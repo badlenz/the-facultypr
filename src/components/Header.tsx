@@ -295,9 +295,9 @@ export const Header: React.FC<HeaderProps> = ({
             {/* BOTÓN DESTACADO: PORTAL DE ARTISTA */}
             <button
               type="button"
-              onClick={() => handleTabSelect('historial')}
+              onClick={() => setShowArtistPortalModal(true)}
               className={`taste-btn px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer group ${
-                isTabActive('historial')
+                showArtistPortalModal
                   ? 'bg-gradient-to-r from-amber-500 via-rose-600 to-red-600 text-white border border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-1 ring-amber-300/40'
                   : 'bg-gradient-to-r from-amber-500/20 via-zinc-900 to-[#12131a] hover:from-amber-500/30 hover:to-zinc-800 text-white border border-amber-500/50 hover:border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)]'
               }`}
@@ -543,9 +543,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             type="button"
-            onClick={() => handleTabSelect('historial')}
+            onClick={() => setShowArtistPortalModal(true)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-              isTabActive('historial')
+              showArtistPortalModal
                 ? 'bg-amber-500/25 border border-amber-400/60 text-amber-200 font-bold'
                 : 'bg-white/5 active:bg-white/10 hover:text-white'
             }`}
