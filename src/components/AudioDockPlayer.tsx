@@ -81,7 +81,7 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
       />
       <audio
         ref={audioBRef}
-        src="/zyron-tukutu-master.wav"
+        src="/zyron-tukutu-master.m4a"
         preload="auto"
         loop
       />

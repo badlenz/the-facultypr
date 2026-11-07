@@ -403,7 +403,7 @@ export const DEFAULT_SHOWCASE_TRACKS: ShowcaseTrack[] = [
     descriptionA: 'Referencia de maqueta sin ecualización comercial ni compresión.',
     descriptionB: 'Mezcla multitrack, afinación vocal y master comercial por Badlenz.',
     audioAUrl: '/zyron-tukutu-reff.mp3',
-    audioBUrl: '/zyron-tukutu-master.wav'
+    audioBUrl: '/zyron-tukutu-master.m4a'
   }
 ];
 
@@ -426,8 +426,8 @@ export const getShowcaseTracks = (): ShowcaseTrack[] => {
       if (!zyronTrack.audioAUrl || zyronTrack.audioAUrl.includes('track_zyron') || zyronTrack.audioAUrl === '') {
         zyronTrack.audioAUrl = '/zyron-tukutu-reff.mp3';
       }
-      if (!zyronTrack.audioBUrl || zyronTrack.audioBUrl.includes('track_zyron') || zyronTrack.audioBUrl === '') {
-        zyronTrack.audioBUrl = '/zyron-tukutu-master.wav';
+      if (!zyronTrack.audioBUrl || zyronTrack.audioBUrl.includes('track_zyron') || zyronTrack.audioBUrl.includes('zyron-tukutu-master.wav') || zyronTrack.audioBUrl === '') {
+        zyronTrack.audioBUrl = '/zyron-tukutu-master.m4a';
       }
       zyronTrack.descriptionA = zyronTrack.descriptionA || 'Referencia de maqueta sin ecualización comercial ni compresión.';
       zyronTrack.descriptionB = zyronTrack.descriptionB || 'Mezcla multitrack, afinación vocal y master comercial por Badlenz.';
