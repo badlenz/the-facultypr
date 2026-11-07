@@ -1392,6 +1392,19 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                 <span>{copiedAthPhone ? '¡Copiado!' : 'ATH Móvil: (787) 240-8627'}</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-artist-portal-modal'));
+                }}
+                className="taste-btn px-4 py-3.5 rounded-xl bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/60 hover:border-amber-400 font-syne font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.18)] cursor-pointer transition-all"
+                title="Abrir Portal de Artista VIP · Cabina de Escucha en Vivo"
+              >
+                <Headphones className="w-4 h-4 text-amber-400" />
+                <span>Portal de Artista</span>
+                <ExternalLink className="w-3.5 h-3.5 text-amber-400/80" />
+              </button>
+
               <a
                 href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Vi%20la%20página%20y%20quiero%20hacerte%20una%20consulta%20para%20grabar%20mi%20sesión%20en%20La%20Facultad."
                 target="_blank"
@@ -3197,7 +3210,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                 </div>
 
                 {/* RECORDATORIO AUTOMÁTICO DE REVISIÓN EN BÓVEDA POR TIMESTAMPS */}
-                <div className="bg-black/80 p-3 rounded-lg border border-amber-600/50 space-y-1">
+                <div className="bg-black/80 p-3 rounded-lg border border-amber-600/50 space-y-2">
                   <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-bold uppercase">
                     <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                     <span>🔔 Recordatorio Automático de Revisión de Mezcla</span>
@@ -3205,6 +3218,14 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   <p className="text-[10px] text-gray-300 leading-normal">
                     En cuanto tu mezcla esté lista en tu Bóveda (de 24 a 72h), recibirás un aviso para escuchar la versión HD y dejar observaciones nota por nota mediante nuestro sistema de timestamps.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-artist-portal-modal'))}
+                    className="w-full py-2 px-3 rounded-lg bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/50 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Headphones className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Abrir Portal de Artista VIP ➜</span>
+                  </button>
                 </div>
 
                 {/* BOTÓN DIRECTO DE WHATSAPP CON MENSAJE PRELLENADO */}

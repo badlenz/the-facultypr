@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LFCrestLogo } from './BrandingLogos';
-import { Shield, User, Sparkles, Flame, Headphones, ArrowRight } from 'lucide-react';
+import { Shield, User, Sparkles, Flame, Headphones, ArrowRight, KeyRound } from 'lucide-react';
+import { PortalArtistaModal } from './PortalArtistaModal';
 
 interface EntrySelectionScreenProps {
   onSelectMode: (mode: 'admin' | 'cliente') => void;
@@ -8,6 +9,7 @@ interface EntrySelectionScreenProps {
 
 export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSelectMode }) => {
   const [hoveredRole, setHoveredRole] = useState<'admin' | 'cliente' | null>(null);
+  const [showVipModal, setShowVipModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center relative overflow-hidden p-6 select-none">
@@ -125,12 +127,44 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
 
         </div>
 
+        {/* Acceso Directo al Portal de Artista VIP (Cabina de Escucha en Vivo) */}
+        <div className="max-w-2xl mx-auto pt-1">
+          <button
+            type="button"
+            onClick={() => setShowVipModal(true)}
+            className="w-full py-3.5 px-5 rounded-2xl bg-[#0b0c0e]/95 hover:bg-[#12141a] border border-amber-500/50 hover:border-amber-400 shadow-[0_10px_30px_rgba(245,158,11,0.18)] transition-all flex items-center justify-between gap-3 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 text-left">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                  <span>Portal de Artista</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                </span>
+                <span className="text-[11px] text-zinc-400 block">
+                  ¿Ya grabaste tu tema? Ingresa tu código de sesión para entrar a tu Cabina de Escucha en vivo.
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform shrink-0">
+              Abrir Cabina ➜
+            </span>
+          </button>
+        </div>
+
         {/* Footer info */}
         <div className="text-[10px] text-gray-500 font-mono pt-4">
           La Facultad Studio OS • Diseñado para profesionales de la música urbana y comercial.
         </div>
 
       </div>
+
+      <PortalArtistaModal
+        isOpen={showVipModal}
+        onClose={() => setShowVipModal(false)}
+      />
     </div>
   );
 };

@@ -59,7 +59,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   React.useEffect(() => {
     const unsub = subscribeToStudioStatus((st) => setStudioStatus(st));
-    return unsub;
+    const handleOpenModalEvent = () => setShowArtistPortalModal(true);
+    window.addEventListener('open-artist-portal-modal', handleOpenModalEvent);
+    return () => {
+      unsub();
+      window.removeEventListener('open-artist-portal-modal', handleOpenModalEvent);
+    };
   }, []);
 
   const isStudioTemporarilyClosed = ['vacaciones', 'mantenimiento', 'remodelacion'].includes(studioStatus.estado);
