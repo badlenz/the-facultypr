@@ -1,0 +1,8 @@
+{
+  "name": "La Facultad Studio | BADLENZ v2",
+  "description": "Calculadora Digital y Sistema de Registro del Estudio de Grabación La Facultad Studio | BADLENZ. Gestión de cotizaciones, pases de estudio, contratos y reservaciones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

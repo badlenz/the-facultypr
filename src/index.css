@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #070709;
+    color: #f1f5f9;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+
+  /* Custom Studio Dark Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0b0f;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(1.05); }
+}
+
+.animate-studio-glow {
+  animation: pulseGlow 8s ease-in-out infinite;
+}
+
+/* Console Studio Typography & Booked Day Striation */
+.font-display {
+  font-family: 'Big Shoulders Display', 'Oswald', Impact, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.day-booked {
+  position: relative;
+  color: #64748b !important;
+  background: repeating-linear-gradient(135deg, rgba(15,17,24,0.9) 0 6px, rgba(255,46,85,0.14) 6px 10px) !important;
+  border-color: rgba(255,46,85,0.4) !important;
+  text-decoration: line-through !important;
+  text-decoration-color: #ff2e55 !important;
+  text-decoration-thickness: 2px !important;
+}
+
+/* Scroll Reveal Modular Animations - Landing Page Experience */
+.reveal-module {
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-module.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-module {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ========================================================
+   CINEMATIC HERO: PORTAL («Cruza a otro mundo.»)
+   ======================================================== */
+.font-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-dmsans {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.portal-hero-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: clamp(62px, 6.9vw, 118px);
+  line-height: 0.89;
+  letter-spacing: -0.065em;
+}
+
+.portal-glass-button {
+  background: rgba(30, 80, 160, 0.32);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portal-glass-button:hover {
+  background: rgba(45, 105, 205, 0.45);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.35),
+    0 12px 40px 0 rgba(24, 76, 165, 0.45);
+  transform: translateY(-2px);
+}
+
+.portal-glass-button:active {
+  transform: translateY(1px);
+  background: rgba(20, 65, 135, 0.4);
+}
+
+.portal-glass-secondary {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes equalizerBounce {
+  0%, 100% { height: 6px; }
+  50% { height: 28px; }
+}
+
+.animate-eq-1 { animation: equalizerBounce 1.1s ease-in-out infinite 0.1s; }
+.animate-eq-2 { animation: equalizerBounce 0.9s ease-in-out infinite 0.3s; }
+.animate-eq-3 { animation: equalizerBounce 1.3s ease-in-out infinite 0.05s; }
+.animate-eq-4 { animation: equalizerBounce 0.8s ease-in-out infinite 0.25s; }
+.animate-eq-5 { animation: equalizerBounce 1.0s ease-in-out infinite 0.4s; }
+
+/* ========================================================
+   DESIGN-TASTE-FRONTEND MOTION LAYER & SPOTLIGHT ENGINE
+   ======================================================== */
+:root {
+  --m-in: 140ms;
+  --m-out: 200ms;
+  --m-press: 90ms;
+  --m-ease: cubic-bezier(.2, .8, .2, 1);
+  --m-ease-io: cubic-bezier(.65, 0, .35, 1);
+  --m-lift: -2px;
+}
+
+/* Taste Step: Buttons step 1px on hover, press down 1px with 1.5% shrink on click */
+.taste-btn {
+  position: relative;
+  transition: transform var(--m-press) var(--m-ease), box-shadow var(--m-out) var(--m-ease), background-color var(--m-out) var(--m-ease), border-color var(--m-out) var(--m-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .taste-btn:hover {
+    transform: translateY(-1px);
+    transition-duration: var(--m-in);
+  }
+}
+.taste-btn:active {
+  transform: translateY(1px) scale(.985);
+  transition-duration: var(--m-press);
+}
+
+/* Taste Card: Linked cards lift 2px with soft shadow */
+.taste-card {
+  transition: transform var(--m-out) var(--m-ease), border-color var(--m-out) var(--m-ease), box-shadow var(--m-out) var(--m-ease);
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .taste-card:hover {
+    transform: translateY(var(--m-lift));
+    transition-duration: var(--m-in);
+  }
+}
+
+/* Taste Link: underline that draws left-to-right */
+.taste-link {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  background-position: left 0 bottom 0;
+  transition: background-size var(--m-out) var(--m-ease), color var(--m-out) var(--m-ease);
+  padding-bottom: 2px;
+}
+.taste-link:hover, .taste-link:focus-visible {
+  background-size: 100% 1px;
+  transition-duration: var(--m-in);
+}
+
+/* FX-Spotlight Effect: Follows pointer to reveal subtle studio glow */
+.fx-spotlight-container {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --spotlight-radius: 350px;
+}
+
+.fx-spotlight-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.fx-spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    var(--spotlight-radius) circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(220, 38, 38, 0.12),
+    rgba(245, 158, 11, 0.05) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fx-spotlight-card:hover::before {
+  opacity: 1;
+}
+
+/* Modern Ambient Studio Lighting & Glass Layers */
+.studio-glass-panel {
+  background: rgba(14, 16, 24, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.studio-glow-red {
+  background: radial-gradient(circle at 50% 30%, rgba(220, 38, 38, 0.18) 0%, rgba(220, 38, 38, 0.03) 50%, transparent 75%);
+}
+
+.studio-glow-gold {
+  background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.14) 0%, rgba(245, 158, 11, 0.02) 55%, transparent 80%);
+}
+
+/* ========================================================
+   ANTIGRAVITY DESIGN SYSTEM (SPATIAL DEPTH & GLASSMORPHISM)
+   ======================================================== */
+.antigravity-viewport {
+  perspective: 1200px;
+}
+
+.antigravity-glass {
+  background: rgba(11, 13, 20, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 0, 0, 0.7),
+    0 0 30px -5px rgba(220, 38, 38, 0.06),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.antigravity-glass-panel {
+  background: rgba(13, 16, 25, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 30px 60px -15px rgba(0, 0, 0, 0.75),
+    0 0 40px -10px rgba(220, 38, 38, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.antigravity-glass-card {
+  background: rgba(18, 21, 32, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.55), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .antigravity-glass-card:hover {
+    transform: translateY(-4px) translateZ(0);
+    border-color: rgba(220, 38, 38, 0.4);
+    box-shadow: 
+      0 28px 56px -10px rgba(0, 0, 0, 0.8),
+      0 0 35px 2px rgba(220, 38, 38, 0.18),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+.antigravity-interactive {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .antigravity-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.65), 0 0 25px 0 rgba(220, 38, 38, 0.15);
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 5s ease-in-out infinite;
+}
+
+@keyframes glowPulseSubtle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.06);
+  }
+}
+
+.animate-ambient-pulse {
+  animation: glowPulseSubtle 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-gentle,
+  .animate-ambient-pulse,
+  .antigravity-glass-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+

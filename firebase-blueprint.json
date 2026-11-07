@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "cliente": {
+      "title": "Cliente",
+      "description": "Perfil de cliente o artista registrado en La Facultad Studio",
+      "type": "object",
+      "properties": {
+        "nombreArtistico": { "type": "string", "maxLength": 100 },
+        "nombreReal": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "telefono": { "type": "string", "maxLength": 50 },
+        "instagram": { "type": "string", "maxLength": 100 },
+        "fechaCreacion": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["nombreArtistico", "email"]
+    },
+    "reserva": {
+      "title": "Reserva",
+      "description": "Reserva de sesión de estudio de grabación o servicio musical",
+      "type": "object",
+      "properties": {
+        "clienteId": { "type": "string", "maxLength": 100 },
+        "nombreArtistico": { "type": "string", "maxLength": 100 },
+        "fecha": { "type": "string", "maxLength": 20 },
+        "fechasBloque": { "type": "array" },
+        "horaInicio": { "type": "string", "maxLength": 20 },
+        "horaSalida": { "type": "string", "maxLength": 20 },
+        "totalHoras": { "type": "number" },
+        "servicios": { "type": "array" },
+        "metodoPago": { "type": "string", "maxLength": 50 },
+        "subtotal": { "type": "number" },
+        "deposito": { "type": "number" },
+        "balance": { "type": "number" },
+        "estado": { "type": "string", "maxLength": 50 },
+        "depositoEstado": { "type": "string", "maxLength": 50 },
+        "firma": { "type": "string" },
+        "creadoEn": { "type": "number" },
+        "comprobanteAthUrl": { "type": "string" },
+        "comprobanteNumReferencia": { "type": "string", "maxLength": 100 },
+        "reagendadoDeFecha": { "type": "string", "maxLength": 20 },
+        "motivoCancelacion": { "type": "string", "maxLength": 500 },
+        "roughMixUrl": { "type": "string" },
+        "roughMixNombre": { "type": "string", "maxLength": 150 },
+        "tipoProyecto": { "type": "string", "maxLength": 50 },
+        "detallesTracklist": { "type": "array" }
+      },
+      "required": ["clienteId", "nombreArtistico", "fecha", "subtotal", "deposito", "balance", "estado"]
+    },
+    "showcaseTrack": {
+      "title": "ShowcaseTrack",
+      "description": "Pistas para el reproductor A/B en vivo de prueba auditiva",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "artist": { "type": "string", "maxLength": 150 },
+        "genre": { "type": "string", "maxLength": 100 },
+        "bpm": { "type": "number" },
+        "descriptionA": { "type": "string", "maxLength": 500 },
+        "descriptionB": { "type": "string", "maxLength": 500 },
+        "audioAUrl": { "type": "string" },
+        "audioBUrl": { "type": "string" }
+      },
+      "required": ["title", "artist", "descriptionA", "descriptionB"]
+    },
+    "songFeedback": {
+      "title": "SongFeedback",
+      "description": "Observaciones y retroalimentación de mezcla por timestamp",
+      "type": "object",
+      "properties": {
+        "proyectoId": { "type": "string", "maxLength": 100 },
+        "nombreArtista": { "type": "string", "maxLength": 100 },
+        "nombreCancion": { "type": "string", "maxLength": 150 },
+        "items": { "type": "array" }
+      },
+      "required": ["proyectoId"]
+    },
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "Perfil de usuario o artista con sesión en Firebase Auth",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "nombreArtistico": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["uid", "email"]
+    },
+    "recibo": {
+      "title": "Recibo",
+      "description": "Recibo digital emitido para un cliente",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 100 },
+        "clienteEmail": { "type": "string", "maxLength": 150 },
+        "nombreArtistico": { "type": "string", "maxLength": 100 },
+        "monto": { "type": "number" },
+        "concepto": { "type": "string", "maxLength": 200 },
+        "fecha": { "type": "string", "maxLength": 50 },
+        "metodoPago": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "clienteEmail", "monto", "fecha"]
+    },
+    "archivoSesion": {
+      "title": "ArchivoSesion",
+      "description": "Archivos entregables de sesión musical",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 100 },
+        "clienteEmail": { "type": "string", "maxLength": 150 },
+        "nombreArtistico": { "type": "string", "maxLength": 100 },
+        "nombreArchivo": { "type": "string", "maxLength": 200 },
+        "tipo": { "type": "string", "maxLength": 50 },
+        "driveUrl": { "type": "string" },
+        "fechaSubida": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "clienteEmail", "nombreArchivo", "driveUrl"]
+    }
+  },
+  "firestore": {
+    "/clientes/{clienteId}": {
+      "schema": "cliente",
+      "description": "Colección de clientes y artistas registrados"
+    },
+    "/reservas/{reservaId}": {
+      "schema": "reserva",
+      "description": "Colección de reservas de estudio y pases de sesión"
+    },
+    "/showcase_tracks/{trackId}": {
+      "schema": "showcaseTrack",
+      "description": "Colección de pistas A/B para el reproductor de la web"
+    },
+    "/song_feedbacks/{feedbackId}": {
+      "schema": "songFeedback",
+      "description": "Colección de revisiones por timestamp de proyectos"
+    },
+    "/users/{userId}": {
+      "schema": "userProfile",
+      "description": "Colección de perfiles de usuario y artistas autenticados"
+    },
+    "/recibos/{reciboId}": {
+      "schema": "recibo",
+      "description": "Colección de recibos de pago digitales"
+    },
+    "/archivos/{archivoId}": {
+      "schema": "archivoSesion",
+      "description": "Colección de archivos entregables de sesiones musicales"
+    }
+  }
+}
