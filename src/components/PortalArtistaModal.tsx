@@ -9,7 +9,6 @@ import {
   Disc3,
   FileCheck2,
   KeyRound,
-  Play,
   AlertCircle,
   CheckCircle2,
   Radio,
@@ -20,13 +19,12 @@ import {
   ExternalLink,
   ShieldCheck,
   Smartphone,
-  FolderArchive,
-  Search,
-  Check,
+  Lock,
+  Unlock,
+  LogOut,
 } from 'lucide-react';
 import {
   getArtistSessionUrl,
-  ARTIST_DEMO_SESSION_URL,
   BADLENZ_WHATSAPP_STATUS_URL,
 } from '../config/portalConfig';
 import { getClientes, getReservas, Cliente, Reserva } from '../services/db';
@@ -96,79 +94,100 @@ const REWARDS_SCALE = [
   },
 ];
 
-interface MockDelivery {
-  id: string;
-  songName: string;
-  artist: string;
-  date: string;
-  format: string;
-  size: string;
-  downloadUrl: string;
-  driveUrl: string;
-}
-
 export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   isOpen,
   onClose,
-  onOpenLegacyVault,
   initialTab = 'cabina',
 }) => {
+  // Credenciales de acceso
+  const [sessionCode, setSessionCode] = useState(() => {
+    try {
+      return sessionStorage.getItem('lfs_artist_session_code') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [securityPin, setSecurityPin] = useState(() => {
+    try {
+      return sessionStorage.getItem('lfs_artist_session_pin') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    try {
+      const savedCode = sessionStorage.getItem('lfs_artist_session_code');
+      const savedPin = sessionStorage.getItem('lfs_artist_session_pin');
+      return Boolean(savedCode && savedPin === '2027');
+    } catch {
+      return false;
+    }
+  });
+
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [pinError, setPinError] = useState<string | null>(null);
+
+  // Pestaña activa una vez autenticado
   const [activeTab, setActiveTab] = useState<'cabina' | 'estrellas' | 'recibos'>(initialTab);
-  
-  // Tab 1 (Cabina de escucha)
-  const [sessionCode, setSessionCode] = useState('');
-  const [codeError, setCodeError] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Tab 2 & 3 (Filtro por teléfono o email para estrellas y recibos)
-  const [artistSearchQuery, setArtistSearchQuery] = useState('');
-  const [currentArtistStars, setCurrentArtistStars] = useState<number>(6);
-  const [matchedArtistName, setMatchedArtistName] = useState<string>('Zyron / Artista VIP');
-  const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
+  // Datos calculados del artista autenticado
+  const [currentArtistStars, setCurrentArtistStars] = useState<number>(1);
+  const [artistDisplayName, setArtistDisplayName] = useState<string>('');
 
-  // Tab 3 Mock Receipts & Deliveries for current artist
-  const [userDeliveries, setUserDeliveries] = useState<MockDelivery[]>([
-    {
-      id: 'DEL-ZYR-01',
-      songName: 'Zyron - Tukutu (Master Oficial)',
-      artist: 'Zyron',
-      date: '2026-08-14',
-      format: 'WAV 24-bit / 48kHz (-14 LUFS)',
-      size: '48.2 MB',
-      downloadUrl: '/zyron-tukutu-master.m4a',
-      driveUrl: 'https://drive.google.com/',
-    },
-    {
-      id: 'DEL-ZYR-02',
-      songName: 'Zyron - Tukutu (Stems Vocales Secos & Con Efecto)',
-      artist: 'Zyron',
-      date: '2026-08-12',
-      format: 'ZIP Multitrack Stems',
-      size: '184 MB',
-      downloadUrl: '#',
-      driveUrl: 'https://drive.google.com/',
-    },
-  ]);
+  const inputCodeRef = useRef<HTMLInputElement | null>(null);
+  const inputPinRef = useRef<HTMLInputElement | null>(null);
+
+  // Recalcular estrellas cuando se desbloquea una sesión
+  useEffect(() => {
+    if (isUnlocked && sessionCode) {
+      const clean = sessionCode.trim().toLowerCase().replace(/\s+/g, '');
+      const allClientes: Cliente[] = getClientes();
+      const allReservas: Reserva[] = getReservas();
+
+      const matchedClient = allClientes.find((c) => {
+        const artName = c.nombreArtistico.toLowerCase().replace(/\s+/g, '');
+        return clean.includes(artName) || artName.includes(clean);
+      });
+
+      if (matchedClient) {
+        setArtistDisplayName(matchedClient.nombreArtistico);
+        const clientReservas = allReservas.filter(
+          (r) =>
+            r.clienteId === matchedClient.id ||
+            r.nombreArtistico.toLowerCase().includes(matchedClient.nombreArtistico.toLowerCase())
+        );
+        const total = clientReservas.reduce((acc, r) => {
+          const count = Array.isArray(r.servicios) ? Math.max(1, r.servicios.length) : 1;
+          return acc + count;
+        }, 0);
+        setCurrentArtistStars(Math.min(Math.max(total, 1), 20));
+      } else {
+        // Formatear el código ingresado como nombre de artista / tema
+        setArtistDisplayName(clean.toUpperCase());
+        setCurrentArtistStars(3); // 1 tema registrado en cabina
+      }
+    }
+  }, [isUnlocked, sessionCode]);
 
   useEffect(() => {
     if (isOpen) {
-      setCodeError(false);
+      setCodeError(null);
+      setPinError(null);
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      if (activeTab === 'cabina') {
-        const timer = setTimeout(() => {
-          inputRef.current?.focus();
-        }, 80);
-        return () => {
-          document.body.style.overflow = prevOverflow;
-          clearTimeout(timer);
-        };
-      }
+
+      const timer = setTimeout(() => {
+        if (!isUnlocked) {
+          inputCodeRef.current?.focus();
+        }
+      }, 100);
+
       return () => {
         document.body.style.overflow = prevOverflow;
+        clearTimeout(timer);
       };
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, isUnlocked]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -182,69 +201,65 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
 
   if (!isOpen || typeof document === 'undefined') return null;
 
-  const handleEnterCabin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const cleaned = sessionCode.trim().toLowerCase().replace(/\s+/g, '');
-    if (!cleaned) {
-      setCodeError(true);
-      inputRef.current?.focus();
-      return;
+  // Manejador del login con Código (artista + tema) y PIN (2027)
+  const handleUnlockSession = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCodeError(null);
+    setPinError(null);
+
+    const cleanCode = sessionCode.trim().toLowerCase().replace(/\s+/g, '');
+    const cleanPin = securityPin.trim();
+
+    let hasError = false;
+
+    if (!cleanCode) {
+      setCodeError('Ingresa el nombre del artista junto al título de tu tema (ej: zyrontukutu).');
+      hasError = true;
+    } else if (cleanCode.length < 3) {
+      setCodeError('El código de sesión debe tener al menos 3 caracteres.');
+      hasError = true;
     }
-    setCodeError(false);
-    const targetUrl = getArtistSessionUrl(cleaned);
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+
+    if (!cleanPin) {
+      setPinError('Ingresa el PIN de seguridad VIP de 4 dígitos proporcionado por Badlenz.');
+      hasError = true;
+    } else if (cleanPin !== '2027') {
+      setPinError('PIN de seguridad incorrecto. Solicita tu PIN oficial a Badlenz.');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    // Autenticación correcta
+    try {
+      sessionStorage.setItem('lfs_artist_session_code', cleanCode);
+      sessionStorage.setItem('lfs_artist_session_pin', cleanPin);
+    } catch {
+      // Ignorar fallback de almacenamiento
+    }
+
+    setIsUnlocked(true);
+    setActiveTab('cabina');
   };
 
-  // Buscar cliente y calcular estrellas
-  const handlePerformArtistSearch = (termToSearch?: string) => {
-    const term = (termToSearch !== undefined ? termToSearch : artistSearchQuery).trim().toLowerCase();
-    if (!term) {
-      setSearchFeedback('Ingresa tu teléfono, correo o nombre artístico para consultar.');
-      return;
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('lfs_artist_session_code');
+      sessionStorage.removeItem('lfs_artist_session_pin');
+    } catch {
+      // Ignorar
     }
+    setIsUnlocked(false);
+    setSecurityPin('');
+    setCodeError(null);
+    setPinError(null);
+  };
 
-    const termDigits = term.replace(/\D/g, '');
-    const allClientes: Cliente[] = getClientes();
-    const allReservas: Reserva[] = getReservas();
-
-    const matchedClient = allClientes.find((c) => {
-      const emailMatch = c.email.toLowerCase().includes(term);
-      const artNameMatch = c.nombreArtistico.toLowerCase().includes(term);
-      const phoneDigits = (c.telefono || '').replace(/\D/g, '');
-      const phoneMatch = termDigits.length >= 4 && (phoneDigits.includes(termDigits) || termDigits.includes(phoneDigits));
-      return emailMatch || artNameMatch || phoneMatch;
-    });
-
-    if (matchedClient) {
-      const clientReservas = allReservas.filter(
-        (r) => r.clienteId === matchedClient.id || r.nombreArtistico.toLowerCase().includes(matchedClient.nombreArtistico.toLowerCase())
-      );
-      const totalCount = clientReservas.reduce((acc, r) => {
-        const count = Array.isArray(r.servicios) ? Math.max(1, r.servicios.length) : 1;
-        return acc + count;
-      }, 0);
-
-      const calculatedStars = Math.min(Math.max(totalCount, 1), 20);
-      setCurrentArtistStars(calculatedStars);
-      setMatchedArtistName(matchedClient.nombreArtistico);
-      setSearchFeedback(`¡Encontrado! Artista: ${matchedClient.nombreArtistico} (${calculatedStars} ⭐)`);
-    } else if (term.includes('zyron') || term.includes('tukutu')) {
-      setCurrentArtistStars(6);
-      setMatchedArtistName('Zyron (Demo Oficial)');
-      setSearchFeedback('Perfil Demo cargado: Zyron (6 ⭐ acumuladas)');
-    } else if (term.includes('badlenz') || term.includes('king')) {
-      setCurrentArtistStars(16);
-      setMatchedArtistName('BADLENZ / El King (VIP)');
-      setSearchFeedback('Perfil VIP cargado: Badlenz (16 ⭐ acumuladas)');
-    } else if (termDigits.length >= 7) {
-      // Si ingresa un teléfono nuevo sin historial
-      const pseudoStars = 4;
-      setCurrentArtistStars(pseudoStars);
-      setMatchedArtistName(`Artista ${term}`);
-      setSearchFeedback(`Teléfono verificado: ${term} (${pseudoStars} ⭐ acumuladas)`);
-    } else {
-      setSearchFeedback(`Mostrando datos de ${matchedArtistName} (${currentArtistStars} ⭐).`);
-    }
+  const handleGoToCabin = () => {
+    const clean = sessionCode.trim().toLowerCase().replace(/\s+/g, '');
+    if (!clean) return;
+    const targetUrl = getArtistSessionUrl(clean);
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
   const currentLevelBadge = (() => {
@@ -276,7 +291,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
         <div className="absolute -top-24 -right-24 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* HEADER FIJO (Siempre visible, nunca se oculta al hacer scroll) */}
+        {/* HEADER FIJO */}
         <div className="relative z-20 p-5 sm:p-6 pb-4 border-b border-amber-500/20 bg-[#0d0f14]/95 space-y-3">
           <button
             type="button"
@@ -291,7 +306,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
             <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-gradient-to-r from-red-950/90 via-[#1a1114] to-amber-950/80 border border-amber-500/40 shadow-inner">
               <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300 font-extrabold">
-                Hub VIP del Artista · La Facultad
+                {isUnlocked ? 'Sesión Autorizada · VIP' : 'Acceso Restringido'}
               </span>
             </div>
 
@@ -299,86 +314,118 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
               id="portal-artista-vip-title"
               className="text-base sm:text-lg font-black uppercase tracking-wide text-white flex flex-wrap items-center gap-2 font-syne"
             >
-              <span>Portal de Artista VIP · Badlenz Studio</span>
+              <span>Portal de Artista VIP · La Facultad Studio</span>
               <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             </h3>
           </div>
 
-          {/* 3 PESTAÑAS FLUIDAS: CABINA, ESTRELLAS, RECIBOS */}
-          <div className="grid grid-cols-3 gap-1 bg-[#13151c] p-1 rounded-2xl border border-amber-500/25 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setActiveTab('cabina')}
-              className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
-                activeTab === 'cabina'
-                  ? 'bg-gradient-to-r from-red-600 via-red-500 to-amber-600 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Headphones className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Cabina en Vivo</span>
-            </button>
+          {/* BARRA DE ESTADO / PESTAÑAS (Solo visible si está desbloqueado) */}
+          {isUnlocked ? (
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between text-xs bg-black/40 border border-amber-500/30 px-3 py-1.5 rounded-xl">
+                <div className="flex items-center gap-2 truncate">
+                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-zinc-400 font-mono text-[11px]">Sesión Activa:</span>
+                  <span className="font-bold text-amber-300 font-mono uppercase truncate">
+                    {sessionCode}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 text-[11px] font-mono text-zinc-400 hover:text-red-400 transition cursor-pointer shrink-0 ml-2"
+                  title="Cambiar de código o cerrar sesión"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Salir</span>
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('estrellas')}
-              className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
-                activeTab === 'estrellas'
-                  ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-950 font-black shadow-md'
-                  : 'text-amber-300/80 hover:text-amber-200'
-              }`}
-            >
-              <Star className="w-3.5 h-3.5 shrink-0 fill-current text-current" />
-              <span className="truncate">20 Estrellas ⭐</span>
-            </button>
+              {/* Selector de Pestañas Fluidas */}
+              <div className="grid grid-cols-3 gap-1 bg-[#13151c] p-1 rounded-2xl border border-amber-500/25 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('cabina')}
+                  className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+                    activeTab === 'cabina'
+                      ? 'bg-gradient-to-r from-red-600 via-red-500 to-amber-600 text-white shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Headphones className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Cabina en Vivo</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('recibos')}
-              className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
-                activeTab === 'recibos'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Receipt className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Recibos & Bóveda</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('estrellas')}
+                  className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+                    activeTab === 'estrellas'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-950 font-black shadow-md'
+                      : 'text-amber-300/80 hover:text-amber-200'
+                  }`}
+                >
+                  <Star className="w-3.5 h-3.5 shrink-0 fill-current text-current" />
+                  <span className="truncate">20 Estrellas ⭐</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('recibos')}
+                  className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+                    activeTab === 'recibos'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Receipt className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Recibos & Bóveda</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Ingresa tu código de sesión (artista + tema) junto con tu PIN personal de seguridad para acceder a tu cabina de escucha, tus estrellas y recibos oficiales.
+            </p>
+          )}
         </div>
 
         {/* CUERPO DEL MODAL (Scrollable) */}
         <div className="relative z-10 flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
           {/* ============================================================== */}
-          {/* PESTAÑA 1: 🎧 CABINA DE ESCUCHA EN VIVO                         */}
+          {/* VISTA 1: BLOQUEADA (REQUIERE CÓDIGO + PIN 2027)                */}
           {/* ============================================================== */}
-          {activeTab === 'cabina' && (
-            <div className="space-y-4">
+          {!isUnlocked && (
+            <div className="space-y-5">
               <form
-                onSubmit={handleEnterCabin}
-                className="space-y-3 bg-[#111318]/95 p-4 sm:p-5 rounded-2xl border border-amber-500/35 shadow-inner"
+                onSubmit={handleUnlockSession}
+                className="space-y-4 bg-[#111318]/95 p-5 sm:p-6 rounded-2xl border border-amber-500/40 shadow-inner"
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="artist-session-code-input"
-                      className="block text-xs font-bold text-amber-300 uppercase tracking-wider font-mono"
-                    >
-                      Ingresa tu código de sesión o nombre del tema
-                    </label>
-                    <span className="text-[10px] text-zinc-400 font-mono">Stream 24-bit HD</span>
-                  </div>
+                <div className="flex items-center gap-2 text-amber-400 pb-1 border-b border-white/5">
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-xs font-mono uppercase font-black tracking-wider text-amber-300">
+                    Autenticación Requerida de Artista
+                  </h4>
+                </div>
 
+                {/* Campo 1: Nombre de Artista + Tema (ej: zyrontukutu) */}
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="artist-session-code-input"
+                    className="block text-xs font-bold text-amber-300 uppercase tracking-wider font-mono"
+                  >
+                    1. Código de Sesión (Artista + Tema)
+                  </label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 text-amber-400/80 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      ref={inputRef}
+                      ref={inputCodeRef}
                       id="artist-session-code-input"
                       type="text"
                       value={sessionCode}
                       onChange={(e) => {
                         setSessionCode(e.target.value);
-                        if (codeError) setCodeError(false);
+                        if (codeError) setCodeError(null);
                       }}
                       placeholder="ej: zyrontukutu, delnorte"
                       className={`w-full pl-10 pr-4 py-3 rounded-xl bg-[#0b0c0e] border ${
@@ -391,45 +438,77 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   {codeError && (
                     <p className="text-[11px] text-red-400 flex items-center gap-1.5 pt-0.5 font-medium">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Escribe el código de tu sesión o tema (ej: zyrontukutu) para entrar.</span>
+                      <span>{codeError}</span>
                     </p>
                   )}
+                  <p className="text-[10px] text-zinc-500 font-mono">
+                    * Tu nombre artístico junto al título de tu tema (todo corrido en minúsculas).
+                  </p>
                 </div>
 
-                {/* Botón Principal: Entrar a mi Cabina de Escucha ➜ */}
+                {/* Campo 2: PIN de Seguridad VIP (2027) */}
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="artist-security-pin-input"
+                    className="block text-xs font-bold text-amber-300 uppercase tracking-wider font-mono"
+                  >
+                    2. PIN de Seguridad VIP (Personal de Badlenz)
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-amber-400/80 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      ref={inputPinRef}
+                      id="artist-security-pin-input"
+                      type="password"
+                      maxLength={6}
+                      value={securityPin}
+                      onChange={(e) => {
+                        setSecurityPin(e.target.value);
+                        if (pinError) setPinError(null);
+                      }}
+                      placeholder="Ingresa tu PIN de 4 dígitos"
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-[#0b0c0e] border ${
+                        pinError
+                          ? 'border-red-500 focus:ring-2 focus:ring-red-500/40'
+                          : 'border-amber-500/40 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/30'
+                      } text-white placeholder-zinc-500 text-sm font-mono tracking-widest focus:outline-none transition`}
+                    />
+                  </div>
+                  {pinError && (
+                    <p className="text-[11px] text-red-400 flex items-center gap-1.5 pt-0.5 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{pinError}</span>
+                    </p>
+                  )}
+                  <p className="text-[10px] text-zinc-500 font-mono">
+                    * Código de autorización asignado personalmente a cada cliente del estudio.
+                  </p>
+                </div>
+
+                {/* Botón Principal de Acceso */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.45)] border border-amber-400/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                  className="w-full py-3.5 px-5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.45)] border border-amber-400/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
-                  <span>Entrar a mi Cabina de Escucha ➜</span>
+                  <Unlock className="w-4 h-4" />
+                  <span>Desbloquear Cabina & Bóveda VIP ➜</span>
                 </button>
-
-                {/* Botón de Acceso Directo a Demo */}
-                <a
-                  href={ARTIST_DEMO_SESSION_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-4 bg-[#0b0c0e] hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 border border-amber-500/40 hover:border-amber-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-center cursor-pointer active:scale-[0.98]"
-                >
-                  <Play className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                  <span>Probar cabina en vivo (Demo Zyron - Tukutu)</span>
-                </a>
               </form>
 
-              {/* SECCIÓN 2: ¿TU TEMA AÚN ESTÁ EN PROCESO O NO TIENES CÓDIGO? */}
+              {/* SECCIÓN INFORMATIVA DE AYUDA Y WHATSAPP */}
               <div className="space-y-3 bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/25">
                 <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
                   <h4 className="text-xs sm:text-sm font-extrabold text-amber-400 uppercase tracking-wide flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0" />
-                    <span>¿Tu tema aún está en proceso o no tienes código?</span>
+                    <span>¿Aún no tienes tu código de sesión o PIN de acceso?</span>
                   </h4>
                 </div>
 
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Cada producción en <strong className="text-white">La Facultad Studio</strong> atraviesa 4 etapas técnicas antes de habilitar tu enlace en la cabina de escucha:
+                  Cada sesión en <strong className="text-white">La Facultad Studio</strong> atraviesa 4 etapas técnicas. Si tu tema aún está en preproducción o mezcla, consúltale a Badlenz para que te active tu cabina y te entregue tu PIN:
                 </p>
 
-                {/* Las 4 Fases de Producción de La Facultad Studio */}
+                {/* Las 4 Fases de Producción */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {PRODUCTION_PHASES.map((phase) => {
                     const IconComponent = phase.icon;
@@ -456,13 +535,96 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   })}
                 </div>
 
-                {/* Botón directo a WhatsApp con Badlenz */}
+                {/* Botón directo a WhatsApp para solicitar PIN y Código */}
+                <div className="pt-1">
+                  <a
+                    href="https://wa.me/17872408627?text=D%C3%ADmelo%20Badlenz!%20Estoy%20en%20el%20portal%20y%20necesito%20mi%20c%C3%B3digo%20de%20sesi%C3%B3n%20y%20el%20PIN%20de%20seguridad%20VIP%20para%20entrar."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-[0_8px_25px_rgba(37,211,102,0.25)] transition flex items-center justify-center gap-2 text-center cursor-pointer active:scale-[0.98]"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                    <span>Solicitar mi PIN y Código a Badlenz</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* VISTA 2: DESBLOQUEADA · PESTAÑA 1: CABINA EN VIVO              */}
+          {/* ============================================================== */}
+          {isUnlocked && activeTab === 'cabina' && (
+            <div className="space-y-4">
+              <div className="bg-[#111318]/95 p-5 rounded-2xl border border-amber-500/35 shadow-inner space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                  <div>
+                    <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
+                      Cabina de Monitoreo Activa
+                    </span>
+                    <h4 className="text-base font-black text-white uppercase tracking-wide font-syne">
+                      Sesión: <span className="text-amber-400 font-mono">{sessionCode}</span>
+                    </h4>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-1 rounded-full font-mono font-bold bg-red-950 text-red-300 border border-red-700/60 uppercase">
+                    • Stream 24-bit / 48kHz
+                  </span>
+                </div>
+
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  Tu sala privada de monitoreo te permite escuchar la versión actual de mezcla/master con precisión acústica, comparar en tiempo real y dejar notas por segundo para Badlenz.
+                </p>
+
+                {/* Botón de acceso directo a la cabina en vivo */}
+                <button
+                  type="button"
+                  onClick={handleGoToCabin}
+                  className="w-full py-3.5 px-5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.45)] border border-amber-400/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                >
+                  <Headphones className="w-4 h-4" />
+                  <span>Entrar a mi Cabina de Escucha ➜</span>
+                </button>
+              </div>
+
+              {/* Fases de Producción para Seguimiento */}
+              <div className="space-y-3 bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/25">
+                <h4 className="text-xs sm:text-sm font-extrabold text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0" />
+                  <span>Fases del Proceso en Estudio</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PRODUCTION_PHASES.map((phase) => {
+                    const IconComponent = phase.icon;
+                    return (
+                      <div
+                        key={phase.number}
+                        className="bg-[#0b0c0e] border border-amber-500/25 rounded-xl p-2.5 flex items-start gap-2.5"
+                      >
+                        <div
+                          className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${phase.accent}`}
+                        >
+                          <IconComponent className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <strong className="text-white block text-[11px] font-bold leading-snug">
+                            {phase.title}
+                          </strong>
+                          <span className="text-[10px] text-zinc-400 leading-tight block mt-0.5">
+                            ({phase.desc})
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div className="pt-1">
                   <a
                     href={BADLENZ_WHATSAPP_STATUS_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-[0_8px_25px_rgba(37,211,102,0.25)] transition flex items-center justify-center gap-2 text-center cursor-pointer active:scale-[0.98]"
+                    className="w-full py-2.5 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 text-center cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4 fill-current shrink-0" />
                     <span>Consultar estado de mi tema por WhatsApp</span>
@@ -473,91 +635,19 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           )}
 
           {/* ============================================================== */}
-          {/* PESTAÑA 2: ⭐ MI PASAPORTE VIP & 20 ESTRELLAS                    */}
+          {/* VISTA 2: DESBLOQUEADA · PESTAÑA 2: MI PASAPORTE 20 ESTRELLAS   */}
           {/* ============================================================== */}
-          {activeTab === 'estrellas' && (
-            <div className="space-y-5">
-              {/* Buscador de Pasaporte por Teléfono o Correo */}
-              <div className="bg-[#12141c] p-4 rounded-2xl border border-amber-500/30 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <label className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Search className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Consulta tus Estrellas Acumuladas</span>
-                  </label>
-                  <span className="text-[10px] text-zinc-400 font-mono">1 Servicio = 1 ⭐</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={artistSearchQuery}
-                    onChange={(e) => setArtistSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handlePerformArtistSearch()}
-                    placeholder="Ingresa tu teléfono, correo o nombre artístico..."
-                    className="flex-1 bg-[#0b0c0e] border border-amber-500/30 focus:border-amber-400 focus:outline-none rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handlePerformArtistSearch()}
-                    className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shrink-0 shadow-md active:scale-95"
-                  >
-                    Consultar
-                  </button>
-                </div>
-
-                {/* Botones de prueba rápida */}
-                <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                  <span className="text-zinc-500">Cargar rápido:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setArtistSearchQuery('Zyron');
-                      handlePerformArtistSearch('Zyron');
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-amber-300 border border-white/10 transition cursor-pointer"
-                  >
-                    Zyron (6 ⭐)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setArtistSearchQuery('Badlenz');
-                      handlePerformArtistSearch('Badlenz');
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-amber-300 border border-white/10 transition cursor-pointer"
-                  >
-                    Badlenz (16 ⭐)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentArtistStars(20);
-                      setMatchedArtistName('Artista Leyenda');
-                      setSearchFeedback('Simulación: 20 Estrellas (Tema Gratis Desbloqueado 👑)');
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-300 border border-white/10 transition cursor-pointer"
-                  >
-                    Simular 20/20 ⭐
-                  </button>
-                </div>
-
-                {searchFeedback && (
-                  <p className="text-[11px] text-amber-400 font-mono bg-amber-950/30 border border-amber-800/40 p-2 rounded-lg">
-                    {searchFeedback}
-                  </p>
-                )}
-              </div>
-
-              {/* Tarjeta Pasaporte VIP */}
+          {isUnlocked && activeTab === 'estrellas' && (
+            <div className="space-y-4">
               <div className="bg-[#101217] p-5 rounded-2xl border border-amber-500/40 shadow-xl space-y-4">
                 <div className="flex justify-between items-start border-b border-white/10 pb-3">
                   <div>
                     <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Award className="w-4 h-4 text-amber-400" />
-                      <span>Pasaporte de Lealtad VIP ({matchedArtistName})</span>
+                      <span>Pasaporte VIP · {artistDisplayName || sessionCode.toUpperCase()}</span>
                     </h4>
                     <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                      La Facultad Studio · Programa de Recompensas
+                      1 Servicio Completado = 1 Estrella ⭐
                     </p>
                   </div>
                   <span
@@ -567,10 +657,10 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   </span>
                 </div>
 
-                {/* Medidor y barra de progreso */}
+                {/* Barra de progreso */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-400">Servicios Completados:</span>
+                    <span className="text-zinc-400">Servicios Acumulados:</span>
                     <span className="font-extrabold text-amber-400 font-mono flex items-center gap-1.5 text-sm">
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400 animate-pulse" />
                       <span>{currentArtistStars} / 20 Estrellas</span>
@@ -586,7 +676,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
 
                   <div className="flex justify-between text-[10px] font-mono text-zinc-400 pt-0.5">
                     <span>Progreso: {Math.round(progressPercent)}%</span>
-                    <span>Meta: 20 ⭐ (1 Tema Completo Gratis)</span>
+                    <span>Meta: 20 ⭐ (Tema Completo Gratis)</span>
                   </div>
                 </div>
 
@@ -607,15 +697,15 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                       👑 ¡FELICITACIONES! HAS ALCANZADO LAS 20 ESTRELLAS
                     </p>
                     <p className="text-[11px] text-zinc-200">
-                      Tienes disponible tu <strong className="text-white">Tema Completo Gratis</strong> (Grabación 4h + Mezcla + Master). Contáctanos para agendar tu fecha de honor.
+                      Has desbloqueado tu <strong className="text-white">Tema Completo Gratis</strong> (Grabación 4h + Mezcla + Master).
                     </p>
                   </div>
                 )}
 
-                {/* Cuadrícula de 20 Stamps (1 Servicio = 1 ⭐) */}
+                {/* Cuadrícula de 20 Stamps (1 a 20) */}
                 <div className="space-y-2 pt-1">
                   <div className="flex justify-between items-center text-[10px] uppercase font-mono font-bold text-zinc-400">
-                    <span>Tarjeta de Sellos (1 a 20):</span>
+                    <span>Tarjeta de Sellos Oficiales:</span>
                     <span className="text-amber-400">Sellos activos: {currentArtistStars}</span>
                   </div>
 
@@ -651,7 +741,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   </div>
                 </div>
 
-                {/* Escala de Recompensas Desbloqueables */}
+                {/* Escala de Recompensas */}
                 <div className="space-y-2 pt-2 border-t border-white/10">
                   <h5 className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                     <Award className="w-3.5 h-3.5" />
@@ -660,12 +750,12 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {REWARDS_SCALE.map((reward) => {
-                      const isUnlocked = currentArtistStars >= reward.pts;
+                      const isUnlockedReward = currentArtistStars >= reward.pts;
                       return (
                         <div
                           key={reward.pts}
                           className={`p-2.5 rounded-xl border text-left transition ${
-                            isUnlocked
+                            isUnlockedReward
                               ? 'bg-amber-950/30 border-amber-500/50 text-white'
                               : 'bg-black/30 border-white/5 text-zinc-500'
                           }`}
@@ -673,19 +763,19 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <span
                               className={`text-xs font-black uppercase ${
-                                isUnlocked ? 'text-amber-300' : 'text-zinc-400'
+                                isUnlockedReward ? 'text-amber-300' : 'text-zinc-400'
                               }`}
                             >
                               {reward.title}
                             </span>
                             <span
                               className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                                isUnlocked
+                                isUnlockedReward
                                   ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/40'
                                   : 'bg-zinc-800 text-zinc-500'
                               }`}
                             >
-                              {isUnlocked ? '✓ Desbloqueado' : `Faltan ${Math.max(0, reward.pts - currentArtistStars)} ⭐`}
+                              {isUnlockedReward ? '✓ Desbloqueado' : `Faltan ${Math.max(0, reward.pts - currentArtistStars)} ⭐`}
                             </span>
                           </div>
                           <p className="text-[10px] text-zinc-400 leading-snug">{reward.desc}</p>
@@ -699,137 +789,119 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           )}
 
           {/* ============================================================== */}
-          {/* PESTAÑA 3: 🧾 RECIBOS, BÓVEDA & ENTREGAS                         */}
+          {/* VISTA 2: DESBLOQUEADA · PESTAÑA 3: RECIBOS & BÓVEDA             */}
           {/* ============================================================== */}
-          {activeTab === 'recibos' && (
+          {isUnlocked && activeTab === 'recibos' && (
             <div className="space-y-4">
-              {/* Sección Entregas & Bóveda de Descarga */}
+              {/* Entregables Oficiales de la Sesión */}
               <div className="bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/30 space-y-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <FolderArchive className="w-4 h-4 text-amber-400" />
-                    <h4 className="text-xs sm:text-sm font-extrabold text-white uppercase tracking-wide">
-                      Bóveda de Masters & Entregables ({matchedArtistName})
-                    </h4>
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>24-bit Certificado</span>
-                  </span>
+                  <h4 className="text-xs sm:text-sm font-extrabold text-white uppercase tracking-wide flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Bóveda Privada de Descargas ({sessionCode})</span>
+                  </h4>
+                  <span className="text-[10px] text-emerald-400 font-mono">24-bit Certificado</span>
                 </div>
 
                 <div className="space-y-2.5">
-                  {userDeliveries.map((file) => (
-                    <div
-                      key={file.id}
-                      className="p-3 bg-[#0b0c0e] rounded-xl border border-amber-500/20 hover:border-amber-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-mono text-red-400 font-bold">{file.id}</span>
-                          <span className="text-[9px] bg-white/5 text-zinc-400 px-1.5 py-0.2 rounded font-mono">
-                            {file.date}
-                          </span>
-                        </div>
-                        <h5 className="text-xs font-bold text-white truncate mt-0.5">{file.songName}</h5>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                          {file.format} · {file.size}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {file.downloadUrl !== '#' ? (
-                          <a
-                            href={file.downloadUrl}
-                            download
-                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Descargar</span>
-                          </a>
-                        ) : (
-                          <a
-                            href={file.driveUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Abrir Drive</span>
-                          </a>
-                        )}
-                      </div>
+                  {/* Master WAV Oficial */}
+                  <div className="p-3 bg-[#0b0c0e] rounded-xl border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <span className="text-[9px] font-mono text-red-400 font-bold">
+                        ENTREGABLE PRINCIPAL
+                      </span>
+                      <h5 className="text-xs font-bold text-white mt-0.5 uppercase">
+                        {sessionCode} · Master Oficial WAV 24-bit
+                      </h5>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                        Calibrado a -14 LUFS / 48kHz
+                      </p>
                     </div>
-                  ))}
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/zyron-tukutu-master.m4a"
+                        download={`${sessionCode}-master.m4a`}
+                        className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Descargar</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Stems Multitrack Drive */}
+                  <div className="p-3 bg-[#0b0c0e] rounded-xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <span className="text-[9px] font-mono text-zinc-500 font-bold">
+                        MULTITRACK PROCESADO
+                      </span>
+                      <h5 className="text-xs font-bold text-white mt-0.5 uppercase">
+                        {sessionCode} · Stems Vocales & Guías
+                      </h5>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                        Carpeta segura en Google Drive
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="https://drive.google.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Abrir Drive</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Sección Recibos Oficiales de Depósito / ATH Móvil */}
+              {/* Recibos Oficiales ATH Móvil */}
               <div className="bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/30 space-y-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                   <div className="flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-emerald-400" />
                     <h4 className="text-xs sm:text-sm font-extrabold text-white uppercase tracking-wide">
-                      Recibos & Comprobantes Oficiales ATH Móvil
+                      Comprobante Oficial ATH Móvil
                     </h4>
                   </div>
                   <span className="text-[10px] text-zinc-400 font-mono">ATH: (787) 240-8627</span>
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  {/* Recibo 1 (Confirmado) */}
                   <div className="p-3 rounded-xl bg-[#0b0c0e] border border-emerald-500/30 space-y-1.5">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                          REF: ATH-882910 · CONFIRMADO
+                          ESTADO: VERIFICADO & CONFIRMADO
                         </span>
                         <h5 className="font-bold text-white text-xs mt-0.5">
-                          Depósito 50% - Grabación Vocal 4h + Mezcla Pro
+                          Depósito 50% · Grabación 4h & Mezcla Pro
                         </h5>
                         <p className="text-[10px] text-zinc-400 font-mono">
-                          Fecha: 2026-08-01 · Método: ATH Móvil Business
+                          Sesión: {sessionCode} · Método: ATH Móvil Business
                         </p>
                       </div>
                       <div className="text-right">
                         <span className="text-emerald-400 font-black text-sm font-mono">$50.00 USD</span>
-                        <p className="text-[9px] text-zinc-500">Balance: $0.00</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recibo 2 (Liquidación) */}
-                  <div className="p-3 rounded-xl bg-[#0b0c0e] border border-emerald-500/30 space-y-1.5">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                          REF: ATH-991421 · LIQUIDADO
-                        </span>
-                        <h5 className="font-bold text-white text-xs mt-0.5">
-                          Saldo Final Master WAV Comercial 24-bit + Certificado
-                        </h5>
-                        <p className="text-[10px] text-zinc-400 font-mono">
-                          Fecha: 2026-08-14 · Método: ATH Móvil Directo
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-emerald-400 font-black text-sm font-mono">$80.00 USD</span>
-                        <p className="text-[9px] text-emerald-400 font-bold">Totalmente Saldo</p>
+                        <p className="text-[9px] text-emerald-500 font-bold">Abono Aplicado</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Subir nuevo comprobante o solicitar recibo */}
-                <div className="pt-2">
+                <div className="pt-1">
                   <a
-                    href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Te%20escribo%20para%20enviarte%20mi%20comprobante%20de%20ATH%20Móvil%20y%20solicitar%20mi%20recibo%20oficial%20o%20acceso%20a%20bóveda."
+                    href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Te%20escribo%20para%20enviarte%20mi%20comprobante%20de%20ATH%20Móvil%20para%20mi%20sesión."
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-2.5 px-4 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-700/50 hover:border-emerald-500 text-emerald-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 text-center cursor-pointer"
                   >
                     <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Enviar captura de ATH Móvil o pedir recibo al (787) 240-8627</span>
+                    <span>Reportar nuevo abono de ATH Móvil al (787) 240-8627</span>
                   </a>
                 </div>
               </div>
