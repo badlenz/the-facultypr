@@ -131,7 +131,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
         <div className="max-w-2xl mx-auto pt-1">
           <button
             type="button"
-            onClick={() => setShowVipModal(true)}
+            onClick={() => onSelectMode('cliente')}
             className="w-full py-3.5 px-5 rounded-2xl bg-[#0b0c0e]/95 hover:bg-[#12141a] border border-amber-500/50 hover:border-amber-400 shadow-[0_10px_30px_rgba(245,158,11,0.18)] transition-all flex items-center justify-between gap-3 cursor-pointer group"
           >
             <div className="flex items-center gap-3 text-left">
@@ -140,16 +140,16 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
               </div>
               <div>
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <span>Portal de Artista</span>
+                  <span>Portal de Artista & Cabina</span>
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 </span>
                 <span className="text-[11px] text-zinc-400 block">
-                  ¿Ya grabaste tu tema? Ingresa tu código de sesión para entrar a tu Cabina de Escucha en vivo.
+                  Consulta tus temas, recibos, acumula tus 20 estrellas VIP o entra a tu cabina de escucha en vivo.
                 </span>
               </div>
             </div>
             <span className="text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform shrink-0">
-              Abrir Cabina ➜
+              Ingresar ➜
             </span>
           </button>
         </div>

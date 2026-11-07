@@ -295,13 +295,17 @@ export const Header: React.FC<HeaderProps> = ({
             {/* BOTÓN DESTACADO: PORTAL DE ARTISTA */}
             <button
               type="button"
-              onClick={() => setShowArtistPortalModal(true)}
-              className="taste-btn px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-zinc-900 to-[#12131a] hover:from-amber-500/30 hover:to-zinc-800 text-white border border-amber-500/50 hover:border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all cursor-pointer group"
-              title="Acceso al Portal de Artistas y Descargas"
+              onClick={() => handleTabSelect('historial')}
+              className={`taste-btn px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer group ${
+                isTabActive('historial')
+                  ? 'bg-gradient-to-r from-amber-500 via-rose-600 to-red-600 text-white border border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-1 ring-amber-300/40'
+                  : 'bg-gradient-to-r from-amber-500/20 via-zinc-900 to-[#12131a] hover:from-amber-500/30 hover:to-zinc-800 text-white border border-amber-500/50 hover:border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)]'
+              }`}
+              title="Abrir Portal de Artista VIP, Temas, Recibos y Recompensas"
             >
               <User className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
               <span className="font-syne font-bold tracking-wide">Portal de Artista</span>
-              <ExternalLink className="w-3 h-3 text-amber-400/80 group-hover:text-amber-300 transition-colors" />
+              <Sparkles className="w-3 h-3 text-amber-400/80 group-hover:text-amber-300 transition-colors" />
             </button>
           </div>
         )}
@@ -539,16 +543,15 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              if (activeTab !== 'cliente') handleTabSelect('cliente');
-              setTimeout(() => {
-                document.getElementById('tarifas-estudio')?.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 active:bg-white/10 hover:text-white"
+            onClick={() => handleTabSelect('historial')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+              isTabActive('historial')
+                ? 'bg-amber-500/25 border border-amber-400/60 text-amber-200 font-bold'
+                : 'bg-white/5 active:bg-white/10 hover:text-white'
+            }`}
           >
-            <span className="text-amber-400 font-bold">$</span>
-            <span className="font-syne">Tarifas</span>
+            <User className="w-3 h-3 text-amber-400" />
+            <span className="font-syne">Portal Artista</span>
           </button>
         </div>
       )}

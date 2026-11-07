@@ -84,7 +84,12 @@ export default function App() {
 
   useEffect(() => {
     const unsub = subscribeToStudioStatus((st) => setStudioStatus(st));
-    return unsub;
+    const handleGoToPortal = () => setActiveTab('historial');
+    window.addEventListener('go-to-portal-artista', handleGoToPortal);
+    return () => {
+      unsub();
+      window.removeEventListener('go-to-portal-artista', handleGoToPortal);
+    };
   }, []);
 
   const isStudioTemporarilyClosed = ['vacaciones', 'mantenimiento', 'remodelacion'].includes(studioStatus.estado);

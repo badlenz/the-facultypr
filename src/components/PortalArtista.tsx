@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  getArtistSessionUrl, 
+  ARTIST_DEMO_SESSION_URL, 
+  BADLENZ_WHATSAPP_STATUS_URL 
+} from '../config/portalConfig';
 import { getClientes, getReservas, actualizarReserva, Cliente, Reserva, getSongFeedbacks, guardarSongFeedback } from '../services/db';
 import { StudioProject } from '../types';
 import { SecureMasterAudioPlayer } from './SecureMasterAudioPlayer';
@@ -668,6 +673,48 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
 
   return (
     <div className="space-y-6">
+      {/* BANNER VIP: ACCESO DIRECTO A CABINA DE ESCUCHA EN VIVO */}
+      <div className="relative overflow-hidden rounded-3xl border border-amber-500/50 bg-gradient-to-r from-[#1b0a0e]/95 via-[#130f18]/95 to-[#0b0c10]/95 p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(245,158,11,0.2)]">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-red-950/80 to-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] font-mono uppercase tracking-[0.2em] font-extrabold">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span>SISTEMA DE ESTUDIO EN VIVO · CABINA DE ESCUCHA</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black uppercase text-white tracking-wide font-syne">
+              Cabina Privada de Monitoreo &amp; Timestamps
+            </h2>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              ¿Quieres escuchar tu tema terminado o en proceso con marcas de tiempo en la onda sonora? Ingresa directamente con tu código de sesión a nuestra sala de escucha oficial en Vercel.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <a
+              href={ARTIST_DEMO_SESSION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-3 rounded-xl bg-black/60 hover:bg-black/90 text-amber-300 hover:text-white border border-amber-500/40 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2"
+            >
+              <span>Demo Zyron - Tukutu</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                const code = prompt('Ingresa tu código de sesión (ej: zyrontukutu, delnorte):');
+                if (code && code.trim()) {
+                  window.open(getArtistSessionUrl(code.trim()), '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-syne font-black text-xs uppercase tracking-wider shadow-lg shadow-red-950/60 hover:shadow-amber-500/30 transition cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+            >
+              <span>Entrar con Código ➜</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* HEADER DE SESIÓN ACTIVA */}
       <div className="antigravity-glass-panel p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">

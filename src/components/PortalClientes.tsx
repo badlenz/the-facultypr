@@ -1395,14 +1395,14 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
               <button
                 type="button"
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('open-artist-portal-modal'));
+                  window.dispatchEvent(new CustomEvent('go-to-portal-artista'));
                 }}
                 className="taste-btn px-4 py-3.5 rounded-xl bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/60 hover:border-amber-400 font-syne font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.18)] cursor-pointer transition-all"
-                title="Abrir Portal de Artista VIP · Cabina de Escucha en Vivo"
+                title="Abrir Portal de Artista VIP, Temas, Recibos y Recompensas"
               >
                 <Headphones className="w-4 h-4 text-amber-400" />
-                <span>Portal de Artista</span>
-                <ExternalLink className="w-3.5 h-3.5 text-amber-400/80" />
+                <span>Portal de Artista VIP</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400/80" />
               </button>
 
               <a
@@ -3220,11 +3220,11 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </p>
                   <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('open-artist-portal-modal'))}
+                    onClick={() => window.dispatchEvent(new CustomEvent('go-to-portal-artista'))}
                     className="w-full py-2 px-3 rounded-lg bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/50 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
                     <Headphones className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Abrir Portal de Artista VIP ➜</span>
+                    <span>Ver Mis Temas, Recibos & Estrellas VIP ➜</span>
                   </button>
                 </div>
 
