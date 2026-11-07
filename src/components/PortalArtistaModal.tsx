@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Sparkles,
   MessageCircle,
@@ -74,9 +75,15 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setCodeError(false);
-      setTimeout(() => {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 80);
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        clearTimeout(timer);
+      };
     }
   }, [isOpen]);
 
@@ -90,7 +97,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const handleEnterCabin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -105,20 +112,20 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="portal-artista-vip-title"
     >
       <div
-        className="relative w-full max-w-xl my-auto bg-[#0b0c0e] border border-amber-500/40 rounded-3xl p-5 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_40px_rgba(245,158,11,0.14)] text-left space-y-5 text-white overflow-hidden"
+        className="relative w-full max-w-xl max-h-[92vh] overflow-y-auto my-auto bg-[#0b0c0e] border border-amber-500/50 rounded-3xl p-5 sm:p-7 shadow-[0_25px_90px_rgba(0,0,0,0.98),0_0_45px_rgba(245,158,11,0.18)] text-left space-y-4 text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Efectos de iluminación ambiental dorados y rojos */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/90 to-transparent pointer-events-none" />
         <div className="absolute -top-24 -right-24 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -126,14 +133,14 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 text-zinc-400 hover:text-amber-300 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/40 transition cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 text-zinc-400 hover:text-amber-300 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 hover:border-amber-500/40 transition cursor-pointer"
           aria-label="Cerrar modal"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Encabezado VIP */}
-        <div className="relative z-10 space-y-2 pr-8">
+        <div className="relative z-10 space-y-1.5 pr-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-red-950/90 via-[#1a1114] to-amber-950/80 border border-amber-500/40 shadow-inner">
             <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300 font-extrabold">
@@ -155,7 +162,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
         </div>
 
         {/* Selector rápido de pestaña / vista */}
-        <div className="relative z-10 grid grid-cols-2 gap-1.5 bg-[#12141a] p-1 rounded-2xl border border-amber-500/20 text-[11px] font-bold">
+        <div className="relative z-10 grid grid-cols-2 gap-1.5 bg-[#12141a] p-1 rounded-2xl border border-amber-500/25 text-[11px] font-bold">
           <button
             type="button"
             onClick={() => setActiveView('all')}
@@ -166,7 +173,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
             }`}
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Acceso con Código</span>
+            <span>Cabina de Escucha</span>
           </button>
           <button
             type="button"
@@ -184,7 +191,10 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
 
         {/* SECCIÓN 1: INGRESO A CABINA DE ESCUCHA CON CÓDIGO + DEMO EN VIVO */}
         {activeView === 'all' && (
-          <form onSubmit={handleEnterCabin} className="relative z-10 space-y-3.5 bg-[#111318]/90 p-4 sm:p-5 rounded-2xl border border-amber-500/30 shadow-inner">
+          <form
+            onSubmit={handleEnterCabin}
+            className="relative z-10 space-y-3 bg-[#111318]/95 p-4 sm:p-5 rounded-2xl border border-amber-500/35 shadow-inner"
+          >
             <div className="space-y-1.5">
               <label
                 htmlFor="artist-session-code-input"
@@ -240,9 +250,9 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           </form>
         )}
 
-        {/* SECCIÓN 2: ¿TU TEMA AÚN ESTÁ EN PROCESO O NO TIENES CÓDIGO? (SIEMPRE VISIBLE O DESTACADA EN PESTAÑA) */}
-        <div className="relative z-10 space-y-3.5 bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/25">
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+        {/* SECCIÓN 2: ¿TU TEMA AÚN ESTÁ EN PROCESO O NO TIENES CÓDIGO? */}
+        <div className="relative z-10 space-y-3 bg-[#101217] p-4 sm:p-5 rounded-2xl border border-amber-500/25">
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
             <h4 className="text-xs sm:text-sm font-extrabold text-amber-400 uppercase tracking-wide flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0" />
               <span>¿Tu tema aún está en proceso o no tienes código?</span>
@@ -254,24 +264,24 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           </p>
 
           {/* Las 4 Fases de Producción de La Facultad Studio */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {PRODUCTION_PHASES.map((phase) => {
               const IconComponent = phase.icon;
               return (
                 <div
                   key={phase.number}
-                  className="bg-[#0b0c0e] border border-amber-500/20 hover:border-amber-500/50 rounded-xl p-3 flex items-start gap-2.5 transition"
+                  className="bg-[#0b0c0e] border border-amber-500/25 hover:border-amber-500/50 rounded-xl p-2.5 flex items-start gap-2.5 transition"
                 >
                   <div
-                    className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${phase.accent}`}
+                    className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${phase.accent}`}
                   >
-                    <IconComponent className="w-4 h-4" />
+                    <IconComponent className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0">
                     <strong className="text-white block text-[11px] font-bold leading-snug">
                       {phase.title}
                     </strong>
-                    <span className="text-[10.5px] text-zinc-400 leading-tight block mt-0.5">
+                    <span className="text-[10px] text-zinc-400 leading-tight block mt-0.5">
                       ({phase.desc})
                     </span>
                   </div>
@@ -295,7 +305,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
 
           {/* Enlace discreto a bóveda local si se requiere */}
           {onOpenLegacyVault && (
-            <div className="text-center pt-1">
+            <div className="text-center pt-0.5">
               <button
                 type="button"
                 onClick={() => {
@@ -311,7 +321,8 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
