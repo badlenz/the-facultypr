@@ -753,7 +753,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setAdminTab(tab.id)}
+                onClick={() => setAdminTab(tab.id as AdminTab)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.35)] ring-1 ring-white/20 scale-[1.02]'

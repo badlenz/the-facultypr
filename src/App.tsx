@@ -29,6 +29,7 @@ import { AvisoEstudioCerrado } from './components/AvisoEstudioCerrado';
 import { getStudioLiveStatus, subscribeToStudioStatus, StudioLiveStatus } from './services/studioStatus';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { BadlenzBackgroundBackdrop } from './components/BadlenzBackgroundBackdrop';
 
 // Módulos pesados cargados de forma diferida (Lazy loading)
 const PortalArtista = lazyWithRetry(() => import('./components/PortalArtista'));
@@ -496,6 +497,9 @@ export default function App() {
       
       {/* Subtle Spatial Mesh Grid */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" aria-hidden="true" />
+
+      {/* Badlenz Watermark Background Effect (Fixed on Scroll with Parallax & Ambient Glow) */}
+      <BadlenzBackgroundBackdrop />
 
       <div className="relative z-10">
         <Header

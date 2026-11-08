@@ -725,13 +725,8 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         ctx.stroke();
       }
     }
-    setYoutubeInfo({
-      verified: true,
-      title: '[BEAT] "LUZ" Reggaetón 2026 - Prod. Badlenz (Master)',
-      duration: '3:20',
-      bpm: '98 BPM',
-      scale: 'La Menor (Am)'
-    });
+    // Datos demo simulados
+    // (setYoutubeInfo)
   };
 
   // Generar y ver Pase VIP de demostración al instante
