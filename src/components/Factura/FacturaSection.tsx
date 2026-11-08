@@ -209,7 +209,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
 
 📍 *Reglamento:* Puntualidad (15 min tolerancia) y máximo 2 acompañantes.
 
-¡Tu espacio en cabina está 100% congelado! Nos vemos en el estudio.`;
+¡Tu turno en el studio está 100% congelado! Nos vemos en el estudio.`;
 
     navigator.clipboard.writeText(text);
     triggerToast('¡Comprobante copiado al portapapeles y abriendo WhatsApp!');
@@ -681,7 +681,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
           <div>
             <StudioDocumentHeader
               documentTitle="COMPROBANTE OFICIAL DE RESERVA & RECIBO"
-              documentSubtitle="BOOKING CONFIRMATION • ANTICIPO CONGELADO EN CABINA"
+              documentSubtitle="BOOKING CONFIRMATION • ANTICIPO CONGELADO EN STUDIO"
               metadataLeft={
                 <div className="space-y-1 text-slate-300">
                   <p><strong className="text-amber-400">Recibo / Folio:</strong> REC-{invoice.numeroFactura}</p>
@@ -693,7 +693,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                 <div className="space-y-1 text-slate-300">
                   <p><strong className="text-amber-400">Fecha de Emisión:</strong> {invoice.fechaEmision}</p>
                   <p><strong className="text-amber-400">Método de Anticipo:</strong> ATH Móvil (787-240-8627)</p>
-                  <p><strong className="text-emerald-400">Estado de Reserva:</strong> <span className="font-black text-emerald-400">🟢 CABINA CONGELADA / PAGO RECIBIDO</span></p>
+                  <p><strong className="text-emerald-400">Estado de Reserva:</strong> <span className="font-black text-emerald-400">🟢 TURNO CONGELADO / PAGO RECIBIDO</span></p>
                 </div>
               }
             />
@@ -725,10 +725,10 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                     {invoice.cliente.nombreArtistico || invoice.cliente.nombre}
                   </h3>
                   <p className="text-xs text-emerald-400 font-mono">
-                    La Facultad Studio certifica que la fecha y horario han sido formalmente congelados en cabina.
+                    La Facultad Studio certifica que la fecha y horario han sido formalmente congelados en el studio.
                   </p>
                   <p className="text-xs text-gray-300">
-                    Estudio: <strong>Cabina Acústica Principal • Hormigueros, Puerto Rico</strong>
+                    Estudio: <strong>Studio Acústico Principal • Hormigueros, Puerto Rico</strong>
                   </p>
                 </div>
 
@@ -746,7 +746,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
               {/* Ficha de la Sesión Reservada */}
               <div className="space-y-2">
                 <div className="bg-amber-400 text-slate-950 font-black p-2 text-center text-xs uppercase tracking-wider rounded">
-                  DETALLES DE LA SESIÓN EN CABINA
+                  DETALLES DE LA SESIÓN DE GRABACIÓN
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="p-3 bg-neutral-950 rounded-xl border border-neutral-800">
@@ -815,7 +815,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
-                    <span>Pre-mezcla estéreo de referencia el mismo día de la sesión en cabina</span>
+                    <span>Pre-mezcla estéreo de referencia el mismo día de la sesión</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
@@ -828,14 +828,14 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                 </div>
               </div>
 
-              {/* Protocolo de Llegada a Cabina */}
+              {/* Protocolo de Llegada al Studio */}
               <div className="space-y-2">
                 <div className="bg-amber-400 text-slate-950 font-black p-2 text-center text-xs uppercase tracking-wider rounded">
                   INSTRUCCIONES DE LLEGADA &amp; REGLAMENTO
                 </div>
                 <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-xs text-slate-200 space-y-2 leading-relaxed">
-                  <p>• <strong>Puntualidad:</strong> Llegar 10 minutos antes. La tolerancia máxima antes de que empiece a correr el bloque de cabina es de <strong className="text-amber-400">15 minutos</strong>.</p>
-                  <p>• <strong>Acompañantes:</strong> Máximo <strong className="text-amber-400">2 acompañantes</strong> por artista en cabina para conservar la concentración y el ambiente acústico.</p>
+                  <p>• <strong>Puntualidad:</strong> Llegar 10 minutos antes. La tolerancia máxima antes de que empiece a correr el bloque de sesión es de <strong className="text-amber-400">15 minutos</strong>.</p>
+                  <p>• <strong>Acompañantes:</strong> Máximo <strong className="text-amber-400">2 acompañantes</strong> por artista en el studio para conservar la concentración y el ambiente acústico.</p>
                   <p>• <strong>Pista / Beat:</strong> Traer el instrumental en formato WAV de alta calidad en un pendrive USB o enlace de descarga directa (Google Drive / WeTransfer).</p>
                 </div>
               </div>
@@ -862,7 +862,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
         {activeDocView === 'pase' && (
           <div>
             <StudioDocumentHeader
-              documentTitle="HOJA OFICIAL DE SESIÓN DE CABINA"
+              documentTitle="HOJA OFICIAL DE SESIÓN DE GRABACIÓN"
               documentSubtitle="SESSION WORK ORDER • FICHA TÉCNICA DE TRACKING, VOCES & MONITOREO"
               metadataLeft={
                 <div className="space-y-1 text-slate-300">
@@ -886,7 +886,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
               <div className="p-6 bg-gradient-to-r from-red-950/80 via-black to-neutral-950 border-2 border-red-600/70 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
                 <div className="space-y-2 text-center sm:text-left">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white font-black text-[10px] rounded-full uppercase tracking-widest">
-                    <span>🎚️ LA FACULTAD STUDIO • CABINA PRINCIPAL</span>
+                    <span>🎚️ LA FACULTAD STUDIO • STUDIO PRINCIPAL</span>
                   </div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-tight">
                     {invoice.cliente.nombreArtistico || invoice.cliente.nombre}
@@ -935,7 +935,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                 </div>
               </div>
 
-              {/* Checklist de Tomas en Cabina */}
+              {/* Checklist de Tomas de Grabación */}
               <div className="space-y-2">
                 <div className="bg-neutral-900 border border-neutral-800 p-2.5 rounded-lg flex items-center justify-between text-xs">
                   <span className="font-black text-white uppercase tracking-wider">Checklist de Tracking (Control de Tomas):</span>
@@ -960,7 +960,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
                   </label>
                   <label className="flex items-center gap-2.5">
                     <input type="checkbox" defaultChecked className="w-4 h-4 accent-amber-500 rounded" />
-                    <span>Pre-mezcla de Referencia en Cabina</span>
+                    <span>Pre-mezcla de Referencia en Sesión</span>
                   </label>
                   <label className="flex items-center gap-2.5">
                     <input type="checkbox" className="w-4 h-4 accent-amber-500 rounded" />
@@ -972,11 +972,11 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
               {/* Rules & Session Agreement */}
               <div className="space-y-2">
                 <div className="bg-amber-400 text-slate-950 font-black p-2 text-center text-xs uppercase tracking-wider rounded">
-                  REGLAMENTO OBLIGATORIO DE CABINA & ESTUDIO
+                  REGLAMENTO OFICIAL DEL STUDIO
                 </div>
                 <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-xs text-slate-200 space-y-2 leading-relaxed">
                   <p>• <strong>Puntualidad:</strong> La sesión arranca a la hora reservada. Tolerancia máxima de <strong className="text-amber-400">15 minutos</strong> antes de que corra el reloj del bloque.</p>
-                  <p>• <strong>Límite de Acompañantes:</strong> Máximo <strong className="text-amber-400">2 personas</strong> además del artista para mantener la acústica y el enfoque en cabina.</p>
+                  <p>• <strong>Límite de Acompañantes:</strong> Máximo <strong className="text-amber-400">2 personas</strong> además del artista para mantener la acústica y el enfoque en el studio.</p>
                   <p>• <strong>Cuidado del Equipamiento:</strong> Prohibido bebidas/alimentos sobre la consola, micrófonos o interfaces. Cero humo cerca del Neumann TLM 103.</p>
                 </div>
               </div>
@@ -1132,7 +1132,7 @@ _(El balance restante se liquidará exclusivamente al recibir tu Máster comerci
               metadataRight={
                 <div className="space-y-1 text-slate-300">
                   <p><strong className="text-amber-400">Estudio:</strong> La Facultad Studio</p>
-                  <p><strong className="text-amber-400">Ubicación:</strong> Cabina Principal</p>
+                  <p><strong className="text-amber-400">Ubicación:</strong> Studio Principal</p>
                 </div>
               }
             />

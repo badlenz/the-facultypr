@@ -112,7 +112,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     // 3. Referencias Musicales
     referencias: '',
 
-    // 4. Aceptación de Términos (Se confirman y firman formalmente en el Pase VIP o en cabina)
+    // 4. Aceptación de Términos (Se confirman y firman formalmente en el Pase VIP o en el studio)
     aceptaTerminos: true,
 
     // Fecha y Horario (Bloque Oficial de 4 Horas Badlenz)
@@ -368,7 +368,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       baseDep = 50; // $50 obligatorio por canción individual según tarifario oficial 2026
       baseBal = 80;
       baseItems = [
-        { name: '🎤 Grabación de Voces (4h en cabina Badlenz)', price: 120 },
+        { name: '🎤 Grabación de Voces (4h de sesión con Badlenz)', price: 120 },
         { name: '🎚️ Mezcla & Master Comercial Completo', price: 80 },
         { name: '🔥 Descuento Promo Reapertura 35% OFF (Cupo oficial 1 de 6)', price: -70, isDiscount: true },
       ];
@@ -378,7 +378,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       baseDep = 50; // $50 por canción individual
       baseBal = 150;
       baseItems = [
-        { name: '🎤 Grabación de Voces Pro (4-5h en cabina)', price: 150 },
+        { name: '🎤 Grabación de Voces Pro (4-5h de sesión)', price: 150 },
         { name: '🎚️ Mezcla & Master Comercial', price: 100 },
         { name: '🔥 Descuento Combo Oficial "Grabación + Mix + Master"', price: -50, isDiscount: true },
       ];
@@ -389,7 +389,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       baseBal = 175;
       baseItems = [
         { name: '🎹 Beat Exclusivo Prod. Badlenz', price: 150 },
-        { name: '🎤 Grabación de Voces (4-5h en cabina)', price: 150 },
+        { name: '🎤 Grabación de Voces (4-5h de sesión)', price: 150 },
         { name: '🎚️ Mezcla & Master Comercial', price: 100 },
         { name: '★ Descuento Combo "Producción Integral"', price: -50, isDiscount: true },
       ];
@@ -408,7 +408,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       baseDep = 50;
       baseBal = 115;
       baseItems = [
-        { name: '🎤 Grabación & Pre-mezcla (3h de cabina)', price: 165 }
+        { name: '🎤 Grabación & Pre-mezcla (3h de sesión)', price: 165 }
       ];
     } else if (selectedPackage === 'combo_3') {
       // 5. COMBO 3 CANCIONES ($425 USD regular | $375 VIP | $300 CREW)
@@ -462,7 +462,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       baseDep = 50;
       baseBal = baseSub - baseDep;
       baseItems = [
-        { name: `🎙️ Cabina + Control Room para Productor (${hrs}h @ $50/h)`, price: baseSub }
+        { name: `🎙️ Studio + Control Room para Productor (${hrs}h @ $50/h)`, price: baseSub }
       ];
     } else if (selectedPackage === 'prod_eng') {
       // 9. SISTEMA PRODUCTORES: PRODUCTOR + ENGINEERING ($75/h - Asistencia Badlenz)
@@ -962,7 +962,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
     doc.setFont('Helvetica', 'normal');
     doc.setTextColor(180, 180, 180);
-    doc.text('Balance en Cabina:', 12, 104);
+    doc.text('Balance al Llegar:', 12, 104);
     doc.setTextColor(239, 68, 68);
     doc.setFont('Helvetica', 'bold');
     doc.text(`$${reservaActiva.balance}.00 USD`, 68, 104, { align: 'right' });
@@ -1028,7 +1028,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
     ctx.fillStyle = '#eab308'; // Gold
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText('PASE VIP DE CABINA • ESTUDIO DE GRABACIÓN', 300, 122);
+    ctx.fillText('PASE VIP OFICIAL • LA FACULTAD STUDIO', 300, 122);
 
     ctx.fillStyle = '#9ca3af';
     ctx.font = '12px monospace';
@@ -1061,7 +1061,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     drawRow('Nombre Legal:', formData.nombreReal || 'Carlos Arturo Mendoza', 285, '#ffffff');
     drawRow('Fecha Sesión:', reservaActiva.fecha, 320, '#ef4444');
     drawRow('Horario Agendado:', `${format12h(reservaActiva.horaInicio)} - ${format12h(reservaActiva.horaSalida)}`, 355, '#38bdf8');
-    drawRow('Duración Cabina:', `${reservaActiva.totalHoras || 5} Horas de Sesión`, 390, '#ffffff');
+    drawRow('Duración de Sesión:', `${reservaActiva.totalHoras || 5} Horas`, 390, '#ffffff');
     drawRow('Contacto / Tel:', formData.telefono || '+1 (787) 240-8627', 425, '#ffffff');
     drawRow('Método de Pago:', reservaActiva.metodoPago, 460, '#34d399');
 
@@ -1083,7 +1083,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
     drawRow('Inversión Total:', `$${reservaActiva.subtotal}.00 USD`, 570, '#ffffff');
     drawRow('Depósito Requerido (50%):', `$${reservaActiva.deposito}.00 USD`, 605, '#fbbf24');
-    drawRow('Balance a Liquidar en Cabina:', `$${reservaActiva.balance}.00 USD`, 640, '#ef4444');
+    drawRow('Balance a Liquidar al Llegar:', `$${reservaActiva.balance}.00 USD`, 640, '#ef4444');
 
     // Simulated QR Code in High Contrast
     ctx.fillStyle = '#0f172a';
@@ -1333,7 +1333,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   ● On Air · Sesiones Activas
                 </span>
                 <span className="text-zinc-400 text-[10px]">
-                  Cabina Acústica &amp; Control Room
+                  Studio Acústico &amp; Control Room
                 </span>
               </div>
             </div>
@@ -1435,7 +1435,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
           <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-zinc-800/80 text-xs">
             <div className="taste-card bg-[#0f1117]/80 p-3.5 rounded-xl border border-zinc-800 hover:border-red-500/40">
               <span className="text-red-400 font-mono text-[10px] uppercase font-bold block">01 · Dirección Vocal 1 a 1</span>
-              <strong className="text-white block mt-0.5 text-xs">Vocal Coach en Cabina</strong>
+              <strong className="text-white block mt-0.5 text-xs">Vocal Coaching en Sesión</strong>
               <p className="text-zinc-400 text-[11px] mt-0.5 leading-snug">
                 Badlenz te guía en cada toma, respiración y entonación para que tu voz suene con máxima presencia y energía.
               </p>
@@ -1453,7 +1453,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
               <span className="text-emerald-400 font-mono text-[10px] uppercase font-bold block">03 · Reserva Garantizada</span>
               <strong className="text-white block mt-0.5 text-xs">$50 Depósito ATH Móvil</strong>
               <p className="text-zinc-400 text-[11px] mt-0.5 leading-snug">
-                Sin trámites ni papeleo: bloqueas tu turno oficial y pagas el saldo al llegar a la cabina.
+                Sin trámites ni papeleo: bloqueas tu turno oficial y pagas el saldo al llegar al studio.
               </p>
             </div>
           </div>
@@ -1548,7 +1548,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
                   <h4 className="text-sm font-bold text-white mt-2.5">Promo Reapertura</h4>
                   <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Bloque de 4h en cabina, premezcla entregada al finalizar la sesión, master final en 24-48h y 2 revisiones gratis.
+                    Bloque de 4h de sesión, premezcla entregada al finalizar la sesión, master final en 24-48h y 2 revisiones gratis.
                   </p>
                 </div>
                 <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
@@ -1575,7 +1575,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </div>
                   <h4 className="text-sm font-bold text-white mt-2.5">Grabación, Mezcla &amp; Master</h4>
                   <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Traes tu beat (YouTube/WAV), 4-5h en cabina, premezcla al salir, master final en 24-48h y 2 revisiones gratis incluidas.
+                    Traes tu beat (YouTube/WAV), 4-5h de sesión, premezcla al salir, master final en 24-48h y 2 revisiones gratis incluidas.
                   </p>
                 </div>
                 <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
@@ -1757,7 +1757,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </div>
                   <h4 className="text-sm font-bold text-white mt-2.5">Productor + Artista</h4>
                   <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Graba a tu propio artista operando tú mismo la cabina tratada y microfonía de estudio (Mínimo 2h = $100 USD).
+                    Graba a tu propio artista operando tú mismo el studio tratado y microfonía profesional (Mínimo 2h = $100 USD).
                   </p>
                 </div>
                 <div className="mt-3.5 pt-2.5 border-t border-zinc-800 text-[11px] flex justify-between text-zinc-400">
@@ -1964,7 +1964,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                       PASO 1 DE 3 • DISPONIBILIDAD EN VIVO
                     </span>
                     <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider mt-0.5">
-                      Selecciona tu Día en el Calendario & Turno de Cabina
+                      Selecciona tu Día en el Calendario & Turno de Sesión
                     </h3>
                   </div>
                   <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-full font-mono font-bold self-start sm:self-auto">
@@ -2057,7 +2057,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                       <Clock className="w-4 h-4 text-amber-400" />
                       <span>Elige uno de los 2 Bloques Diarios Oficiales:</span>
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-mono">4 Horas en Cabina · Máx. 5h</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">4 Horas de Sesión · Máx. 5h</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {bloquesDisponibles.map((bloque) => {
@@ -2103,7 +2103,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                       📅 {formData.fecha} • ⏰ {format12h(formData.horaInicio)} a {format12h(formData.horaSalida)}
                     </p>
                     <span className="text-[11px] text-gray-300">
-                      Cabina acústica tratada + monitoreo profesional listo para tu sesión.
+                      Studio acústico tratado + monitoreo profesional listo para tu sesión.
                     </span>
                   </div>
 
@@ -2142,7 +2142,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
               <div className="bg-[#111827] p-4 sm:p-6 rounded-2xl border border-gray-800 space-y-4 shadow-xl">
                 <div className="border-b border-gray-800 pb-3">
                   <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest font-mono">
-                    PASO 2 DE 3 • REGISTRO DE CABINA
+                    PASO 2 DE 3 • DETALLES DE TU SESIÓN
                   </span>
                   <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider mt-0.5">
                     ¿Quién va a romper en el micrófono?
@@ -2244,14 +2244,14 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                           PRO TOOLS FAST-PASS
                         </span>
                         <span className="text-emerald-400 font-bold text-[11px] font-mono">
-                          ⚡ Ahorra 20 Minutos de Cabina
+                          ⚡ Ahorra 20 Minutos de tu Sesión
                         </span>
                       </div>
                       <h4 className="text-sm font-bold text-white uppercase tracking-tight mt-1">
                         Tu Pista / Beat para el Día de la Grabación
                       </h4>
                       <p className="text-[11px] text-gray-400 mt-0.5">
-                        Badlenz preparará tu sesión de Pro Tools con el tempo (BPM) y la escala de Auto-Tune antes de que entres a cabina. ¡Llegas directo a cantar!
+                        Badlenz preparará tu sesión de Pro Tools con el tempo (BPM) y la escala de Auto-Tune antes de que entres al studio. ¡Llegas directo a cantar!
                       </p>
                     </div>
                   </div>
@@ -2355,7 +2355,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   {formData.tipoInstrumental === 'pendrive' && (
                     <div className="bg-black/60 p-3 rounded-xl border border-gray-800 text-[11px] text-gray-300">
                       <p>
-                        ✓ <strong>Entendido:</strong> Traerás tu instrumental en tu pendrive USB, disco externo o te la pasas por AirDrop con Badlenz al entrar a cabina.
+                        ✓ <strong>Entendido:</strong> Traerás tu instrumental en tu pendrive USB, disco externo o te la pasas por AirDrop con Badlenz al llegar al studio.
                       </p>
                     </div>
                   )}
@@ -2421,7 +2421,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     Envía tu Depósito de {formatMoney(deposito)} por ATH Móvil & Recibe tu Pase VIP
                   </h3>
                   <p className="text-xs text-gray-400 mt-1">
-                    El anticipo congela tu fecha en cabina para que nadie más tome tu turno.
+                    El anticipo congela tu fecha en el studio para que nadie más tome tu turno.
                   </p>
                 </div>
 
@@ -2442,7 +2442,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   <div className="bg-black/50 p-3.5 rounded-xl border border-gray-800 text-center">
                     <span className="text-[10px] text-gray-400 font-mono uppercase block">Saldo al Llegar</span>
                     <strong className="text-emerald-400 text-base font-mono block mt-0.5">{formatMoney(balance)} USD</strong>
-                    <span className="text-[10px] text-gray-400">Se liquida en cabina</span>
+                    <span className="text-[10px] text-gray-400">Se liquida al llegar</span>
                   </div>
                 </div>
 
@@ -2644,7 +2644,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </div>
                 </div>
 
-                {/* AVISO DE TRANQUILIDAD: REGLAS Y FIRMA EN CABINA */}
+                {/* AVISO DE TRANQUILIDAD: REGLAS Y FIRMA EN EL STUDIO */}
                 <div className="bg-black/50 p-3.5 rounded-xl border border-gray-800 text-[11px] text-gray-300 space-y-1">
                   <p className="font-bold text-amber-400 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 text-amber-400" />
@@ -2652,7 +2652,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </p>
                   <p>
                     • Cuentas con <strong>20 minutos de gracia</strong> al inicio de tu sesión en Hormigueros.<br/>
-                    • Máximo <strong>2 acompañantes</strong> en cabina para máxima concentración creativa.<br/>
+                    • Máximo <strong>2 acompañantes</strong> en el studio para máxima concentración creativa.<br/>
                     • Tu contrato de cesión y firma digital se completan directamente en tu Pase VIP al pisar el estudio.
                   </p>
                 </div>
@@ -2669,7 +2669,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                           Datos Rápidos para Emitir tu Pase VIP
                         </span>
                       </div>
-                      <span className="text-[10px] text-amber-400 font-mono">* Requerido para cabina</span>
+                      <span className="text-[10px] text-amber-400 font-mono">* Requerido para la sesión</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -2798,7 +2798,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
               <div className="bg-[#111827] p-3 rounded-xl border border-gray-800 space-y-1">
                 <p className="text-gray-400"><strong>Artista / Titular:</strong> <span className="text-white font-bold">{formData.nombreArtistico || '-'}</span></p>
                 <p className="text-gray-400"><strong>Fecha Congelada:</strong> <span className="text-emerald-400 font-bold">{reservaActiva.fecha}</span></p>
-                <p className="text-gray-400"><strong>Horario en Cabina:</strong> <span className="text-amber-400 font-bold">{format12h(reservaActiva.horaInicio)} - {format12h(reservaActiva.horaSalida)}</span></p>
+                <p className="text-gray-400"><strong>Horario de Sesión:</strong> <span className="text-amber-400 font-bold">{format12h(reservaActiva.horaInicio)} - {format12h(reservaActiva.horaSalida)}</span></p>
                 <p className="text-gray-400"><strong>Contacto (WhatsApp):</strong> <span className="text-amber-400">{formData.telefono || '-'}</span></p>
                 {formData.redesSociales && (
                   <p className="text-gray-400"><strong>Redes (IG/TikTok/FB):</strong> <span className="text-gray-300">{formData.redesSociales}</span></p>
@@ -2860,7 +2860,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     <p className="text-[10px] text-gray-300">
                       {isPassLiquidado 
                         ? 'Tu proyecto está liquidado. Puedes reproducir o descargar el archivo maestro en alta resolución WAV 24-bit:'
-                        : 'Escucha la pre-escucha streaming de cabina. La descarga del archivo final WAV se activará cuando el administrador marque tu saldo como Pagado / Liquidado.'}
+                        : 'Escucha la pre-escucha streaming del studio. La descarga del archivo final WAV se activará cuando el administrador marque tu saldo como Pagado / Liquidado.'}
                     </p>
 
                     <div className="bg-black/60 p-2.5 rounded-lg border border-gray-800 flex items-center justify-between gap-2">
@@ -3168,7 +3168,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   {/* REGLAS DE LA SALA & PROTOCOLO DE ENTREGAS */}
                   <div className="pt-1 border-t border-gray-800/80 space-y-1.5 text-[10px]">
                     <span className="font-bold text-red-400 uppercase tracking-wider block">
-                      ⚠️ Protocolo de Cabina & Entregas Badlenz:
+                      ⚠️ Protocolo de Sesión & Entregas Badlenz:
                     </span>
                     <ul className="space-y-1 text-gray-300 list-disc list-inside text-[9.5px]">
                       <li><strong>Acompañantes:</strong> Máximo <strong>{studioConfig.maxAcompanantes} personas</strong> en sala de control para garantizar óptima acústica.</li>
@@ -3293,7 +3293,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   <span className="font-extrabold text-xs text-emerald-400">{formatMoney(deposito)} USD</span>
                 </div>
                 <div className="flex justify-between text-amber-300 text-[11px] pt-1.5 border-t border-gray-800">
-                  <span>Balance al llegar a Cabina:</span>
+                  <span>Balance al llegar al Studio:</span>
                   <span className="text-amber-400 font-extrabold text-xs">{formatMoney(balance)} USD</span>
                 </div>
               </div>
@@ -3302,7 +3302,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
               <div className="flex gap-2 items-start bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl text-[10px] text-emerald-300">
                 <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <p className="leading-snug">
-                  <strong>💡 Cero sorpresas:</strong> El costo total de tu tema es <strong>{formatMoney(subtotal)} USD</strong>. Solo abonas <strong>{formatMoney(deposito)} USD</strong> hoy para bloquear tu día en el calendario; los <strong>{formatMoney(balance)} USD</strong> restantes se pagan cuando llegues a cabina.
+                  <strong>💡 Cero sorpresas:</strong> El costo total de tu tema es <strong>{formatMoney(subtotal)} USD</strong>. Solo abonas <strong>{formatMoney(deposito)} USD</strong> hoy para bloquear tu día en el calendario; los <strong>{formatMoney(balance)} USD</strong> restantes se pagan cuando llegues al studio.
                 </p>
               </div>
             </div>

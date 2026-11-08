@@ -673,17 +673,17 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
 
   return (
     <div className="space-y-6">
-      {/* BANNER VIP: ACCESO DIRECTO A CABINA DE ESCUCHA EN VIVO */}
+      {/* BANNER VIP: ACCESO DIRECTO A SALA DE ESCUCHA EN VIVO */}
       <div className="relative overflow-hidden rounded-3xl border border-amber-500/50 bg-gradient-to-r from-[#1b0a0e]/95 via-[#130f18]/95 to-[#0b0c10]/95 p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(245,158,11,0.2)]">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-red-950/80 to-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] font-mono uppercase tracking-[0.2em] font-extrabold">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <span>SISTEMA DE ESTUDIO EN VIVO · CABINA DE ESCUCHA</span>
+              <span>SISTEMA DE ESTUDIO EN VIVO · SALA DE ESCUCHA</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black uppercase text-white tracking-wide font-syne">
-              Cabina Privada de Monitoreo &amp; Timestamps
+              Sala Privada de Monitoreo &amp; Timestamps
             </h2>
             <p className="text-xs text-zinc-300 leading-relaxed">
               ¿Quieres escuchar tu tema terminado o en proceso con marcas de tiempo en la onda sonora? Ingresa directamente con tu código de sesión a nuestra sala de escucha oficial en Vercel.
@@ -752,7 +752,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
             <span className="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-mono font-bold">24 A 72 HORAS</span>
           </h4>
           <p className="text-gray-300 leading-relaxed text-[11px]">
-            • <strong>Rough Mix (Maqueta Inmediata):</strong> Al terminar tus 4 horas de sesión en cabina, Badlenz te pasa el audio al instante por <strong>AirDrop, WhatsApp y correo</strong> para escucharlo en tu auto o celular.<br/>
+            • <strong>Rough Mix (Maqueta Inmediata):</strong> Al terminar tus 4 horas de sesión en el studio, Badlenz te pasa el audio al instante por <strong>AirDrop, WhatsApp y correo</strong> para escucharlo en tu auto o celular.<br/>
             • <strong>Entrega Final (Web Oficial):</strong> Aquí en tu Bóveda descargas tu <strong>Master WAV 24-bit</strong> de nivel comercial, <strong>MP3 320kbps</strong> para radios/redes y tu carpeta completa de <strong>Stems</strong> limpios.
           </p>
         </div>
@@ -926,7 +926,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
 
           if (!cumpleRegla48h) {
             const confirmaExcepcion = confirm(
-              `⚠️ AVISO DE PENALIDAD: Faltan menos de 48 horas (${Math.max(0, Math.round(diffHoras))} horas restantes) para tu sesión programada.\n\nSegún la política de La Facultad Studio, el depósito del 50% ($${reservaParaReagendar.deposito} USD) no es transferible con menos de 48h de aviso porque el tiempo de cabina ya fue bloqueado.\n\n¿Deseas enviar la solicitud especial a Badlenz por WhatsApp para evaluar tu caso?`
+              `⚠️ AVISO DE PENALIDAD: Faltan menos de 48 horas (${Math.max(0, Math.round(diffHoras))} horas restantes) para tu sesión programada.\n\nSegún la política de La Facultad Studio, el depósito del 50% ($${reservaParaReagendar.deposito} USD) no es transferible con menos de 48h de aviso porque el tiempo de estudio ya fue reservado.\n\n¿Deseas enviar la solicitud especial a Badlenz por WhatsApp para evaluar tu caso?`
             );
             if (!confirmaExcepcion) return;
           }
@@ -987,7 +987,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
                 <p className="text-[11px] leading-relaxed">
                   {cumpleRegla48h
                     ? `Faltan aproximadamente ${Math.round(diffHoras)} horas para tu fecha programada. Puedes mover tu cita sin costo ni penalidad.`
-                    : `Tu sesión es el ${reservaParaReagendar.fecha}. Al faltar menos de 48h, el depósito del 50% no es reembolsable debido al tiempo reservado en cabina.`}
+                    : `Tu sesión es el ${reservaParaReagendar.fecha}. Al faltar menos de 48h, el depósito del 50% no es reembolsable debido al tiempo reservado en el estudio.`}
                 </p>
               </div>
 
@@ -1017,7 +1017,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
 
                 <div>
                   <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
-                    Turno de Cabina
+                    Turno de Sesión
                   </label>
                   <select
                     value={nuevoHorarioReagendar}
@@ -1433,7 +1433,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
                               </span>
                             </div>
                             <h4 className="text-xs font-black text-white mt-1 uppercase">
-                              SESIÓN DE {res.totalHoras} HORAS EN CABINA
+                              SESIÓN DE {res.totalHoras} HORAS EN EL STUDIO
                             </h4>
                           </div>
 
@@ -1490,7 +1490,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
                             <Music className="w-4 h-4 text-amber-500" />
                             <div>
                               <p className="text-[11px] font-bold text-white">
-                                {res.roughMixNombre || `${res.nombreArtistico || 'Tema'}_Rough_Mix_Cabina.wav`}
+                                {res.roughMixNombre || `${res.nombreArtistico || 'Tema'}_Rough_Mix_Studio.wav`}
                               </p>
                               <span className="text-[9px] text-gray-400 font-mono">
                                 24-bit Pre-mix • HD WAV (Directo de Pro Tools)
@@ -1573,7 +1573,7 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
                   </div>
                   <h4 className="text-sm font-bold text-white uppercase">Sin canciones terminadas aún</h4>
                   <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-                    No se encontraron proyectos activos vinculados con este criterio. Si acabas de grabar en cabina, tu proyecto aparecerá en la Bóveda en cuanto Badlenz inicie la fase de mezcla.
+                    No se encontraron proyectos activos vinculados con este criterio. Si acabas de grabar en el studio, tu proyecto aparecerá en la Bóveda en cuanto Badlenz inicie la fase de mezcla.
                   </p>
                 </div>
               ) : (

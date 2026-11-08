@@ -429,7 +429,7 @@ _(El balance se liquida exclusivamente contra entrega de tu Máster WAV 24-bit y
 📍 *Estudio:* Hormigueros, Puerto Rico
 🎙️ *Productor Principal:* Manuel "Badlenz" Silva
 
-¿Confirmamos fecha en cabina con tu depósito de ${formatMoney(depositoRequerido)}?`;
+¿Confirmamos fecha en el studio con tu depósito de ${formatMoney(depositoRequerido)}?`;
 
     navigator.clipboard.writeText(textoMensaje);
     showToast('¡Presupuesto copiado al portapapeles y abriendo WhatsApp!');
@@ -666,7 +666,7 @@ _(El balance se liquida exclusivamente contra entrega de tu Máster WAV 24-bit y
                   <h2 className="text-lg font-bold text-white">
                     {isAdmin ? 'Configuración de Sesión (Interna)' : 'Reserva tu Sesión / Datos del Artista'}
                   </h2>
-                  <p className="text-xs text-slate-400">Parámetros del artista y reserva de cabina</p>
+                  <p className="text-xs text-slate-400">Parámetros del artista y reserva de sesión</p>
                 </div>
               </div>
 
@@ -1308,7 +1308,7 @@ _(El balance se liquida exclusivamente contra entrega de tu Máster WAV 24-bit y
 
                 {/* Nota de validez de 7 días */}
                 <div className="pt-2 text-[10px] text-zinc-400 border-t border-white/5 leading-relaxed">
-                  ⚠️ <strong className="text-zinc-300">Validez formal:</strong> Esta propuesta ejecutiva y sus tarifas se garantizan durante <strong>7 días hábiles</strong>. El turno en cabina se congela enviando el depósito a ATH Móvil (787-240-8627).
+                  ⚠️ <strong className="text-zinc-300">Validez formal:</strong> Esta propuesta ejecutiva y sus tarifas se garantizan durante <strong>7 días hábiles</strong>. El turno en el studio se congela enviando el depósito a ATH Móvil (787-240-8627).
                 </div>
               </div>
 

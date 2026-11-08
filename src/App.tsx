@@ -438,7 +438,7 @@ export default function App() {
                   PORTAFOLIO OFICIAL & DEMOSTRACIÓN A/B
                 </span>
                 <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider mt-0.5">
-                  Prueba de Calidad Badlenz • Sonido Comercial en Cabina
+                  Prueba de Calidad Badlenz • Sonido Comercial en Studio
                 </h2>
                 <p className="text-xs text-gray-400">
                   Compara en vivo la voz cruda sin tratar contra la mezcla y master comercial de La Facultad Studio.
@@ -616,7 +616,7 @@ export default function App() {
                 <span className="bg-gray-800 text-amber-400 px-2 py-1 rounded border border-gray-700 font-bold">Alt + F</span>
               </div>
               <div className="flex justify-between items-center bg-[#111827] p-3 rounded-lg border border-gray-800">
-                <span className="text-gray-300">Ir a Calendario de Cabina</span>
+                <span className="text-gray-300">Ir a Calendario de Sesiones</span>
                 <span className="bg-gray-800 text-amber-400 px-2 py-1 rounded border border-gray-700 font-bold">Alt + K</span>
               </div>
               <div className="flex justify-between items-center bg-[#111827] p-3 rounded-lg border border-gray-800">

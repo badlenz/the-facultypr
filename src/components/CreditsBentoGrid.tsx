@@ -84,7 +84,7 @@ export const STUDIO_CREDITS: StudioTrackCredit[] = [
     year: '2024',
     genre: 'Reggaetón Club / Perreo',
     role: 'PROD. LA FACULTAD • AFINACIÓN MELODYNE • MÁSTER -14 LUFS',
-    releaseContext: 'Catálogo de Cabina La Facultad Studio',
+    releaseContext: 'Catálogo de Producción La Facultad Studio',
     accentColor: 'from-amber-500/25 via-black to-red-900/20',
     bpm: 98
   }
@@ -183,7 +183,7 @@ export const CreditsBentoGrid: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             <span className="text-[11px] font-mono tracking-widest text-red-400 font-bold uppercase">
-              DISCOGRAFÍA &amp; PRODUCCIÓN EN CABINA
+              DISCOGRAFÍA &amp; PRODUCCIÓN EN STUDIO
             </span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-display uppercase tracking-wide text-white mt-1.5">
@@ -293,7 +293,7 @@ export const CreditsBentoGrid: React.FC = () => {
           }}
           className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-wider transition shrink-0 shadow-lg shadow-red-950/50 cursor-pointer"
         >
-          Apartar Sesión en Cabina ($130 USD) →
+          Apartar Sesión de Grabación ($130 USD) →
         </button>
       </div>
     </section>

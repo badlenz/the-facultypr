@@ -117,7 +117,7 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
             <h2 className="text-lg font-syne font-bold text-white flex items-center gap-2">
               <span className="text-red-500">📅</span> Calendario Oficial del Estudio
             </h2>
-            <p className="text-xs text-zinc-400 font-dmsans">Navega y programa los 2 bloques oficiales diarios de 4 horas en cabina.</p>
+            <p className="text-xs text-zinc-400 font-dmsans">Navega y programa los 2 bloques oficiales diarios de 4 horas de sesión.</p>
           </div>
 
           <div className="flex items-center space-x-1 bg-black/60 p-1.5 rounded-2xl border border-white/10 text-xs">
@@ -303,7 +303,7 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
                     </div>
                   ) : (
                     <div className="text-[9px] text-gray-400 leading-tight">
-                      <span className="text-red-400/90 font-mono text-[9px] font-semibold block truncate">Cabina Llena</span>
+                      <span className="text-red-400/90 font-mono text-[9px] font-semibold block truncate">Turnos Ocupados</span>
                     </div>
                   )}
                 </div>

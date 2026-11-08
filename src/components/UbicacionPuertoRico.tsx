@@ -53,7 +53,7 @@ export const UbicacionPuertoRico: React.FC = () => {
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <span className="text-[10px] font-mono uppercase text-gray-500 font-bold block">
-                Dirección de Cabina
+                Ubicación del Studio
               </span>
               <h3 className="text-base font-black text-white">
                 La Facultad Studio • Prod. Badlenz
@@ -111,7 +111,7 @@ export const UbicacionPuertoRico: React.FC = () => {
         <div className="lg:col-span-5 bg-[#14141a] p-4 sm:p-5 rounded-xl border border-gray-800 flex flex-col justify-between space-y-4">
           <div className="space-y-3">
             <span className="text-[10px] font-mono uppercase text-amber-500 font-bold tracking-wider block">
-              Instalaciones de Cabina
+              Instalaciones del Studio
             </span>
 
             <div className="space-y-2.5 text-xs text-gray-300">
@@ -125,7 +125,7 @@ export const UbicacionPuertoRico: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Cabina tratada acústicamente y aire acondicionado.</span>
+                <span>Studio tratado acústicamente y aire acondicionado.</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-sky-400 shrink-0" />

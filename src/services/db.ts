@@ -666,7 +666,7 @@ export const inicializarModoDemo = async () => {
       moneda: '$ USD',
       hitos: [
         { id: 'h1', titulo: 'Reserva & Depósito del 50% recibido', completado: true },
-        { id: 'h2', titulo: 'Grabación de voces en cabina (4 horas)', completado: true },
+        { id: 'h2', titulo: 'Grabación de voces en el studio (4 horas)', completado: true },
         { id: 'h3', titulo: 'Edición y Tuning de voces (Melodyne)', completado: true },
         { id: 'h4', titulo: 'Mezcla multitrack y balance de frecuencias', completado: false },
         { id: 'h5', titulo: 'Mastering final y entrega de Stems', completado: false },

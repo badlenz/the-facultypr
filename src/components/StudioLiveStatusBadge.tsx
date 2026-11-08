@@ -223,7 +223,7 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
 
               <div className="flex items-center justify-between text-gray-400 pt-1 border-t border-gray-800/80">
                 <span>Tratamiento de Sala:</span>
-                <span className="text-gray-300 font-mono text-[11px]">Cabina Acústica Profesional</span>
+                <span className="text-gray-300 font-mono text-[11px]">Studio Acústico Profesional</span>
               </div>
 
               <div className="flex items-center justify-between text-gray-400">
@@ -256,7 +256,7 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
 
               <a
                 href={`https://wa.me/17872408627?text=${encodeURIComponent(
-                  `¡Hola Badlenz! Vi el estado de La Facultad Studio (${status.titulo}). Me gustaría consultar disponibilidad de cabina para mi próximo tema.`
+                  `¡Hola Badlenz! Vi el estado de La Facultad Studio (${status.titulo}). Me gustaría consultar disponibilidad de fechas en el studio para mi próximo tema.`
                 )}`}
                 target="_blank"
                 rel="noreferrer"

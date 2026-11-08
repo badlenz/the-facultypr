@@ -66,7 +66,7 @@ export const BovedaVipDelivery: React.FC<BovedaVipDeliveryProps> = ({
       id: 'grabacion',
       title: 'En Grabación',
       emoji: '🔴',
-      desc: 'Tracking de voces e instrumentos en cabina acústica con micrófono Neumann TLM 103.',
+      desc: 'Tracking de voces e instrumentos en el studio acústico con micrófono Neumann TLM 103.',
       activeColor: 'bg-red-600 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]',
       textColor: 'text-red-400',
       badgeBg: 'bg-red-950/80 text-red-300 border-red-800'

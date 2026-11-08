@@ -52,7 +52,7 @@ export const StudioGuaranteesBento: React.FC = () => {
           <p className="font-dmsans text-zinc-200">
             <span className="italic font-medium text-white">“Transformando tu visión en sonido profesional.”</span>
             <span className="text-zinc-400 block sm:inline sm:ml-2 text-[11px]">
-              Términos reales de operación: cero tiempo perdido en cabina y entrega veloz.
+              Términos reales de operación: cero tiempo perdido en tu sesión y entrega veloz.
             </span>
           </p>
         </div>
@@ -123,7 +123,7 @@ export const StudioGuaranteesBento: React.FC = () => {
               <Zap className="w-4 h-4" />
             </div>
             <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold block">
-              Eficiencia en Cabina
+              Eficiencia en la Sesión
             </span>
             <h3 className="font-dmsans font-bold text-white text-sm">
               Pro Tools Fast-Pass

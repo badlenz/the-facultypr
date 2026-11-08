@@ -33,7 +33,7 @@ interface PortalArtistaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenLegacyVault?: () => void;
-  initialTab?: 'cabina' | 'estrellas' | 'recibos';
+  initialTab?: 'escucha' | 'estrellas' | 'recibos';
 }
 
 const PRODUCTION_PHASES = [
@@ -97,7 +97,7 @@ const REWARDS_SCALE = [
 export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'cabina',
+  initialTab = 'escucha',
 }) => {
   // Credenciales de acceso
   const [sessionCode, setSessionCode] = useState(() => {
@@ -128,7 +128,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   const [pinError, setPinError] = useState<string | null>(null);
 
   // Pestaña activa una vez autenticado
-  const [activeTab, setActiveTab] = useState<'cabina' | 'estrellas' | 'recibos'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'escucha' | 'estrellas' | 'recibos'>(initialTab);
 
   // Datos calculados del artista autenticado
   const [currentArtistStars, setCurrentArtistStars] = useState<number>(1);
@@ -164,7 +164,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
       } else {
         // Formatear el código ingresado como nombre de artista / tema
         setArtistDisplayName(clean.toUpperCase());
-        setCurrentArtistStars(3); // 1 tema registrado en cabina
+        setCurrentArtistStars(3); // 1 tema registrado en el studio
       }
     }
   }, [isUnlocked, sessionCode]);
@@ -239,7 +239,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
     }
 
     setIsUnlocked(true);
-    setActiveTab('cabina');
+    setActiveTab('escucha');
   };
 
   const handleLogout = () => {
@@ -345,15 +345,15 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
               <div className="grid grid-cols-3 gap-1 bg-[#13151c] p-1 rounded-2xl border border-amber-500/25 text-xs font-bold">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('cabina')}
+                  onClick={() => setActiveTab('escucha')}
                   className={`py-2 px-2 sm:px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-center ${
-                    activeTab === 'cabina'
+                    activeTab === 'escucha'
                       ? 'bg-gradient-to-r from-red-600 via-red-500 to-amber-600 text-white shadow-md'
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   <Headphones className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">Cabina en Vivo</span>
+                  <span className="truncate">Escucha en Vivo</span>
                 </button>
 
                 <button
@@ -385,7 +385,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
             </div>
           ) : (
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Ingresa tu código de sesión (artista + tema) junto con tu PIN personal de seguridad para acceder a tu cabina de escucha, tus estrellas y recibos oficiales.
+              Ingresa tu código de sesión (artista + tema) junto con tu PIN personal de seguridad para acceder a tu sala de escucha, tus estrellas y recibos oficiales.
             </p>
           )}
         </div>
@@ -491,7 +491,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   className="w-full py-3.5 px-5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.45)] border border-amber-400/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <Unlock className="w-4 h-4" />
-                  <span>Desbloquear Cabina & Bóveda VIP ➜</span>
+                  <span>Desbloquear Sala & Bóveda VIP ➜</span>
                 </button>
               </form>
 
@@ -505,7 +505,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                 </div>
 
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Cada sesión en <strong className="text-white">La Facultad Studio</strong> atraviesa 4 etapas técnicas. Si tu tema aún está en preproducción o mezcla, consúltale a Badlenz para que te active tu cabina y te entregue tu PIN:
+                  Cada sesión en <strong className="text-white">La Facultad Studio</strong> atraviesa 4 etapas técnicas. Si tu tema aún está en preproducción o mezcla, consúltale a Badlenz para que te active tu sala y te entregue tu PIN:
                 </p>
 
                 {/* Las 4 Fases de Producción */}
@@ -552,15 +552,15 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
           )}
 
           {/* ============================================================== */}
-          {/* VISTA 2: DESBLOQUEADA · PESTAÑA 1: CABINA EN VIVO              */}
+          {/* VISTA 2: DESBLOQUEADA · PESTAÑA 1: SALA EN VIVO                */}
           {/* ============================================================== */}
-          {isUnlocked && activeTab === 'cabina' && (
+          {isUnlocked && activeTab === 'escucha' && (
             <div className="space-y-4">
               <div className="bg-[#111318]/95 p-5 rounded-2xl border border-amber-500/35 shadow-inner space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
                   <div>
                     <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-                      Cabina de Monitoreo Activa
+                      Sala de Monitoreo Activa
                     </span>
                     <h4 className="text-base font-black text-white uppercase tracking-wide font-syne">
                       Sesión: <span className="text-amber-400 font-mono">{sessionCode}</span>
@@ -575,14 +575,14 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                   Tu sala privada de monitoreo te permite escuchar la versión actual de mezcla/master con precisión acústica, comparar en tiempo real y dejar notas por segundo para Badlenz.
                 </p>
 
-                {/* Botón de acceso directo a la cabina en vivo */}
+                {/* Botón de acceso directo a la sala en vivo */}
                 <button
                   type="button"
                   onClick={handleGoToCabin}
                   className="w-full py-3.5 px-5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.45)] border border-amber-400/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <Headphones className="w-4 h-4" />
-                  <span>Entrar a mi Cabina de Escucha ➜</span>
+                  <span>Entrar a mi Sala de Escucha ➜</span>
                 </button>
               </div>
 

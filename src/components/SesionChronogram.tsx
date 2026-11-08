@@ -68,7 +68,7 @@ export const SesionChronogram: React.FC = () => {
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800/80 pb-4">
         <div>
           <h3 className="font-syne text-lg sm:text-xl font-black text-white tracking-tight mt-1">
-            ¿Cómo se aprovecha tu Bloque de 4 Horas en Cabina?
+            ¿Cómo se aprovecha tu Bloque de 4 Horas de Sesión?
           </h3>
           <p className="text-xs text-gray-400">
             En La Facultad Studio cada minuto está cronometrado para garantizar que tu canción quede grabada al máximo estándar.
@@ -174,7 +174,7 @@ export const SesionChronogram: React.FC = () => {
       {/* Note after session */}
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-400 bg-red-950/20 border border-red-900/30 rounded-xl p-3">
         <span className="font-mono text-[11px] text-amber-300">
-          ⚡ <strong>Post-Sesión (Fuera de Cabina):</strong> Badlenz realiza el Master Comercial en 24 a 48 horas con 2 revisiones gratis incluidas.
+          ⚡ <strong>Post-Sesión (Finalizada la Grabación):</strong> Badlenz realiza el Master Comercial en 24 a 48 horas con 2 revisiones gratis incluidas.
         </span>
         <span className="text-gray-400 text-[10px] shrink-0 font-mono">
           Norma 2026 Badlenz

@@ -561,7 +561,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
 Confirmamos el registro de tu sesión de estudio:
 🎟️ Folio de Pase: ${reserva.id}
 📅 Fecha: ${formattedDate}
-⏰ Horario: ${format12h(reserva.horaInicio)} - ${format12h(reserva.horaSalida)} (${reserva.totalHoras} Horas en Cabina)
+⏰ Horario: ${format12h(reserva.horaInicio)} - ${format12h(reserva.horaSalida)} (${reserva.totalHoras} Horas de Sesión)
 🎸 Servicios: ${reserva.servicios.join(', ')}
 
 💵 Resumen de Cuentas:
@@ -690,7 +690,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                 </span>
               </div>
               <p className="text-xs text-zinc-400 mt-0.5 font-dmsans">
-                Consola ejecutiva de sesiones, depósitos, artistas de cabina y bóveda A/B en Hormigueros, PR.
+                Consola ejecutiva de sesiones, depósitos, artistas del studio y bóveda A/B en Hormigueros, PR.
               </p>
             </div>
           </div>
@@ -740,7 +740,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
         {/* TAB NAVIGATION BAR (CONSOLE CHANNEL STRIPS) */}
         <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto pb-1 pt-3 border-t border-white/10 scrollbar-none">
           {[
-            { id: 'overview', label: 'Resumen & Cabina', icon: BarChart2, badge: null },
+            { id: 'overview', label: 'Resumen & Studio', icon: BarChart2, badge: null },
             { id: 'reservas', label: 'Reservas & Sesiones', icon: Ticket, badge: reservas.length },
             { id: 'calendario', label: 'Calendario & Turnos', icon: Calendar, badge: null },
             { id: 'showcase', label: 'Bóveda A/B', icon: Music, badge: showcaseTracks.length },
@@ -775,10 +775,10 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
         </div>
       </div>
 
-      {/* TAB 1: OVERVIEW & CABINA */}
+      {/* TAB 1: OVERVIEW & STUDIO */}
       {adminTab === 'overview' && (
         <div className="space-y-6 animate-fadeIn">
-      {/* CONMUTADOR MANUAL DE ESTADO EN TIEMPO REAL (CABINA & CONTROL ROOM) */}
+      {/* CONMUTADOR MANUAL DE ESTADO EN TIEMPO REAL (STUDIO & CONTROL ROOM) */}
       <div className="antigravity-glass border border-white/10 p-6 rounded-3xl shadow-2xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
           <div>
@@ -830,7 +830,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
             <div>
               <strong className="text-xs font-black text-white uppercase block">🔴 En Grabación</strong>
               <span className="text-[10px] text-gray-400 leading-tight block mt-0.5">
-                Cabina ocupada • Tracking de voces
+                Studio ocupado • Tracking de voces
               </span>
             </div>
           </button>
@@ -882,7 +882,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
               </span>
             </div>
             <div>
-              <strong className="text-xs font-black text-white uppercase block">🟢 Cabina Disponible</strong>
+              <strong className="text-xs font-black text-white uppercase block">🟢 Studio Disponible</strong>
               <span className="text-[10px] text-gray-400 leading-tight block mt-0.5">
                 Espacios libres para agendar
               </span>
@@ -982,7 +982,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
             <div>
               <strong className="text-xs font-black text-teal-300 uppercase block">🎧 Remodelación</strong>
               <span className="text-[10px] text-gray-400 leading-tight block mt-0.5">
-                Mejoras en cabina vocal
+                Mejoras en el studio vocal
               </span>
             </div>
           </button>
@@ -999,7 +999,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                 type="text"
                 value={customSubtitleInput}
                 onChange={(e) => setCustomSubtitleInput(e.target.value)}
-                placeholder="Ej: Cabina Acústica Ocupada con Neumann TLM 103"
+                placeholder="Ej: Studio Ocupado con Grabación Neumann TLM 103"
                 className="w-full bg-[#111827] border border-gray-700 rounded-lg p-2 text-xs text-white outline-none focus:border-red-500 font-sans"
               />
             </div>
@@ -1046,7 +1046,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
               <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400">🌴</span>
               <div>
                 <h4 className="text-sm font-black text-white uppercase tracking-wider">
-                  Lista de Espera VIP • Reapertura de Cabina ({leadsEspera.length} Artistas)
+                  Lista de Espera VIP • Reapertura del Studio ({leadsEspera.length} Artistas)
                 </h4>
                 <p className="text-xs text-gray-400">
                   Artistas que dejaron sus datos mientras el estudio está en vacaciones o mantenimiento.
@@ -1075,7 +1075,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                 </div>
                 <a
                   href={`https://wa.me/${lead.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                    `¡Hola ${lead.nombreArtistico}! Te escribe Badlenz de La Facultad Studio. Ya tenemos fecha para reabrir la cabina y estás en nuestra lista prioritaria con el turno ${lead.id}. ¿Qué día te gustaría agendar tu sesión?`
+                    `¡Hola ${lead.nombreArtistico}! Te escribe Badlenz de La Facultad Studio. Ya tenemos fecha para reabrir el studio y estás en nuestra lista prioritaria con el turno ${lead.id}. ¿Qué día te gustaría agendar tu sesión?`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
@@ -1633,7 +1633,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                             <button
                               onClick={() => handleQuickStatusChange(res.id, 'En Proceso')}
                               className="p-1.5 bg-sky-950/40 hover:bg-sky-900/40 text-sky-400 border border-sky-900/40 rounded transition flex items-center gap-1 animate-pulse"
-                              title="Iniciar Grabación en Cabina"
+                              title="Iniciar Grabación en el Studio"
                             >
                               <Clock className="w-3.5 h-3.5" />
                               <span className="text-[9px] font-bold uppercase hidden lg:inline">Iniciar</span>

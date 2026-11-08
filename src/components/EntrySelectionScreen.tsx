@@ -37,7 +37,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
               LA FACULTAD <span className="text-red-500">STUDIO</span>
             </h1>
             <p className="text-xs md:text-sm text-gray-400 max-w-md mx-auto pt-1 font-mono">
-              Selecciona tu portal de acceso para ingresar a la cabina o gestionar operaciones.
+              Selecciona tu portal de acceso para ingresar al studio o gestionar operaciones.
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
                   Portal de Clientes
                 </h3>
                 <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                  Escucha el sonido A/B en cabina, revisa tarifas oficiales, reserva tu bloque de 4 horas y accede a tus proyectos.
+                  Escucha el sonido A/B en el studio, revisa tarifas oficiales, reserva tu bloque de 4 horas y accede a tus proyectos.
                 </p>
               </div>
             </div>
@@ -106,7 +106,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
               </div>
 
               <div>
-                <span className="text-[10px] font-mono text-red-500 uppercase tracking-widest font-bold">Gestión de Cabina</span>
+                <span className="text-[10px] font-mono text-red-500 uppercase tracking-widest font-bold">Gestión del Studio</span>
                 <h3 className="text-lg font-black text-white uppercase tracking-wider mt-1 group-hover:text-red-400 transition-colors">
                   Panel Admin
                 </h3>
@@ -127,7 +127,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
 
         </div>
 
-        {/* Acceso Directo al Portal de Artista VIP (Cabina de Escucha en Vivo) */}
+        {/* Acceso Directo al Portal de Artista VIP (Sala de Escucha en Vivo) */}
         <div className="max-w-2xl mx-auto pt-1">
           <button
             type="button"
@@ -140,11 +140,11 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
               </div>
               <div>
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <span>Portal de Artista & Cabina</span>
+                  <span>Portal de Artista & Studio</span>
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 </span>
                 <span className="text-[11px] text-zinc-400 block">
-                  Consulta tus temas, recibos, acumula tus 20 estrellas VIP o entra a tu cabina de escucha en vivo.
+                  Consulta tus temas, recibos, acumula tus 20 estrellas VIP o entra a tu sala de escucha en vivo.
                 </span>
               </div>
             </div>

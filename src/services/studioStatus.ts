@@ -27,7 +27,7 @@ export const PRESET_STATUSES: Record<StudioLiveStatusType, StudioLiveStatus> = {
   grabando: {
     estado: 'grabando',
     titulo: '🔴 ON AIR: EN GRABACIÓN',
-    subtitulo: 'Cabina Acústica Ocupada con Micrófono Neumann TLM 103',
+    subtitulo: 'Studio Acústico Ocupado con Micrófono Neumann TLM 103',
     proximoTurnoLibre: 'Hoy 06:00 PM',
     ingeniero: 'Manuel E. Ramirez (Badlenz)'
   },
@@ -40,7 +40,7 @@ export const PRESET_STATUSES: Record<StudioLiveStatusType, StudioLiveStatus> = {
   },
   disponible: {
     estado: 'disponible',
-    titulo: '🟢 CABINA DISPONIBLE HOY',
+    titulo: '🟢 STUDIO DISPONIBLE HOY',
     subtitulo: 'Espacio Abierto • ¡Toca aquí para reservar tu turno!',
     proximoTurnoLibre: 'Inmediato / Turnos de Tarde & Noche',
     ingeniero: 'Manuel E. Ramirez (Badlenz)'
@@ -81,7 +81,7 @@ export const PRESET_STATUSES: Record<StudioLiveStatusType, StudioLiveStatus> = {
     ingeniero: 'Manuel E. Ramirez (Badlenz)',
     motivoCierre: 'remodelacion',
     fechaReapertura: '15 de Octubre',
-    mensajeEspecial: 'Transformando la cabina para elevar aún más la experiencia de grabación de nuestros artistas.'
+    mensajeEspecial: 'Transformando el studio para elevar aún más la experiencia de grabación de nuestros artistas.'
   }
 };
 

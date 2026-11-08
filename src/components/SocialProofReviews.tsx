@@ -24,7 +24,7 @@ const REVIEWS: ReviewItem[] = [
     sessionType: 'Bloque Promo 4 Horas + Mezcla',
     rating: 5,
     date: 'Hace 1 semana',
-    comment: 'La diferencia de grabar con el Neumann TLM 103 en la cabina de Badlenz es del cielo a la tierra. No tuve que esperar semanas por la mezcla; en 48 horas tenía el WAV masterizado sonando al nivel de lo que suena en la radio.',
+    comment: 'La diferencia de grabar con el Neumann TLM 103 en el studio de Badlenz es del cielo a la tierra. No tuve que esperar semanas por la mezcla; en 48 horas tenía el WAV masterizado sonando al nivel de lo que suena en la radio.',
     highlight: 'Afinación Melodyne quirúrgica y brillo vocal sin sibilancia.'
   },
   {
@@ -48,7 +48,7 @@ const REVIEWS: ReviewItem[] = [
     sessionType: 'Full Pack (Beat Badlenz + Voces)',
     rating: 5,
     date: 'Hace 3 semanas',
-    comment: 'El beat que me montó Badlenz en sesión estaba durísimo, los 808s rompen en la guagua y en los audífonos con una pegada limpia. La acústica de la cabina es seca y profesional, sin eco ni ruidos de la calle.',
+    comment: 'El beat que me montó Badlenz en sesión estaba durísimo, los 808s rompen en la guagua y en los audífonos con una pegada limpia. La acústica del studio es seca y profesional, sin eco ni ruidos de la calle.',
     highlight: '808s con pegada pesada calibrados en monitores Focal.'
   },
   {
@@ -72,7 +72,7 @@ export const SocialProofReviews: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#1e2230] pb-4">
         <div>
           <span className="text-[11px] font-mono tracking-widest text-amber-400 font-bold uppercase block">
-            EXPERIENCIAS EN CABINA &amp; REPUTACIÓN LOCAL
+            EXPERIENCIAS EN EL STUDIO &amp; REPUTACIÓN LOCAL
           </span>
           <h2 className="text-2xl sm:text-3xl font-display uppercase tracking-wide text-white mt-1">
             LO QUE DICEN LOS <span className="text-red-500">ARTISTAS DE PUERTO RICO</span>

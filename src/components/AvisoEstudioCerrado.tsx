@@ -143,7 +143,7 @@ export const AvisoEstudioCerrado: React.FC<AvisoEstudioCerradoProps> = ({
     vacaciones: {
       badge: '🌴 RECESO DE CREATIVIDAD & DESCANSO',
       title: 'Tomando aire fresco para tu próximo hit',
-      sub: 'En La Facultad Studio creemos que la música exige oídos descansados y máxima energía. Badlenz está en un breve receso para volver al 100% en cabina.',
+      sub: 'En La Facultad Studio creemos que la música exige oídos descansados y máxima energía. Badlenz está en un breve receso para volver al 100% al studio.',
       icon: <Palmtree className="w-6 h-6 text-amber-400" />,
       accentColor: 'from-amber-500/20 via-orange-950/20 to-transparent',
       borderColor: 'border-amber-600/40',
@@ -161,7 +161,7 @@ export const AvisoEstudioCerrado: React.FC<AvisoEstudioCerradoProps> = ({
       highlight: 'Tu voz merece la calibración más exacta de Puerto Rico. Cada decibel cuenta.'
     },
     remodelacion: {
-      badge: '🎧 REMODELACIÓN ACÚSTICA DE CABINA',
+      badge: '🎧 REMODELACIÓN ACÚSTICA DEL STUDIO',
       title: 'Evolucionando el sonido de La Facultad',
       sub: 'Estamos instalando nuevas trampas de graves de lana mineral de alta densidad y difusores QRD de madera para un tiempo de reverberación ultra seco.',
       icon: <Headphones className="w-6 h-6 text-emerald-400" />,
@@ -199,7 +199,7 @@ export const AvisoEstudioCerrado: React.FC<AvisoEstudioCerradoProps> = ({
           <div className="flex items-center gap-2 pl-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
             <span className="text-xs font-mono font-bold uppercase text-gray-300">
-              Estado de Cabina:
+              Estado del Studio:
             </span>
             <span className="text-xs font-bold text-amber-400">
               {activeReason === 'vacaciones' ? '🌴 Vacaciones' :
@@ -289,7 +289,7 @@ export const AvisoEstudioCerrado: React.FC<AvisoEstudioCerradoProps> = ({
             </p>
           </div>
 
-          {/* TARJETAS DE CONFIANZA: MIENTRAS LA CABINA DESCANSA */}
+          {/* TARJETAS DE CONFIANZA: MIENTRAS EL STUDIO DESCANSA */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <div className="bg-black/50 border border-gray-800/80 rounded-2xl p-4 space-y-1">
               <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1.5">

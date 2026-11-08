@@ -69,7 +69,7 @@ export function obtenerDisponibilidadMes(año: number, mes: number): Record<numb
     'Bloque 1 Reservado (1:00 PM - 5:00 PM)',
     'Bloque 2 Nocturno Reservado (6:00 PM - 10:00 PM)',
     'Sesión de Producción Full Reservada',
-    'Mantenimiento Acústico de Cabina',
+    'Mantenimiento Acústico del Studio',
     'Cerrado por Descanso Operativo'
   ];
 
@@ -117,7 +117,7 @@ export function obtenerDisponibilidadMes(año: number, mes: number): Record<numb
         disponible = false;
         motivo = 'Día exclusivo de Mezcla & Master en DAW';
       } else {
-        // Martes, Jueves, Viernes y Sábados: Días activos de grabación en cabina
+        // Martes, Jueves, Viernes y Sábados: Días activos de grabación en el studio
         // Generamos alternancia de demanda para mostrar días disponibles y días reservados
         const esReservado = (dia % 4 === 0) || (dia % 7 === 2);
         
