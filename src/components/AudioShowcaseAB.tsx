@@ -66,15 +66,26 @@ export const AudioShowcaseAB: React.FC = () => {
 
   const hasCustomAudio = Boolean(playableAudioA || playableAudioB);
 
-  // Synchronize HTML5 Audio volumes and play states
+  // Synchronize HTML5 Audio volumes and coordinate global playback
+  useEffect(() => {
+    const handleGlobalAudio = (e: any) => {
+      if (e.detail?.source !== 'showcase' && isPlaying) {
+        stopAudioEngine();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('studio-audio-play', handleGlobalAudio);
+    return () => window.removeEventListener('studio-audio-play', handleGlobalAudio);
+  }, [isPlaying]);
+
   useEffect(() => {
     if (audioARef.current) {
-      audioARef.current.volume = isMuted ? 0 : (mode === 'A' ? 1 : 0);
+      audioARef.current.volume = isMuted ? 0 : 1;
     }
     if (audioBRef.current) {
-      audioBRef.current.volume = isMuted ? 0 : (mode === 'B' ? 1 : 0);
+      audioBRef.current.volume = isMuted ? 0 : 1;
     }
-  }, [mode, isMuted]);
+  }, [isMuted]);
 
   // Handle Play/Pause for both Custom Audio & Web Audio Synth
   const togglePlay = () => {
@@ -89,19 +100,25 @@ export const AudioShowcaseAB: React.FC = () => {
 
   const startAudioEngine = () => {
     setIsLoadingAudio(true);
+    // Notificar a otros reproductores (ej: barra flotante AudioDock) para evitar superposición
+    window.dispatchEvent(new CustomEvent('studio-audio-play', { detail: { source: 'showcase' } }));
+
     if (hasCustomAudio) {
-      // Play real HTML5 audio elements
-      if (audioARef.current && audioBRef.current) {
-        audioARef.current.volume = isMuted ? 0 : (mode === 'A' ? 1 : 0);
-        audioBRef.current.volume = isMuted ? 0 : (mode === 'B' ? 1 : 0);
+      // Reproducir ÚNICAMENTE la pista activa en móviles y desktop para evitar doble sonido
+      const activeEl = mode === 'A' ? audioARef.current : audioBRef.current;
+      const inactiveEl = mode === 'A' ? audioBRef.current : audioARef.current;
 
-        audioBRef.current.currentTime = audioARef.current.currentTime;
+      if (inactiveEl) {
+        inactiveEl.pause();
+      }
 
-        const pA = audioARef.current.play();
-        const pB = audioBRef.current.play();
-
-        if (pA && pA.catch) pA.catch(() => {});
-        if (pB && pB.catch) pB.catch(() => {});
+      if (activeEl) {
+        if (inactiveEl && inactiveEl.currentTime) {
+          activeEl.currentTime = inactiveEl.currentTime;
+        }
+        activeEl.volume = isMuted ? 0 : 1;
+        const p = activeEl.play();
+        if (p && p.catch) p.catch(() => {});
       }
       setIsLoadingAudio(false);
       return;
@@ -236,10 +253,22 @@ export const AudioShowcaseAB: React.FC = () => {
     setLufsMeter(newMode === 'A' ? -18.4 : -8.9);
 
     if (hasCustomAudio) {
-      if (audioARef.current && audioBRef.current) {
-        audioARef.current.volume = isMuted ? 0 : (newMode === 'A' ? 1 : 0);
-        audioBRef.current.volume = isMuted ? 0 : (newMode === 'B' ? 1 : 0);
-        audioBRef.current.currentTime = audioARef.current.currentTime;
+      const currentActive = newMode === 'A' ? audioBRef.current : audioARef.current;
+      const targetActive = newMode === 'A' ? audioARef.current : audioBRef.current;
+
+      if (currentActive && targetActive) {
+        const sharedTime = currentActive.currentTime || 0;
+        targetActive.currentTime = sharedTime;
+
+        if (isPlaying) {
+          currentActive.pause();
+          targetActive.volume = isMuted ? 0 : 1;
+          const p = targetActive.play();
+          if (p && p.catch) p.catch(() => {});
+        } else {
+          currentActive.pause();
+          targetActive.pause();
+        }
       }
       return;
     }

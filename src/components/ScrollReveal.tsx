@@ -21,16 +21,26 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
       return;
     }
 
+    // Si el elemento ya está dentro o cerca del viewport al montar, hacerlo visible de inmediato
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 150) {
+        setIsVisible(true);
+        return;
+      }
+    }
+
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect(); // Una vez revelado, permanece visible
+          observer.disconnect(); // Una vez revelado, permanece visible permanentemente
         }
       },
       { 
-        threshold: 0.08, 
-        rootMargin: '0px 0px -40px 0px' 
+        threshold: 0.01, 
+        rootMargin: '120px 0px 120px 0px' 
       }
     );
 
@@ -38,7 +48,15 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
       observer.observe(ref.current);
     }
 
-    return () => observer.disconnect();
+    // Respaldo de seguridad: garantizar que ningún contenido quede oculto si el observer se retrasa
+    const timeout = setTimeout(() => {
+      setIsVisible(true);
+    }, 600);
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+    };
   }, []);
 
   return (

@@ -1238,69 +1238,66 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         </div>
       )}
       {/* BANNER OFICIAL DE BIENVENIDA & REAPERTURA 2026 (SPATIAL ANTIGRAVITY DESIGN) */}
-      <ScrollReveal delayMs={0}>
-        <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-gradient-to-r from-[#1b080d]/90 via-[#100c14]/95 to-[#0b0c10]/95 p-5 sm:p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_35px_rgba(245,158,11,0.18)]">
-          {/* Glass Top Edge Light Streak */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent pointer-events-none" />
-          
-          {/* Ambient Lighting Orbs */}
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-48 h-48 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-gradient-to-r from-[#1b080d]/90 via-[#100c14]/95 to-[#0b0c10]/95 p-5 sm:p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_35px_rgba(245,158,11,0.18)]">
+        {/* Glass Top Edge Light Streak */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent pointer-events-none" />
+        
+        {/* Ambient Lighting Orbs */}
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-48 h-48 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            <div className="space-y-2.5 max-w-3xl">
-              {/* Badges Row with Exact Baseline Alignment */}
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white text-[11px] font-black uppercase tracking-wider shadow-md shadow-red-950/50">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
-                  </span>
-                  <span>REAPERTURA OFICIAL</span>
-                  <span className="bg-black/30 px-1.5 py-0.5 rounded font-sans font-extrabold lining-nums text-amber-200 leading-none">
-                    2026
-                  </span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-2.5 max-w-3xl">
+            {/* Badges Row with Exact Baseline Alignment */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white text-[11px] font-black uppercase tracking-wider shadow-md shadow-red-950/50">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
                 </span>
-
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold backdrop-blur-md">
-                  <span className="text-amber-400">🔥</span>
-                  <span>Solo <strong className="font-sans font-black lining-nums text-white bg-amber-500/20 px-1.5 py-0.5 rounded leading-none">6 Cupos</strong> a</span>
-                  <span className="font-sans font-black text-white lining-nums tracking-tight text-sm leading-none">$130 USD</span>
-                  <span className="text-zinc-400 text-[10px] line-through font-sans lining-nums decoration-red-500 leading-none">(Reg. $200)</span>
+                <span>REAPERTURA OFICIAL</span>
+                <span className="bg-black/30 px-1.5 py-0.5 rounded font-sans font-extrabold lining-nums text-amber-200 leading-none">
+                  2026
                 </span>
-              </div>
+              </span>
 
-              {/* Informative Text with Crisp Lining Numerals */}
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
-                Tras <span className="font-sans font-bold lining-nums text-zinc-100">10</span> meses de preparación acústica, <strong className="text-white font-semibold">La Facultad Studio</strong> reabre sus puertas en Hormigueros. Separa tu bloque de grabación de <span className="font-sans font-bold lining-nums text-zinc-100">4</span> horas (con premezcla el mismo día y máster WAV 24-bit) con solo <strong className="text-amber-300 font-sans font-black lining-nums">$50 USD</strong> de depósito vía ATH Móvil.
-              </p>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold backdrop-blur-md">
+                <span className="text-amber-400">🔥</span>
+                <span>Solo <strong className="font-sans font-black lining-nums text-white bg-amber-500/20 px-1.5 py-0.5 rounded leading-none">6 Cupos</strong> a</span>
+                <span className="font-sans font-black text-white lining-nums tracking-tight text-sm leading-none">$130 USD</span>
+                <span className="text-zinc-400 text-[10px] line-through font-sans lining-nums decoration-red-500 leading-none">(Reg. $200)</span>
+              </span>
             </div>
 
-            {/* Spatial Button with Perfectly Aligned Micro-Pill */}
-            <div className="flex items-center shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  handleSelectPackage('promo');
-                  document.getElementById('seccion-calendario-booking')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-red-500 hover:from-amber-300 hover:to-red-400 text-gray-950 font-syne font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_10px_30px_rgba(245,158,11,0.35)] hover:shadow-[0_15px_40px_rgba(245,158,11,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer"
-              >
-                <span>Aprovechar</span>
-                <span className="inline-flex items-center justify-center bg-gray-950 text-amber-300 font-sans font-black text-xs lining-nums px-2 py-0.5 rounded-lg border border-amber-400/40 shadow-inner leading-none">
-                  $130
-                </span>
-                <span>&amp; Elegir Fecha</span>
-                <span className="transition-transform duration-300 group-hover:translate-x-1">➔</span>
-              </button>
-            </div>
+            {/* Informative Text with Crisp Lining Numerals */}
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
+              Tras <span className="font-sans font-bold lining-nums text-zinc-100">10</span> meses de preparación acústica, <strong className="text-white font-semibold">La Facultad Studio</strong> reabre sus puertas en Hormigueros. Separa tu bloque de grabación de <span className="font-sans font-bold lining-nums text-zinc-100">4</span> horas (con premezcla el mismo día y máster WAV 24-bit) con solo <strong className="text-amber-300 font-sans font-black lining-nums">$50 USD</strong> de depósito vía ATH Móvil.
+            </p>
+          </div>
+
+          {/* Spatial Button with Perfectly Aligned Micro-Pill */}
+          <div className="flex items-center shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                handleSelectPackage('promo');
+                document.getElementById('seccion-calendario-booking')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-red-500 hover:from-amber-300 hover:to-red-400 text-gray-950 font-syne font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_10px_30px_rgba(245,158,11,0.35)] hover:shadow-[0_15px_40px_rgba(245,158,11,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer"
+            >
+              <span>Aprovechar</span>
+              <span className="inline-flex items-center justify-center bg-gray-950 text-amber-300 font-sans font-black text-xs lining-nums px-2 py-0.5 rounded-lg border border-amber-400/40 shadow-inner leading-none">
+                $130
+              </span>
+              <span>&amp; Elegir Fecha</span>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">➔</span>
+            </button>
           </div>
         </div>
-      </ScrollReveal>
+      </div>
 
       {/* 1. MASTER STUDIO HERO (URBAN BOUTIQUE RECORDING STUDIO) */}
-      <ScrollReveal delayMs={0}>
-        <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
+      <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
           {/* Background Studio Photo (Flipped & Soft Blur with Seamless Gradient Blend) */}
           <div 
             className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[60%] pointer-events-none overflow-hidden select-none z-0"
@@ -1474,7 +1471,6 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
             </div>
           </div>
         </div>
-      </ScrollReveal>
 
       {/* DEMOSTRACIÓN AUDITIVA A/B EN VIVO BADLENZ */}
       <ScrollReveal delayMs={40}>

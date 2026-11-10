@@ -15,15 +15,28 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
   const audioARef = useRef<HTMLAudioElement | null>(null);
   const audioBRef = useRef<HTMLAudioElement | null>(null);
 
-  // Sync volume with active channel and mute state
+  // Coordinar reproducción global para evitar superposiciones entre reproductores
+  useEffect(() => {
+    const handleGlobalAudio = (e: any) => {
+      if (e.detail?.source !== 'dock' && isPlaying) {
+        if (audioARef.current) audioARef.current.pause();
+        if (audioBRef.current) audioBRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('studio-audio-play', handleGlobalAudio);
+    return () => window.removeEventListener('studio-audio-play', handleGlobalAudio);
+  }, [isPlaying]);
+
+  // Sync volume with mute state
   useEffect(() => {
     if (audioARef.current) {
-      audioARef.current.volume = isMuted ? 0 : (activeChannel === 'raw' ? 1 : 0);
+      audioARef.current.volume = isMuted ? 0 : 1;
     }
     if (audioBRef.current) {
-      audioBRef.current.volume = isMuted ? 0 : (activeChannel === 'master' ? 1 : 0);
+      audioBRef.current.volume = isMuted ? 0 : 1;
     }
-  }, [activeChannel, isMuted]);
+  }, [isMuted]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -31,15 +44,22 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
       if (audioBRef.current) audioBRef.current.pause();
       setIsPlaying(false);
     } else {
-      if (audioARef.current && audioBRef.current) {
-        audioBRef.current.currentTime = audioARef.current.currentTime;
-        audioARef.current.volume = isMuted ? 0 : (activeChannel === 'raw' ? 1 : 0);
-        audioBRef.current.volume = isMuted ? 0 : (activeChannel === 'master' ? 1 : 0);
-        
-        const pA = audioARef.current.play();
-        const pB = audioBRef.current.play();
-        if (pA && pA.catch) pA.catch(() => {});
-        if (pB && pB.catch) pB.catch(() => {});
+      window.dispatchEvent(new CustomEvent('studio-audio-play', { detail: { source: 'dock' } }));
+      
+      const activeEl = activeChannel === 'raw' ? audioARef.current : audioBRef.current;
+      const inactiveEl = activeChannel === 'raw' ? audioBRef.current : audioARef.current;
+
+      if (inactiveEl) {
+        inactiveEl.pause();
+      }
+
+      if (activeEl) {
+        if (inactiveEl && inactiveEl.currentTime) {
+          activeEl.currentTime = inactiveEl.currentTime;
+        }
+        activeEl.volume = isMuted ? 0 : 1;
+        const p = activeEl.play();
+        if (p && p.catch) p.catch(() => {});
       }
       setIsPlaying(true);
     }
@@ -47,13 +67,24 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
 
   const handleChannelSwitch = (channel: 'raw' | 'master') => {
     setActiveChannel(channel);
-    if (audioARef.current && audioBRef.current) {
-      const targetTime = channel === 'master' ? audioARef.current.currentTime : audioBRef.current.currentTime;
-      audioARef.current.currentTime = targetTime;
-      audioBRef.current.currentTime = targetTime;
-      audioARef.current.volume = isMuted ? 0 : (channel === 'raw' ? 1 : 0);
-      audioBRef.current.volume = isMuted ? 0 : (channel === 'master' ? 1 : 0);
+    const currentActive = channel === 'raw' ? audioBRef.current : audioARef.current;
+    const targetActive = channel === 'raw' ? audioARef.current : audioBRef.current;
+
+    if (currentActive && targetActive) {
+      const targetTime = currentActive.currentTime || 0;
+      targetActive.currentTime = targetTime;
+
+      if (isPlaying) {
+        currentActive.pause();
+        targetActive.volume = isMuted ? 0 : 1;
+        const p = targetActive.play();
+        if (p && p.catch) p.catch(() => {});
+      } else {
+        currentActive.pause();
+        targetActive.pause();
+      }
     }
+
     if (!isPlaying) {
       togglePlay();
     }

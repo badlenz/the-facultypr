@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    background-color: #070709;
+  html, body, #root {
+    background-color: #07080d !important;
+    color-scheme: dark !important;
     color: #f1f5f9;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
@@ -53,14 +54,14 @@
 /* Scroll Reveal Modular Animations - Landing Page Experience */
 .reveal-module {
   opacity: 0;
-  transform: translateY(36px);
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
+  transform: translateY(24px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reveal-module.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+  opacity: 1 !important;
+  transform: none !important;
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

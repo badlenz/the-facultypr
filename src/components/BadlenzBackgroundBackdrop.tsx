@@ -29,19 +29,20 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
 
   // Transformaciones cinemáticas al hacer scroll:
   // 1. Parallax vertical suave (se mueve a un ritmo diferente que el contenido)
-  const yParallax = useTransform(smoothProgress, [0, 1], [-30, 80]);
+  const yParallax = useTransform(smoothProgress, [0, 1], [-30, 80], { clamp: true });
   
   // 2. Rotación muy lenta (-4deg a +4deg)
-  const rotateParallax = useTransform(smoothProgress, [0, 1], [-2, 5]);
+  const rotateParallax = useTransform(smoothProgress, [0, 1], [-2, 5], { clamp: true });
 
   // 3. Escala reactiva al scroll (da sensación de acercamiento sutil)
-  const scaleParallax = useTransform(smoothProgress, [0, 0.5, 1], [0.98, 1.04, 0.96]);
+  const scaleParallax = useTransform(smoothProgress, [0, 0.5, 1], [0.98, 1.04, 0.96], { clamp: true });
 
   // 4. Modulación sutil de opacidad para que nunca interfiera con la lectura
   const dynamicOpacity = useTransform(
     smoothProgress,
     [0, 0.3, 0.7, 1],
-    [opacity * 1.2, opacity * 0.9, opacity * 1.1, opacity * 0.85]
+    [opacity * 1.2, opacity * 0.9, opacity * 1.1, opacity * 0.85],
+    { clamp: true }
   );
 
   return (
