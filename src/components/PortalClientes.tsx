@@ -1301,6 +1301,22 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       {/* 1. MASTER STUDIO HERO (URBAN BOUTIQUE RECORDING STUDIO) */}
       <ScrollReveal delayMs={0}>
         <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
+          {/* Background Studio Photo (Flipped & Soft Blur with Seamless Gradient Blend) */}
+          <div 
+            className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[60%] pointer-events-none overflow-hidden select-none z-0"
+            aria-hidden="true"
+          >
+            <img
+              src="/assets/studio/hero-session-badlenz.jpg"
+              alt="Badlenz produciendo en La Facultad Studio"
+              className="w-full h-full object-cover object-right sm:object-center scale-x-[-1] filter blur-[2.5px] opacity-40 sm:opacity-55"
+            />
+            {/* Gradientes de fusión hacia negro (#0a0c10) para garantizar 100% legibilidad del texto */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0c10] via-[#0a0c10]/85 via-35% to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10] via-transparent to-[#0a0c10]/60" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a0c10]/60 via-transparent to-transparent" />
+          </div>
+
           {/* Ambient Studio Lighting Glows */}
           <div className="absolute top-0 right-10 w-96 h-96 bg-red-600/15 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-[110px] pointer-events-none" />
