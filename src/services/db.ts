@@ -48,6 +48,59 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+export const VIP_MAX_STARS = 20;
+
+export const VIP_MILESTONES = [
+  {
+    pts: 5,
+    title: '5 ⭐: 15% Descuento',
+    desc: '15% de Descuento directo en tu próxima sesión de estudio.',
+    badge: '15% OFF',
+  },
+  {
+    pts: 10,
+    title: '10 ⭐: 1 Mezcla Pro Gratis',
+    desc: 'Mezcla profesional multitrack completa con compresión analógica y afinación.',
+    badge: 'Mezcla Gratis',
+  },
+  {
+    pts: 15,
+    title: '15 ⭐: Stems Multitrack Libres',
+    desc: 'Exportación de stems procesados e individuales sin costo adicional.',
+    badge: 'Stems Incluidos',
+  },
+  {
+    pts: 20,
+    title: '20 ⭐: 👑 1 Tema Completo Gratis',
+    desc: 'Bloque de Grabación 4h + Mezcla Multitrack Pro + Master Acústico 24-bit.',
+    badge: '👑 Tema Gratis',
+  },
+] as const;
+
+export const clampVipStars = (stars?: number): number => {
+  if (typeof stars !== 'number' || Number.isNaN(stars)) return 0;
+  return Math.max(0, Math.min(VIP_MAX_STARS, Math.round(stars)));
+};
+
+export const getVipLevelBadge = (stars: number) => {
+  const safe = clampVipStars(stars);
+  if (safe >= 20) return { label: '👑 Leyenda (20/20 ⭐)', shortLabel: '👑 Leyenda', color: 'text-amber-300 bg-amber-950/80 border-amber-400' };
+  if (safe >= 15) return { label: '💎 Platino (15+ ⭐)', shortLabel: '💎 Platino', color: 'text-cyan-300 bg-cyan-950/80 border-cyan-400' };
+  if (safe >= 10) return { label: '🥇 Oro (10+ ⭐)', shortLabel: '🥇 Oro', color: 'text-yellow-300 bg-yellow-950/80 border-yellow-400' };
+  if (safe >= 5) return { label: '🥈 Plata (5+ ⭐)', shortLabel: '🥈 Plata', color: 'text-zinc-200 bg-zinc-800 border-zinc-400' };
+  if (safe >= 1) return { label: '🥉 Bronce (1-4 ⭐)', shortLabel: '🥉 Bronce', color: 'text-amber-600 bg-amber-950/40 border-amber-800' };
+  return { label: '🌱 Nuevo Ingreso (0 ⭐)', shortLabel: '🌱 Nuevo (0 ⭐)', color: 'text-gray-300 bg-gray-900/80 border-gray-700' };
+};
+
+export interface HistorialEstrella {
+  id: string;
+  fecha: string;
+  delta: number;
+  tema?: string;
+  nota?: string;
+  reservaId?: string;
+}
+
 export interface Cliente {
   id: string;
   nombreArtistico: string;
@@ -56,6 +109,9 @@ export interface Cliente {
   telefono: string;
   instagram: string;
   fechaCreacion: string;
+  estrellasVip?: number;
+  codigoSesion?: string;
+  historialEstrellas?: HistorialEstrella[];
 }
 
 export interface Reserva {
@@ -86,18 +142,26 @@ export interface Reserva {
   roughMixNombre?: string;
   tipoProyecto?: 'single' | 'ep_3_tracks' | 'ep_5_tracks' | 'album_completo' | 'pack_semanal';
   detallesTracklist?: string[];
+  estrellaOtorgada?: boolean;
 }
 
 const STORAGE_KEY_CLIENTES = 'la_facultad_clientes_db';
 const STORAGE_KEY_RESERVAS = 'la_facultad_reservas_db';
 
 // Real-time listener initialization for Firestore
+const notifyClientesUpdated = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('la_facultad_clientes_updated'));
+  }
+};
+
 try {
   onSnapshot(collection(db, 'clientes'), (snapshot) => {
     const list: Cliente[] = [];
     snapshot.forEach(d => list.push(d.data() as Cliente));
     if (list.length > 0) {
       localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(list));
+      notifyClientesUpdated();
     }
   }, (err) => {
     console.warn('Firestore Clientes sync offline mode:', err.message);
@@ -124,7 +188,12 @@ export const getClientes = (): Cliente[] => {
 
 export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'>): Cliente => {
   const clientes = getClientes();
-  const existe = clientes.find(c => c.email === clienteData.email || c.nombreArtistico === clienteData.nombreArtistico);
+  const cleanEmail = (clienteData.email || '').trim().toLowerCase();
+  const cleanArt = (clienteData.nombreArtistico || '').trim().toLowerCase();
+  const existe = clientes.find(c =>
+    (cleanEmail && (c.email || '').trim().toLowerCase() === cleanEmail) ||
+    (cleanArt && (c.nombreArtistico || '').trim().toLowerCase() === cleanArt)
+  );
   
   if (existe) {
     return existe; // Retorna el cliente existente si ya está registrado
@@ -132,12 +201,15 @@ export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'
 
   const nuevoCliente: Cliente = {
     ...clienteData,
+    estrellasVip: clampVipStars(clienteData.estrellasVip),
+    historialEstrellas: clienteData.historialEstrellas || [],
     id: `CLI-${Date.now().toString().slice(-4)}`,
     fechaCreacion: new Date().toISOString().split('T')[0]
   };
 
   clientes.push(nuevoCliente);
   localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(clientes));
+  notifyClientesUpdated();
 
   // Sync to Firestore
   setDoc(doc(db, 'clientes', nuevoCliente.id), nuevoCliente).catch(err => {
@@ -220,18 +292,91 @@ export const eliminarReserva = (id: string): Reserva[] => {
   return filtradas;
 };
 
+/**
+ * Busca un cliente coincidiendo por código de sesión VIP, nombre artístico o nombre real.
+ */
+export const findClienteForArtistQuery = (
+  rawQuery: string,
+  clientesList?: Cliente[]
+): Cliente | undefined => {
+  const clean = rawQuery.trim().toLowerCase().replace(/\s+/g, '');
+  if (!clean) return undefined;
+  const list = clientesList ?? getClientes();
+
+  const exactMatch = list.find((c) => {
+    const code = (c.codigoSesion || '').trim().toLowerCase().replace(/\s+/g, '');
+    const artName = (c.nombreArtistico || '').trim().toLowerCase().replace(/\s+/g, '');
+    const realName = (c.nombreReal || '').trim().toLowerCase().replace(/\s+/g, '');
+    return (code && code === clean) || (artName && artName === clean) || (realName && realName === clean);
+  });
+  if (exactMatch) return exactMatch;
+
+  return list.find((c) => {
+    const code = (c.codigoSesion || '').trim().toLowerCase().replace(/\s+/g, '');
+    const artName = (c.nombreArtistico || '').trim().toLowerCase().replace(/\s+/g, '');
+    const realName = (c.nombreReal || '').trim().toLowerCase().replace(/\s+/g, '');
+    if (code && clean.includes(code)) return true;
+    if (artName && (clean.includes(artName) || artName.includes(clean))) return true;
+    if (realName && clean.includes(realName)) return true;
+    return false;
+  });
+};
+
 export const actualizarCliente = (id: string, updates: Partial<Cliente>): Cliente[] => {
   const clientes = getClientes();
   const index = clientes.findIndex(c => c.id === id);
   if (index !== -1) {
-    const updated = { ...clientes[index], ...updates };
+    const nextStars =
+      updates.estrellasVip !== undefined
+        ? clampVipStars(updates.estrellasVip)
+        : clampVipStars(clientes[index].estrellasVip);
+    const updated: Cliente = {
+      ...clientes[index],
+      ...updates,
+      estrellasVip: nextStars,
+    };
     clientes[index] = updated;
     localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(clientes));
+    notifyClientesUpdated();
     setDoc(doc(db, 'clientes', id), updated, { merge: true }).catch(err => {
       console.warn('Firestore actualizarCliente async update notice:', err);
     });
   }
   return clientes;
+};
+
+/**
+ * Ajusta manualmente las estrellas del Pasaporte VIP (1 servicio entregado y facturado = 1 ⭐, 0..20)
+ * y registra el movimiento en el historial del artista.
+ */
+export const ajustarEstrellasCliente = (
+  clienteId: string,
+  delta: number,
+  detalle?: { tema?: string; nota?: string; reservaId?: string }
+): Cliente[] => {
+  const clientes = getClientes();
+  const target = clientes.find(c => c.id === clienteId);
+  if (!target || delta === 0) return clientes;
+
+  const prevStars = clampVipStars(target.estrellasVip);
+  const nextStars = clampVipStars(prevStars + delta);
+  const actualDelta = nextStars - prevStars;
+  if (actualDelta === 0) return clientes;
+
+  const entry: HistorialEstrella = {
+    id: `EST-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    fecha: new Date().toISOString().split('T')[0],
+    delta: actualDelta,
+    ...(detalle?.tema?.trim() ? { tema: detalle.tema.trim() } : {}),
+    ...(detalle?.nota?.trim() ? { nota: detalle.nota.trim() } : {}),
+    ...(detalle?.reservaId?.trim() ? { reservaId: detalle.reservaId.trim() } : {}),
+  };
+
+  const prevHistory = Array.isArray(target.historialEstrellas) ? target.historialEstrellas : [];
+  return actualizarCliente(clienteId, {
+    estrellasVip: nextStars,
+    historialEstrellas: [entry, ...prevHistory],
+  });
 };
 
 export const eliminarCliente = (id: string): Cliente[] => {

@@ -27,7 +27,14 @@ import {
   getArtistSessionUrl,
   BADLENZ_WHATSAPP_STATUS_URL,
 } from '../config/portalConfig';
-import { getClientes, getReservas, Cliente, Reserva } from '../services/db';
+import {
+  getClientes,
+  HistorialEstrella,
+  VIP_MILESTONES,
+  clampVipStars,
+  getVipLevelBadge,
+  findClienteForArtistQuery,
+} from '../services/db';
 
 interface PortalArtistaModalProps {
   isOpen: boolean;
@@ -67,32 +74,7 @@ const PRODUCTION_PHASES = [
   },
 ];
 
-const REWARDS_SCALE = [
-  {
-    pts: 5,
-    title: '5 ⭐: 15% Descuento',
-    desc: '15% de Descuento directo en tu próxima sesión de estudio.',
-    badge: '15% OFF',
-  },
-  {
-    pts: 10,
-    title: '10 ⭐: 1 Mezcla Pro Gratis',
-    desc: 'Mezcla profesional multitrack completa con compresión analógica y afinación.',
-    badge: 'Mezcla Gratis',
-  },
-  {
-    pts: 15,
-    title: '15 ⭐: Stems Multitrack Libres',
-    desc: 'Exportación de stems procesados e individuales sin costo adicional.',
-    badge: 'Stems Incluidos',
-  },
-  {
-    pts: 20,
-    title: '20 ⭐: 👑 1 Tema Completo Gratis',
-    desc: 'Bloque de Grabación 4h + Mezcla Multitrack Pro + Master Acústico 24-bit.',
-    badge: '👑 Tema Gratis',
-  },
-];
+const REWARDS_SCALE = VIP_MILESTONES;
 
 export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   isOpen,
@@ -130,43 +112,42 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
   // Pestaña activa una vez autenticado
   const [activeTab, setActiveTab] = useState<'escucha' | 'estrellas' | 'recibos'>(initialTab);
 
-  // Datos calculados del artista autenticado
-  const [currentArtistStars, setCurrentArtistStars] = useState<number>(1);
+  // Datos del Pasaporte VIP (asignados manualmente por Badlenz tras entrega y facturación; inician en 0)
+  const [currentArtistStars, setCurrentArtistStars] = useState<number>(0);
   const [artistDisplayName, setArtistDisplayName] = useState<string>('');
+  const [artistStarHistory, setArtistStarHistory] = useState<HistorialEstrella[]>([]);
 
   const inputCodeRef = useRef<HTMLInputElement | null>(null);
   const inputPinRef = useRef<HTMLInputElement | null>(null);
 
-  // Recalcular estrellas cuando se desbloquea una sesión
+  // Sincronizar estrellas del Pasaporte VIP cuando se desbloquea o el Admin actualiza el CRM
   useEffect(() => {
-    if (isUnlocked && sessionCode) {
-      const clean = sessionCode.trim().toLowerCase().replace(/\s+/g, '');
-      const allClientes: Cliente[] = getClientes();
-      const allReservas: Reserva[] = getReservas();
+    if (!isUnlocked || !sessionCode) {
+      setCurrentArtistStars(0);
+      setArtistStarHistory([]);
+      return;
+    }
 
-      const matchedClient = allClientes.find((c) => {
-        const artName = c.nombreArtistico.toLowerCase().replace(/\s+/g, '');
-        return clean.includes(artName) || artName.includes(clean);
-      });
-
+    const refreshPassport = () => {
+      const matchedClient = findClienteForArtistQuery(sessionCode, getClientes());
       if (matchedClient) {
         setArtistDisplayName(matchedClient.nombreArtistico);
-        const clientReservas = allReservas.filter(
-          (r) =>
-            r.clienteId === matchedClient.id ||
-            r.nombreArtistico.toLowerCase().includes(matchedClient.nombreArtistico.toLowerCase())
-        );
-        const total = clientReservas.reduce((acc, r) => {
-          const count = Array.isArray(r.servicios) ? Math.max(1, r.servicios.length) : 1;
-          return acc + count;
-        }, 0);
-        setCurrentArtistStars(Math.min(Math.max(total, 1), 20));
+        setCurrentArtistStars(clampVipStars(matchedClient.estrellasVip));
+        setArtistStarHistory(Array.isArray(matchedClient.historialEstrellas) ? matchedClient.historialEstrellas : []);
       } else {
-        // Formatear el código ingresado como nombre de artista / tema
-        setArtistDisplayName(clean.toUpperCase());
-        setCurrentArtistStars(3); // 1 tema registrado en el studio
+        setArtistDisplayName(sessionCode.trim().toUpperCase());
+        setCurrentArtistStars(0);
+        setArtistStarHistory([]);
       }
-    }
+    };
+
+    refreshPassport();
+    window.addEventListener('la_facultad_clientes_updated', refreshPassport);
+    window.addEventListener('storage', refreshPassport);
+    return () => {
+      window.removeEventListener('la_facultad_clientes_updated', refreshPassport);
+      window.removeEventListener('storage', refreshPassport);
+    };
   }, [isUnlocked, sessionCode]);
 
   useEffect(() => {
@@ -262,13 +243,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const currentLevelBadge = (() => {
-    if (currentArtistStars >= 20) return { label: '👑 Leyenda (20/20 ⭐)', color: 'text-amber-300 bg-amber-950/80 border-amber-400' };
-    if (currentArtistStars >= 15) return { label: '💎 Platino (15+ ⭐)', color: 'text-cyan-300 bg-cyan-950/80 border-cyan-400' };
-    if (currentArtistStars >= 10) return { label: '🥇 Oro (10+ ⭐)', color: 'text-yellow-300 bg-yellow-950/80 border-yellow-400' };
-    if (currentArtistStars >= 5)  return { label: '🥈 Plata (5+ ⭐)', color: 'text-zinc-200 bg-zinc-800 border-zinc-400' };
-    return { label: '🥉 Bronce (1-4 ⭐)', color: 'text-amber-600 bg-amber-950/40 border-amber-800' };
-  })();
+  const currentLevelBadge = getVipLevelBadge(currentArtistStars);
 
   const nextMilestone = REWARDS_SCALE.find((m) => currentArtistStars < m.pts);
   const starsNeededForNext = nextMilestone ? nextMilestone.pts - currentArtistStars : 0;
@@ -782,6 +757,53 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Historial de servicios entregados y facturados */}
+                  <div className="pt-3 border-t border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        Registro de Temas Facturados
+                      </span>
+                      <span className="text-[10px] font-mono text-amber-400">
+                        {currentArtistStars} / 20 ⭐
+                      </span>
+                    </div>
+                    {artistStarHistory.length > 0 ? (
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                        {artistStarHistory.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/5 text-[10px]"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-bold text-white truncate block">
+                                {item.tema || (item.delta > 0 ? 'Servicio Entregado & Facturado' : 'Ajuste Administrativo')}
+                              </span>
+                              {item.nota && <span className="text-zinc-500 block truncate">{item.nota}</span>}
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span className={`font-black ${item.delta >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                                {item.delta >= 0 ? `+${item.delta} ⭐` : `${item.delta} ⭐`}
+                              </span>
+                              <span className="block text-[9px] text-zinc-500 font-mono">{item.fecha}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-zinc-500 bg-black/30 border border-white/5 rounded-xl p-2.5">
+                        {currentArtistStars === 0 ? (
+                          <>
+                            Aún tienes <strong className="text-zinc-300">0 estrellas</strong>. Cada vez que Badlenz entregue tu tema terminado y se complete la facturación, se sumará <strong className="text-amber-400">+1 ⭐</strong> a tu Pasaporte VIP.
+                          </>
+                        ) : (
+                          <>
+                            Tienes <strong className="text-amber-400">{currentArtistStars} ⭐</strong> acreditadas manualmente en tu Pasaporte VIP.
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

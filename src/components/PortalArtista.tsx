@@ -4,7 +4,18 @@ import {
   ARTIST_DEMO_SESSION_URL, 
   BADLENZ_WHATSAPP_STATUS_URL 
 } from '../config/portalConfig';
-import { getClientes, getReservas, actualizarReserva, Cliente, Reserva, getSongFeedbacks, guardarSongFeedback } from '../services/db';
+import {
+  getClientes,
+  getReservas,
+  actualizarReserva,
+  Cliente,
+  Reserva,
+  getSongFeedbacks,
+  guardarSongFeedback,
+  VIP_MILESTONES,
+  clampVipStars,
+  getVipLevelBadge,
+} from '../services/db';
 import { StudioProject } from '../types';
 import { SecureMasterAudioPlayer } from './SecureMasterAudioPlayer';
 import { 
@@ -71,6 +82,20 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
   const [hasSearched, setHasSearched] = useState(false);
   const [foundCliente, setFoundCliente] = useState<Cliente | null>(null);
   const [foundReservas, setFoundReservas] = useState<Reserva[]>([]);
+
+  useEffect(() => {
+    if (!foundCliente) return;
+    const syncCliente = () => {
+      const updated = getClientes().find(c => c.id === foundCliente.id);
+      if (updated) setFoundCliente(updated);
+    };
+    window.addEventListener('la_facultad_clientes_updated', syncCliente);
+    window.addEventListener('storage', syncCliente);
+    return () => {
+      window.removeEventListener('la_facultad_clientes_updated', syncCliente);
+      window.removeEventListener('storage', syncCliente);
+    };
+  }, [foundCliente?.id]);
   const [foundProjects, setFoundProjects] = useState<StudioProject[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -1197,23 +1222,12 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
               </div>
             </div>
 
-            {/* Tarjeta de Lealtad y Pasaporte por Servicios (1 Servicio = 1 Estrella ⭐) */}
+            {/* Tarjeta de Pasaporte VIP (1 Servicio Entregado y Facturado = 1 Estrella ⭐) */}
             {(() => {
-              const clientReservas = foundReservas.filter(r => r.estado === 'Confirmada' || r.estado === 'Completada');
-              // Cada servicio cuenta como 1 punto/estrella (hasta 20 máximo)
-              const totalServicios = clientReservas.reduce((acc, r) => {
-                const count = Array.isArray(r.servicios) ? Math.max(1, r.servicios.length) : 1;
-                return acc + count;
-              }, 0);
-              const totalPuntos = Math.min(totalServicios, 20); // Máximo 20 estrellas
-              
-              const milestones = [
-                { pts: 4, label: '30% Descuento en tu próximo servicio' },
-                { pts: 8, label: '50% Descuento en Grabación o Mezcla' },
-                { pts: 12, label: 'Mezcla & Masterización GRATIS' },
-                { pts: 16, label: 'Pista / Beat exclusivo de Regalo' },
-                { pts: 20, label: 'Producción Completa (Beat, Grabación, Mix & Master) GRATIS' },
-              ];
+              // Solo cuentan las estrellas otorgadas manualmente por Badlenz tras entrega y facturación (inician en 0)
+              const totalPuntos = clampVipStars(foundCliente.estrellasVip);
+              const milestones = VIP_MILESTONES.map(m => ({ pts: m.pts, label: m.desc }));
+              const levelBadge = getVipLevelBadge(totalPuntos);
 
               const nextMilestone = milestones.find(m => totalPuntos < m.pts);
               const serviciosParaSiguiente = nextMilestone ? nextMilestone.pts - totalPuntos : 0;
@@ -1225,15 +1239,12 @@ export const PortalArtista: React.FC<PortalArtistaProps> = ({ projects, onUpdate
                     <div>
                       <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                         <Award className="w-4 h-4 text-amber-500" />
-                        <span>Pasaporte de Fidelidad ('Estrellas por Servicio')</span>
+                        <span>Pasaporte VIP ('Estrellas por Servicio')</span>
                       </h4>
-                      <p className="text-[9px] text-gray-500 font-mono mt-0.5">La Facultad Studio</p>
+                      <p className="text-[9px] text-gray-500 font-mono mt-0.5">La Facultad Studio · 1 Tema Facturado = 1 ⭐</p>
                     </div>
-                    <div className="bg-red-950/40 border border-red-700/30 px-2 py-0.5 rounded text-[10px] font-black text-red-400 uppercase tracking-wider">
-                      {totalPuntos >= 20 ? '👑 Leyenda (20/20 ⭐)' :
-                       totalPuntos >= 15 ? '💎 Platino (15+ ⭐)' :
-                       totalPuntos >= 10 ? '🥇 Oro (10+ ⭐)' :
-                       totalPuntos >= 5  ? '🥈 Plata (5+ ⭐)' : '🥉 Bronce'}
+                    <div className={`border px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${levelBadge.color}`}>
+                      {levelBadge.shortLabel}
                     </div>
                   </div>
 

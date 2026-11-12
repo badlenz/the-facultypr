@@ -27,7 +27,13 @@ import {
   inicializarModoDemo,
   inicializarModoLanzamiento,
   getLeadsEspera,
-  LeadEspera
+  LeadEspera,
+  ajustarEstrellasCliente,
+  VIP_MILESTONES,
+  VIP_MAX_STARS,
+  clampVipStars,
+  getVipLevelBadge,
+  findClienteForArtistQuery
 } from '../services/db';
 import {
   obtenerTodasDisponibilidades,
@@ -79,6 +85,9 @@ import {
   Award,
   Flame,
   Trophy,
+  Star,
+  Minus,
+  History,
   Camera,
   Image as ImageIcon,
   HardDrive
@@ -237,16 +246,19 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
       cargarDatos();
       updateDataState();
     };
+    const handleClientesUpdated = () => cargarDatos();
     window.addEventListener('la_facultad_db_reset', handleDbReset);
     window.addEventListener('la_facultad_promo_slots_updated', updateDataState);
     window.addEventListener('la_facultad_showcase_updated', updateDataState);
     window.addEventListener('la_facultad_config_updated', updateDataState);
+    window.addEventListener('la_facultad_clientes_updated', handleClientesUpdated);
     window.addEventListener('storage', updateDataState);
     return () => {
       window.removeEventListener('la_facultad_db_reset', handleDbReset);
       window.removeEventListener('la_facultad_promo_slots_updated', updateDataState);
       window.removeEventListener('la_facultad_showcase_updated', updateDataState);
       window.removeEventListener('la_facultad_config_updated', updateDataState);
+      window.removeEventListener('la_facultad_clientes_updated', handleClientesUpdated);
       window.removeEventListener('storage', updateDataState);
     };
   }, []);
@@ -258,6 +270,20 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [busquedaReserva, setBusquedaReserva] = useState<string>('');
   const [busquedaRanking, setBusquedaRanking] = useState<string>('');
+
+  // Control Pasaporte VIP (Estrellas por servicio entregado y facturado)
+  const [mostrarNuevoArtistaVip, setMostrarNuevoArtistaVip] = useState(false);
+  const [nuevoArtistaVip, setNuevoArtistaVip] = useState({
+    nombreArtistico: '',
+    nombreReal: '',
+    telefono: '',
+    instagram: '',
+    codigoSesion: '',
+  });
+  const [artistaOtorgando, setArtistaOtorgando] = useState<{ clienteId: string; nombreArtistico: string } | null>(null);
+  const [temaEstrella, setTemaEstrella] = useState('');
+  const [notaEstrella, setNotaEstrella] = useState('');
+  const [historialAbiertoId, setHistorialAbiertoId] = useState<string | null>(null);
 
   // Estados para gestión de disponibilidad
   const [fechaLiberar, setFechaLiberar] = useState('2026-10-15');
@@ -440,6 +466,90 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
       eliminarCliente(id);
       cargarDatos();
     }
+  };
+
+  // CONTROL PASAPORTE VIP (1 SERVICIO ENTREGADO & FACTURADO = 1 ⭐)
+  const ensureOrGetClienteByNombre = (nombreArtistico: string, fallbackClienteId?: string): Cliente => {
+    const actuales = getClientes();
+    const cleanName = nombreArtistico.trim().toLowerCase();
+    const existing =
+      (fallbackClienteId ? actuales.find(c => c.id === fallbackClienteId) : undefined) ||
+      actuales.find(c => c.nombreArtistico.trim().toLowerCase() === cleanName);
+    if (existing) return existing;
+
+    return guardarCliente({
+      nombreArtistico: nombreArtistico.trim(),
+      nombreReal: 'Artista Invitado',
+      email: '',
+      telefono: '',
+      instagram: '',
+      estrellasVip: 0,
+      historialEstrellas: [],
+    });
+  };
+
+  const handleRegistrarArtistaVip = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevoArtistaVip.nombreArtistico.trim()) return;
+    guardarCliente({
+      nombreArtistico: nuevoArtistaVip.nombreArtistico.trim(),
+      nombreReal: nuevoArtistaVip.nombreReal.trim() || nuevoArtistaVip.nombreArtistico.trim(),
+      email: '',
+      telefono: nuevoArtistaVip.telefono.trim(),
+      instagram: nuevoArtistaVip.instagram.trim(),
+      codigoSesion: nuevoArtistaVip.codigoSesion.trim(),
+      estrellasVip: 0,
+      historialEstrellas: [],
+    });
+    setNuevoArtistaVip({ nombreArtistico: '', nombreReal: '', telefono: '', instagram: '', codigoSesion: '' });
+    setMostrarNuevoArtistaVip(false);
+    cargarDatos();
+  };
+
+  const handleAbrirOtorgarEstrella = (clienteId: string, nombreArtistico: string) => {
+    setArtistaOtorgando({ clienteId, nombreArtistico });
+    setTemaEstrella('');
+    setNotaEstrella('');
+  };
+
+  const handleConfirmarOtorgarEstrella = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!artistaOtorgando) return;
+    ajustarEstrellasCliente(artistaOtorgando.clienteId, 1, {
+      tema: temaEstrella.trim() || 'Tema Entregado & Facturado',
+      nota: notaEstrella.trim(),
+    });
+    setArtistaOtorgando(null);
+    setTemaEstrella('');
+    setNotaEstrella('');
+    cargarDatos();
+  };
+
+  const handleRestarEstrella = (cliente: Cliente) => {
+    const actuales = clampVipStars(cliente.estrellasVip);
+    if (actuales <= 0) return;
+    if (!confirm(`¿Restar 1 ⭐ a ${cliente.nombreArtistico} (${actuales} → ${actuales - 1} ⭐)?`)) return;
+    ajustarEstrellasCliente(cliente.id, -1, {
+      tema: 'Corrección manual desde Admin',
+    });
+    cargarDatos();
+  };
+
+  const handleOtorgarEstrellaDesdeReserva = (res: Reserva) => {
+    if (res.estrellaOtorgada) return;
+    const target = ensureOrGetClienteByNombre(res.nombreArtistico, res.clienteId);
+    const currentStars = clampVipStars(target.estrellasVip);
+    if (currentStars >= VIP_MAX_STARS) {
+      alert(`${target.nombreArtistico} ya alcanzó el máximo de ${VIP_MAX_STARS} ⭐ en su Pasaporte VIP.`);
+      return;
+    }
+    ajustarEstrellasCliente(target.id, 1, {
+      tema: Array.isArray(res.servicios) && res.servicios.length > 0 ? res.servicios.join(' + ') : 'Servicio Entregado & Facturado',
+      nota: `Sesión ${res.id} (${res.fecha})`,
+      reservaId: res.id,
+    });
+    actualizarReserva(res.id, { estrellaOtorgada: true, clienteId: target.id });
+    cargarDatos();
   };
 
   // CREAR RESERVA MANUALMENTE
@@ -744,7 +854,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
             { id: 'reservas', label: 'Reservas & Sesiones', icon: Ticket, badge: reservas.length },
             { id: 'calendario', label: 'Calendario & Turnos', icon: Calendar, badge: null },
             { id: 'showcase', label: 'Bóveda A/B', icon: Music, badge: showcaseTracks.length },
-            { id: 'crm', label: 'Artistas & Loyalty', icon: Users, badge: clientes.length },
+            { id: 'crm', label: 'Artistas & Pasaporte VIP', icon: Users, badge: clientes.length },
             { id: 'ajustes', label: 'Configuración & Sistema', icon: Lock, badge: null },
           ].map(tab => {
             const Icon = tab.icon;
@@ -1651,6 +1761,27 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                             </button>
                           )}
 
+                          {res.estado !== 'Cancelada' && res.estado !== 'Liberada' && (
+                            res.estrellaOtorgada ? (
+                              <span
+                                className="p-1.5 bg-amber-950/30 text-amber-400 border border-amber-500/30 rounded flex items-center gap-1"
+                                title="Estrella VIP ya otorgada por esta sesión facturada"
+                              >
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                <span className="text-[9px] font-bold uppercase hidden xl:inline">VIP ✓</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleOtorgarEstrellaDesdeReserva(res)}
+                                className="p-1.5 bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-700/40 rounded transition flex items-center gap-1"
+                                title="Tema entregado y facturado: sumar +1 ⭐ al Pasaporte VIP"
+                              >
+                                <Star className="w-3.5 h-3.5" />
+                                <span className="text-[9px] font-bold uppercase hidden xl:inline">+1 ⭐</span>
+                              </button>
+                            )
+                          )}
+
                           <button
                             onClick={() => handleOpenWhatsApp(res)}
                             className="p-1.5 bg-green-950/40 hover:bg-green-900/40 text-green-400 border border-green-900/40 rounded transition"
@@ -2444,261 +2575,474 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
         )}
       </div>
 
-      {/* SECCIÓN 6: CLASIFICACIÓN DE ARTISTAS Y HORAS DE VUELO (LOYALTY SYSTEM) */}
+      {/* SECCIÓN 6: PASAPORTE VIP · CONTROL MANUAL DE ESTRELLAS (1 SERVICIO ENTREGADO & FACTURADO = 1 ⭐) */}
       <div className="antigravity-glass border border-white/10 p-6 sm:p-7 rounded-3xl space-y-5 shadow-2xl mt-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-800 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-gray-800 pb-4">
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <span>Ranking de Fidelidad y 'Horas de Vuelo'</span>
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span>Pasaporte VIP · Control de Estrellas</span>
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              Clasificación de artistas basada en sus horas de grabación confirmadas o completadas. Identifica quiénes están próximos a desbloquear su siguiente premio.
+              Todos los artistas comienzan en <strong className="text-white">0 ⭐</strong>. Suma <strong className="text-amber-400">+1 ⭐</strong> manualmente cada vez que entregues un tema terminado y quede facturado (escala de 20 ⭐).
             </p>
           </div>
-          
-          {/* Input de Búsqueda */}
-          <div className="relative w-full md:w-72 shrink-0">
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
             <input
               type="text"
-              placeholder="Buscar artista por nombre..."
-              className="w-full bg-[#111827] border border-gray-800 text-xs text-white placeholder-gray-500 rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
+              placeholder="Buscar artista o código..."
+              className="w-full sm:w-56 bg-[#111827] border border-gray-800 text-xs text-white placeholder-gray-500 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500"
               value={busquedaRanking}
               onChange={(e) => setBusquedaRanking(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setMostrarNuevoArtistaVip(prev => !prev)}
+              className="inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black px-3.5 py-2 rounded-lg text-[11px] uppercase tracking-wider transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{mostrarNuevoArtistaVip ? 'Cerrar' : 'Agregar Artista (0 ⭐)'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Lógica de Procesamiento del Ranking */}
+        {/* Formulario rápido para registrar artista directo en el Pasaporte VIP (inicia en 0 ⭐) */}
+        {mostrarNuevoArtistaVip && (
+          <form
+            onSubmit={handleRegistrarArtistaVip}
+            className="bg-black/40 border border-amber-500/30 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          >
+            <div>
+              <label className="block text-[10px] font-bold text-amber-400 uppercase mb-1">Nombre Artístico *</label>
+              <input
+                type="text"
+                required
+                placeholder="Ej: Zyron"
+                className="w-full bg-[#111827] border border-gray-700 text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-amber-400"
+                value={nuevoArtistaVip.nombreArtistico}
+                onChange={e => setNuevoArtistaVip({ ...nuevoArtistaVip, nombreArtistico: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Código Portal (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Ej: zyrontukutu"
+                className="w-full bg-[#111827] border border-gray-700 text-white text-xs px-3 py-2 rounded-lg outline-none font-mono"
+                value={nuevoArtistaVip.codigoSesion}
+                onChange={e => setNuevoArtistaVip({ ...nuevoArtistaVip, codigoSesion: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">WhatsApp</label>
+              <input
+                type="text"
+                placeholder="787-000-0000"
+                className="w-full bg-[#111827] border border-gray-700 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                value={nuevoArtistaVip.telefono}
+                onChange={e => setNuevoArtistaVip({ ...nuevoArtistaVip, telefono: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Instagram</label>
+              <input
+                type="text"
+                placeholder="@artista"
+                className="w-full bg-[#111827] border border-gray-700 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                value={nuevoArtistaVip.instagram}
+                onChange={e => setNuevoArtistaVip({ ...nuevoArtistaVip, instagram: e.target.value })}
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider py-2 px-4 rounded-lg transition"
+            >
+              Crear en 0 ⭐
+            </button>
+          </form>
+        )}
+
+        {/* Leyenda rápida de la escala 0 -> 20 ⭐ */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {VIP_MILESTONES.map((m) => (
+            <div key={m.pts} className="bg-black/30 border border-white/5 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black text-amber-400">{m.pts} ⭐</span>
+              <span className="text-[10px] font-bold text-gray-300 truncate">{m.badge}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Lista & Controles de Pasaporte VIP */}
         {(() => {
-          const rankingMap = new Map<string, {
+          const passportMap = new Map<string, {
+            key: string;
+            cliente: Cliente | null;
             nombreArtistico: string;
             nombreCompleto: string;
             email: string;
             whatsapp: string;
-            horasDeVuelo: number;
+            codigoSesion: string;
+            estrellas: number;
             esClienteRegistrado: boolean;
           }>();
 
-          // 1. Agregar todos los clientes registrados
           clientes.forEach(c => {
-            rankingMap.set(c.nombreArtistico.toLowerCase().trim(), {
+            const key = c.nombreArtistico.toLowerCase().trim();
+            passportMap.set(key, {
+              key,
+              cliente: c,
               nombreArtistico: c.nombreArtistico,
-              nombreCompleto: c.nombreReal,
-              email: c.email,
-              whatsapp: c.telefono,
-              horasDeVuelo: 0,
-              esClienteRegistrado: true
+              nombreCompleto: c.nombreReal || c.nombreArtistico,
+              email: c.email || '-',
+              whatsapp: c.telefono || '',
+              codigoSesion: c.codigoSesion || '',
+              estrellas: clampVipStars(c.estrellasVip),
+              esClienteRegistrado: true,
             });
           });
 
-          // 2. Acumular horas de vuelo desde las reservas confirmadas o completadas
           reservas.forEach(r => {
-            if (r.estado === 'Confirmada' || r.estado === 'Completada') {
-              const artNameKey = r.nombreArtistico.toLowerCase().trim();
-              const horas = Number(r.totalHoras) || 0;
-              
-              if (rankingMap.has(artNameKey)) {
-                const item = rankingMap.get(artNameKey)!;
-                item.horasDeVuelo += horas;
-              } else if (r.nombreArtistico.trim()) {
-                // Artista no registrado formalmente como cliente, pero con reservas
-                rankingMap.set(artNameKey, {
-                  nombreArtistico: r.nombreArtistico,
-                  nombreCompleto: 'Artista Invitado',
-                  email: '-',
-                  whatsapp: '-',
-                  horasDeVuelo: horas,
-                  esClienteRegistrado: false
-                });
-              }
+            const key = r.nombreArtistico.toLowerCase().trim();
+            if (key && !passportMap.has(key)) {
+              passportMap.set(key, {
+                key,
+                cliente: null,
+                nombreArtistico: r.nombreArtistico,
+                nombreCompleto: 'Artista con reserva (sin perfil)',
+                email: '-',
+                whatsapp: '',
+                codigoSesion: '',
+                estrellas: 0,
+                esClienteRegistrado: false,
+              });
             }
           });
 
-          // Milestones de Premios
-          const milestones = [
-            { pts: 5, label: '30% Descuento' },
-            { pts: 8, label: '50% Descuento' },
-            { pts: 10, label: 'Mix & Master gratis' },
-            { pts: 15, label: 'Pista de regalo' },
-            { pts: 20, label: 'Grabación de 1 tema' },
-            { pts: 25, label: 'Producción completa' },
-          ];
+          const allItems = Array.from(passportMap.values());
+          const totalEstrellasOtorgadas = allItems.reduce((sum, it) => sum + it.estrellas, 0);
+          const cercaRecompensa = allItems.filter(it => {
+            const next = VIP_MILESTONES.find(m => it.estrellas < m.pts);
+            return next && (next.pts - it.estrellas) === 1;
+          }).length;
+          const leyendasCount = allItems.filter(it => it.estrellas >= VIP_MAX_STARS).length;
 
-          // Filtrar por término de búsqueda
-          let listaRanking = Array.from(rankingMap.values());
+          let listaPasaporte = allItems;
           if (busquedaRanking.trim()) {
             const query = busquedaRanking.toLowerCase();
-            listaRanking = listaRanking.filter(item => 
+            listaPasaporte = listaPasaporte.filter(item =>
               item.nombreArtistico.toLowerCase().includes(query) ||
-              item.nombreCompleto.toLowerCase().includes(query)
+              item.nombreCompleto.toLowerCase().includes(query) ||
+              item.codigoSesion.toLowerCase().includes(query)
             );
           }
 
-          // Ordenar descendentemente por horas de vuelo
-          listaRanking.sort((a, b) => b.horasDeVuelo - a.horasDeVuelo);
-
-          if (listaRanking.length === 0) {
-            return (
-              <div className="p-8 text-center bg-black/20 rounded-lg border border-gray-900/60">
-                <p className="text-xs text-gray-500 italic">No se encontraron artistas que coincidan con la búsqueda.</p>
-              </div>
-            );
-          }
+          listaPasaporte.sort((a, b) => {
+            if (b.estrellas !== a.estrellas) return b.estrellas - a.estrellas;
+            return a.nombreArtistico.localeCompare(b.nombreArtistico);
+          });
 
           return (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-800 text-gray-500 text-[10px] uppercase font-black tracking-wider">
-                    <th className="py-3 px-3 text-center w-12">Puesto</th>
-                    <th className="py-3 px-3">Artista</th>
-                    <th className="py-3 px-3 text-center">Horas de Vuelo</th>
-                    <th className="py-3 px-3">Progreso de Nivel</th>
-                    <th className="py-3 px-3">Próximo Escalón</th>
-                    <th className="py-3 px-3 text-center">Estado de Alerta</th>
-                    <th className="py-3 px-3 text-right">Contacto CRM</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/40">
-                  {listaRanking.map((item, index) => {
-                    const puesto = index + 1;
-                    const horas = item.horasDeVuelo;
-                    const percentage = Math.min((horas / 25) * 100, 100);
+            <div className="space-y-4">
+              {/* Resumen de Pasaportes */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block">Artistas</span>
+                  <span className="text-lg font-black text-white">{allItems.length}</span>
+                </div>
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block">Estrellas Facturadas</span>
+                  <span className="text-lg font-black text-amber-400">{totalEstrellasOtorgadas} ⭐</span>
+                </div>
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block">A 1 ⭐ de Premio</span>
+                  <span className="text-lg font-black text-emerald-400">{cercaRecompensa}</span>
+                </div>
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block">Leyendas (20 ⭐)</span>
+                  <span className="text-lg font-black text-purple-400">{leyendasCount}</span>
+                </div>
+              </div>
 
-                    // Buscar próximo hito
-                    const nextMilestone = milestones.find(m => horas < m.pts);
-                    const horasFaltantes = nextMilestone ? nextMilestone.pts - horas : 0;
-                    
-                    // Alerta si falta poco para el siguiente beneficio (ej: <= 2 horas)
-                    const estaMuyCerca = nextMilestone && horasFaltantes <= 2;
+              {listaPasaporte.length === 0 ? (
+                <div className="p-8 text-center bg-black/20 rounded-lg border border-gray-900/60">
+                  <p className="text-xs text-gray-500 italic">No hay artistas que coincidan con tu búsqueda. Usa &quot;Agregar Artista (0 ⭐)&quot; para crear uno.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-800 text-gray-500 text-[10px] uppercase font-black tracking-wider">
+                        <th className="py-3 px-3">Artista</th>
+                        <th className="py-3 px-3 text-center">Nivel</th>
+                        <th className="py-3 px-3">Pasaporte (0–20 ⭐)</th>
+                        <th className="py-3 px-3">Próxima Recompensa</th>
+                        <th className="py-3 px-3 text-center">Control Entrega &amp; Factura</th>
+                        <th className="py-3 px-3 text-right">CRM</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/40">
+                      {listaPasaporte.map((item) => {
+                        const stars = item.estrellas;
+                        const percentage = Math.min((stars / VIP_MAX_STARS) * 100, 100);
+                        const levelBadge = getVipLevelBadge(stars);
+                        const nextMilestone = VIP_MILESTONES.find(m => stars < m.pts);
+                        const starsFaltantes = nextMilestone ? nextMilestone.pts - stars : 0;
+                        const history = item.cliente?.historialEstrellas || [];
+                        const isHistoryOpen = item.cliente && historialAbiertoId === item.cliente.id;
 
-                    return (
-                      <tr 
-                        key={item.nombreArtistico} 
-                        className={`hover:bg-white/[0.02] transition-all ${
-                          puesto === 1 ? 'bg-amber-500/[0.02]' : puesto === 2 ? 'bg-slate-400/[0.01]' : puesto === 3 ? 'bg-amber-700/[0.01]' : ''
-                        }`}
-                      >
-                        {/* Puesto */}
-                        <td className="py-3.5 px-3 text-center font-mono">
-                          {puesto === 1 ? (
-                            <span className="inline-flex items-center justify-center bg-amber-500/20 text-amber-500 border border-amber-500/40 w-6 h-6 rounded-full font-black text-xs" title="Líder Absoluto 🥇">
-                              🥇
-                            </span>
-                          ) : puesto === 2 ? (
-                            <span className="inline-flex items-center justify-center bg-slate-400/20 text-slate-300 border border-slate-400/40 w-6 h-6 rounded-full font-black text-xs" title="Subcampeón 🥈">
-                              🥈
-                            </span>
-                          ) : puesto === 3 ? (
-                            <span className="inline-flex items-center justify-center bg-amber-800/20 text-amber-600 border border-amber-800/40 w-6 h-6 rounded-full font-black text-xs" title="Tercer Lugar 🥉">
-                              🥉
-                            </span>
-                          ) : (
-                            <span className="text-gray-500 font-bold text-xs">#{puesto}</span>
-                          )}
-                        </td>
+                        return (
+                          <React.Fragment key={item.key}>
+                            <tr className="hover:bg-white/[0.02] transition-all">
+                              {/* Artista */}
+                              <td className="py-3.5 px-3">
+                                <div>
+                                  <p className="font-extrabold text-white uppercase tracking-wide flex flex-wrap items-center gap-1.5">
+                                    <span>{item.nombreArtistico}</span>
+                                    {item.esClienteRegistrado ? (
+                                      <span className="text-[8px] bg-emerald-950/80 border border-emerald-800/40 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-normal">
+                                        VIP Activo
+                                      </span>
+                                    ) : (
+                                      <span className="text-[8px] bg-gray-900 border border-gray-800 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-normal">
+                                        Reserva sin ficha
+                                      </span>
+                                    )}
+                                    {item.codigoSesion && (
+                                      <span className="text-[9px] bg-amber-950/50 border border-amber-700/30 text-amber-300 px-1.5 py-0.5 rounded font-mono lowercase">
+                                        {item.codigoSesion}
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                    {item.nombreCompleto}{item.email !== '-' ? ` • ${item.email}` : ''}
+                                  </p>
+                                </div>
+                              </td>
 
-                        {/* Artista */}
-                        <td className="py-3.5 px-3">
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <p className="font-extrabold text-white uppercase tracking-wide flex items-center gap-1.5">
-                                <span>{item.nombreArtistico}</span>
-                                {item.esClienteRegistrado ? (
-                                  <span className="text-[8px] bg-emerald-950/80 border border-emerald-800/40 text-emerald-400 px-1 rounded uppercase tracking-wider font-normal">
-                                    Registrado
-                                  </span>
+                              {/* Nivel */}
+                              <td className="py-3.5 px-3 text-center">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-black whitespace-nowrap ${levelBadge.color}`}>
+                                  {levelBadge.shortLabel}
+                                </span>
+                              </td>
+
+                              {/* Estrellas Pasaporte */}
+                              <td className="py-3.5 px-3 w-48 min-w-[175px]">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="font-black text-amber-400 flex items-center gap-1">
+                                      <Star className={`w-3.5 h-3.5 ${stars > 0 ? 'fill-amber-400 text-amber-400' : 'text-gray-600'}`} />
+                                      {stars} / {VIP_MAX_STARS} ⭐
+                                    </span>
+                                    <span className="text-[9px] text-gray-500 font-mono">{Math.round(percentage)}%</span>
+                                  </div>
+                                  <div className="w-full bg-black/50 border border-gray-800 h-2 rounded-full overflow-hidden">
+                                    <div
+                                      className="bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Próxima Recompensa */}
+                              <td className="py-3.5 px-3">
+                                {nextMilestone ? (
+                                  <div>
+                                    <p className="font-bold text-gray-200">{nextMilestone.badge}</p>
+                                    <p className="text-[9px] text-gray-500 mt-0.5">
+                                      Faltan <strong className="text-amber-400">{starsFaltantes}</strong> {starsFaltantes === 1 ? 'estrella' : 'estrellas'} (meta {nextMilestone.pts} ⭐)
+                                    </p>
+                                  </div>
                                 ) : (
-                                  <span className="text-[8px] bg-gray-950/80 border border-gray-800 text-gray-500 px-1 rounded uppercase tracking-wider font-normal">
-                                    Invitado
+                                  <span className="text-[10px] text-emerald-400 font-black bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded uppercase tracking-wider">
+                                    👑 Premio 20/20 Listo
                                   </span>
                                 )}
-                              </p>
-                              <p className="text-[10px] text-gray-500 font-mono mt-0.5">{item.nombreCompleto} • {item.email}</p>
-                            </div>
-                          </div>
-                        </td>
+                              </td>
 
-                        {/* Horas de Vuelo */}
-                        <td className="py-3.5 px-3 text-center">
-                          <span className="inline-flex items-center gap-1 font-extrabold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md font-mono text-xs">
-                            <Flame className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" />
-                            {horas} hrs
-                          </span>
-                        </td>
+                              {/* Controles Manuales de Estrellas */}
+                              <td className="py-3.5 px-3">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  {item.cliente ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        disabled={stars <= 0}
+                                        onClick={() => handleRestarEstrella(item.cliente!)}
+                                        className="p-1.5 rounded-lg border border-gray-800 bg-[#111827] hover:bg-red-950/50 hover:border-red-800 text-gray-400 hover:text-red-400 disabled:opacity-30 disabled:pointer-events-none transition"
+                                        title="Restar 1 estrella"
+                                      >
+                                        <Minus className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={stars >= VIP_MAX_STARS}
+                                        onClick={() => handleAbrirOtorgarEstrella(item.cliente!.id, item.nombreArtistico)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-[10px] uppercase tracking-wider disabled:opacity-40 disabled:pointer-events-none transition shadow-md"
+                                        title="Tema entregado y facturado: sumar +1 ⭐"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        <span>1 ⭐ Facturado</span>
+                                      </button>
+                                      {history.length > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setHistorialAbiertoId(isHistoryOpen ? null : item.cliente!.id)}
+                                          className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border text-[10px] font-bold transition ${
+                                            isHistoryOpen
+                                              ? 'bg-zinc-800 border-amber-500/50 text-amber-300'
+                                              : 'bg-[#111827] border-gray-800 text-gray-400 hover:text-white'
+                                          }`}
+                                          title="Ver temas entregados y facturados"
+                                        >
+                                          <History className="w-3 h-3" />
+                                          <span>{history.length}</span>
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const created = ensureOrGetClienteByNombre(item.nombreArtistico);
+                                        cargarDatos();
+                                        handleAbrirOtorgarEstrella(created.id, created.nombreArtistico);
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/90 hover:bg-amber-400 text-black font-black text-[10px] uppercase tracking-wider transition"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>Activar y +1 ⭐</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
 
-                        {/* Progreso Visual */}
-                        <td className="py-3.5 px-3 w-40 min-w-[150px]">
-                          <div className="space-y-1">
-                            <div className="w-full bg-black/40 border border-gray-800 h-2 rounded-full overflow-hidden">
-                              <div 
-                                className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 h-full rounded-full transition-all duration-1000"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            <span className="text-[9px] text-gray-500 font-mono block text-right">
-                              {horas}/25h ({Math.round(percentage)}%)
-                            </span>
-                          </div>
-                        </td>
+                              {/* Contacto CRM */}
+                              <td className="py-3.5 px-3 text-right">
+                                {item.whatsapp ? (
+                                  <a
+                                    href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                      `Hola ${item.nombreArtistico}! Te escribimos de La Facultad Studio. Tienes ${stars}/20 estrellas ⭐ en tu Pasaporte VIP${
+                                        nextMilestone
+                                          ? ` y te faltan solo ${starsFaltantes} ${starsFaltantes === 1 ? 'estrella' : 'estrellas'} para desbloquear: ${nextMilestone.badge}`
+                                          : ' (¡Pasaporte VIP 20/20 completado!)'
+                                      }. ¿Agendamos tu próximo tema?`
+                                    )}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2.5 py-1.5 rounded text-[10px] uppercase tracking-wider transition-all"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-[10px] text-gray-600 italic">Sin teléfono</span>
+                                )}
+                              </td>
+                            </tr>
 
-                        {/* Próximo Escalón */}
-                        <td className="py-3.5 px-3">
-                          {nextMilestone ? (
-                            <div>
-                              <p className="font-bold text-gray-300">{nextMilestone.label}</p>
-                              <p className="text-[9px] text-gray-500 mt-0.5">Desbloquea a las {nextMilestone.pts}h</p>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-emerald-400 font-black bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded uppercase tracking-wider">
-                              👑 Rango Máximo Leyenda
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Estado de Alerta */}
-                        <td className="py-3.5 px-3 text-center">
-                          {estaMuyCerca ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] bg-red-950/80 border border-red-700/30 text-red-400 font-black px-2 py-1 rounded animate-pulse uppercase tracking-wider">
-                              ⚠️ ¡Cerca! Faltan {horasFaltantes}h
-                            </span>
-                          ) : nextMilestone ? (
-                            <span className="text-[9px] bg-gray-900 border border-gray-800 text-gray-500 px-2 py-1 rounded font-mono">
-                              Faltan {horasFaltantes}h
-                            </span>
-                          ) : (
-                            <span className="text-[9px] bg-emerald-950/20 border border-emerald-900/30 text-emerald-400 font-mono px-2 py-1 rounded">
-                              Completado
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Contacto CRM */}
-                        <td className="py-3.5 px-3 text-right">
-                          {item.whatsapp && item.whatsapp !== '-' ? (
-                            <a
-                              href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(item.nombreArtistico)}!%20Te%20escribimos%20de%20La%20Facultad%20Studio.%20Tienes%20${horas}%20Horas%20de%20Vuelo%20con%20nosotros%20y%20te%20faltan%20solo%20${horasFaltantes}%20horas%20para%20tu%20pr%C3%B3xima%20recompensa%20(${encodeURIComponent(nextMilestone?.label || '')}).%20%C2%BFTe%20gustar%C3%ADa%20agendar%20tu%20pr%C3%B3xima%20sesi%C3%B3n?`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-1.5 rounded text-[10px] uppercase tracking-wider transition-all"
-                            >
-                              <Phone className="w-3 h-3" />
-                              <span>Fidelizar WA</span>
-                            </a>
-                          ) : (
-                            <span className="text-[10px] text-gray-600 italic">Sin teléfono</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            {/* Historial expandible de estrellas facturadas */}
+                            {isHistoryOpen && history.length > 0 && (
+                              <tr className="bg-black/40">
+                                <td colSpan={6} className="px-4 py-3">
+                                  <div className="space-y-1.5">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                                      Historial de Temas Entregados &amp; Facturados — {item.nombreArtistico}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                      {history.map(h => (
+                                        <div key={h.id} className="flex items-center justify-between gap-2 bg-[#111827] border border-white/5 rounded-lg px-3 py-2 text-[10px]">
+                                          <div className="min-w-0">
+                                            <p className="font-bold text-white truncate">{h.tema || 'Servicio Facturado'}</p>
+                                            {h.nota && <p className="text-gray-400 truncate">{h.nota}</p>}
+                                          </div>
+                                          <div className="shrink-0 text-right">
+                                            <span className={`font-black ${h.delta >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                                              {h.delta >= 0 ? `+${h.delta} ⭐` : `${h.delta} ⭐`}
+                                            </span>
+                                            <span className="block text-[9px] text-gray-500 font-mono">{h.fecha}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           );
         })()}
       </div>
+
+      {/* MODAL PARA SUMAR +1 ⭐ POR TEMA ENTREGADO & FACTURADO */}
+      {artistaOtorgando && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#18181b] border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <span>Sumar +1 ⭐ al Pasaporte VIP</span>
+                </h3>
+                <p className="text-[11px] text-amber-300 font-bold mt-0.5">{artistaOtorgando.nombreArtistico}</p>
+              </div>
+              <button onClick={() => setArtistaOtorgando(null)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarOtorgarEstrella} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-gray-300 font-bold mb-1">Tema o Servicio Entregado (Opcional)</label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Ej: Track 'Nocturno' — Mezcla y Master"
+                  className="w-full bg-[#111827] border border-gray-700 text-white p-2.5 rounded-lg outline-none focus:border-amber-400"
+                  value={temaEstrella}
+                  onChange={e => setTemaEstrella(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-bold mb-1">Referencia de Factura / Pago (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Factura #024 · ATH Móvil Pagado"
+                  className="w-full bg-[#111827] border border-gray-700 text-white p-2.5 rounded-lg outline-none focus:border-amber-400"
+                  value={notaEstrella}
+                  onChange={e => setNotaEstrella(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setArtistaOtorgando(null)}
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-gray-200 font-bold py-2.5 rounded-lg text-xs uppercase tracking-wider transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-black py-2.5 rounded-lg text-xs uppercase tracking-wider transition"
+                >
+                  Confirmar +1 ⭐
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* SECCIÓN NUEVA: GESTIÓN DE ARCHIVOS DE ARTISTAS */}
       <div className="antigravity-glass border border-white/10 p-6 sm:p-7 rounded-3xl space-y-5 shadow-2xl mt-6">
@@ -3313,7 +3657,7 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
 
             <form onSubmit={handleUpdateCliente} className="space-y-4 text-xs">
               <div>
-                <label className="block text-gray-400 font-bold mb-1">Nombre Artístico</label>
+                <label className="block text-gray-400 font-bold mb-1">Nombre Artístico *</label>
                 <input
                   type="text"
                   required
@@ -3327,18 +3671,40 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                 <label className="block text-gray-400 font-bold mb-1">Nombre Real / Legal</label>
                 <input
                   type="text"
-                  required
                   className="w-full bg-[#111827] border border-gray-800 text-white p-2 rounded outline-none"
                   value={clienteEditando.nombreReal}
                   onChange={e => setClienteEditando({ ...clienteEditando, nombreReal: e.target.value })}
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-gray-400 font-bold mb-1">Código Portal VIP</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: zyrontukutu"
+                    className="w-full bg-[#111827] border border-gray-800 text-amber-400 p-2 rounded outline-none font-mono"
+                    value={clienteEditando.codigoSesion || ''}
+                    onChange={e => setClienteEditando({ ...clienteEditando, codigoSesion: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 font-bold mb-1">Estrellas VIP (0–20 ⭐)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={VIP_MAX_STARS}
+                    className="w-full bg-[#111827] border border-gray-800 text-amber-400 font-black p-2 rounded outline-none"
+                    value={clampVipStars(clienteEditando.estrellasVip)}
+                    onChange={e => setClienteEditando({ ...clienteEditando, estrellasVip: clampVipStars(Number(e.target.value)) })}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-gray-400 font-bold mb-1">Email de Contacto</label>
                 <input
                   type="email"
-                  required
                   className="w-full bg-[#111827] border border-gray-800 text-white p-2 rounded outline-none font-mono"
                   value={clienteEditando.email}
                   onChange={e => setClienteEditando({ ...clienteEditando, email: e.target.value })}
@@ -3350,7 +3716,6 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                   <label className="block text-gray-400 font-bold mb-1">Teléfono</label>
                   <input
                     type="text"
-                    required
                     className="w-full bg-[#111827] border border-gray-800 text-white p-2 rounded outline-none"
                     value={clienteEditando.telefono}
                     onChange={e => setClienteEditando({ ...clienteEditando, telefono: e.target.value })}
@@ -3360,7 +3725,6 @@ Estado de Pase: ${reserva.estado.toUpperCase()} 🚨
                   <label className="block text-gray-400 font-bold mb-1">Instagram (@)</label>
                   <input
                     type="text"
-                    required
                     className="w-full bg-[#111827] border border-gray-800 text-white p-2 rounded outline-none font-semibold text-amber-500"
                     value={clienteEditando.instagram}
                     onChange={e => setClienteEditando({ ...clienteEditando, instagram: e.target.value })}

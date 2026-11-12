@@ -111,7 +111,7 @@ export const EntrySelectionScreen: React.FC<EntrySelectionScreenProps> = ({ onSe
                   Panel Admin
                 </h3>
                 <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                  Administra reservas, control de pagos, gestión de proyectos de mezcla/master y ranking de artistas con horas de vuelo.
+                  Administra reservas, control de pagos, gestión de proyectos de mezcla/master y Pasaporte VIP (estrellas por servicio entregado).
                 </p>
               </div>
             </div>
