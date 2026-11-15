@@ -149,7 +149,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     setAthComprobanteNombre('');
   };
 
-  const [selectedPackage, setSelectedPackage] = useState<'promo' | 'pro' | 'full' | 'mezcla' | 'express' | 'combo_3' | 'combo_4' | 'prod_cuarto' | 'prod_artista' | 'prod_eng' | null>('promo');
+  const [selectedPackage, setSelectedPackage] = useState<'promo' | 'pro' | 'full' | 'mezcla' | 'instrumental' | 'express' | 'combo_3' | 'combo_4' | 'prod_cuarto' | 'prod_artista' | 'prod_eng' | null>('promo');
   const [fechasSeleccionadasBloque, setFechasSeleccionadasBloque] = useState<string[]>(['2026-08-10']);
   const [esReservaEnBloque, setEsReservaEnBloque] = useState<boolean>(false);
   const [roughAudioPlaying, setRoughAudioPlaying] = useState<boolean>(false);
@@ -394,13 +394,21 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         { name: '★ Descuento Combo "Producción Integral"', price: -50, isDiscount: true },
       ];
     } else if (selectedPackage === 'mezcla' || (!formData.servicios.grabacion && !formData.servicios.instrumental && formData.servicios.mezclaMaster && !formData.servicios.produccionCompleta)) {
-      // 3. Paquete Mezcla y Master ($125 USD)
-      baseSub = 125;
-      baseDep = 50; // $50 individual
+      // 3. Paquete Mezcla y Master ($150 USD)
+      baseSub = 150;
+      baseDep = 75; // 50% de $150
       baseBal = 75;
       baseItems = [
-        { name: '🎚️ Mezcla Profesional Multitrack & Afinación', price: 85 },
-        { name: '🔊 Masterización Comercial (Estándar Streaming)', price: 40 },
+        { name: '🎚️ Mezcla Profesional Multitrack & Afinación', price: 100 },
+        { name: '🔊 Masterización Comercial (Estándar Streaming)', price: 50 },
+      ];
+    } else if (selectedPackage === 'instrumental' || (!formData.servicios.grabacion && formData.servicios.instrumental && !formData.servicios.mezclaMaster && !formData.servicios.produccionCompleta)) {
+      // 4. Paquete Instrumental Exclusiva ($200+ USD)
+      baseSub = 200;
+      baseDep = 100; // 50% de $200
+      baseBal = 100;
+      baseItems = [
+        { name: '🎹 Instrumental Exclusiva a Medida (Prod. Badlenz)', price: 200 },
       ];
     } else if (selectedPackage === 'express' || (formData.servicios.grabacion && !formData.servicios.mezclaMaster && !formData.servicios.instrumental && !formData.servicios.produccionCompleta && durH === 3)) {
       // 4. Paquete Express: Grabación & Pre-mezcla ($165 USD)
@@ -547,7 +555,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     setTimeout(() => setCopiedAthPhone(false), 2500);
   };
 
-  const handleSelectPackage = (pkg: 'promo' | 'full' | 'pro' | 'mezcla' | 'express' | 'combo_3' | 'combo_4' | 'prod_cuarto' | 'prod_artista' | 'prod_eng') => {
+  const handleSelectPackage = (pkg: 'promo' | 'full' | 'pro' | 'mezcla' | 'instrumental' | 'express' | 'combo_3' | 'combo_4' | 'prod_cuarto' | 'prod_artista' | 'prod_eng') => {
     setSelectedPackage(pkg);
     if (pkg === 'promo') {
       setFormData(prev => ({
@@ -581,6 +589,15 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         ...prev,
         servicios: { grabacion: false, instrumental: false, mezclaMaster: true, produccionCompleta: false },
         tipoInstrumental: 'drive',
+        horaInicio: '13:00',
+        horaSalida: '17:00'
+      }));
+      setEsReservaEnBloque(false);
+    } else if (pkg === 'instrumental') {
+      setFormData(prev => ({
+        ...prev,
+        servicios: { grabacion: false, instrumental: true, mezclaMaster: false, produccionCompleta: false },
+        tipoInstrumental: 'ninguna',
         horaInicio: '13:00',
         horaSalida: '17:00'
       }));
@@ -1493,349 +1510,152 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
             </div>
           </div>
 
-          {/* Categorías de paquetes en tabs horizontales minimalistas */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none font-dmsans">
-            <button
-              type="button"
-              onClick={() => setTarifasCategory('populares')}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                tarifasCategory === 'populares'
-                  ? 'bg-rose-600 text-white font-bold shadow-md shadow-rose-950/40'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+          {/* Planes principales de Grabación & Producción */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fadeIn">
+            {/* Paquete 0: Promo Reapertura */}
+            <div 
+              onClick={() => handleSelectPackage('promo')}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+                selectedPackage === 'promo'
+                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
+                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
               }`}
             >
-              Más Solicitados
-            </button>
-            <button
-              type="button"
-              onClick={() => setTarifasCategory('combos')}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                tarifasCategory === 'combos'
-                  ? 'bg-rose-600 text-white font-bold shadow-md shadow-rose-950/40'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
-              }`}
-            >
-              Combos de Temas (Ahorro EP)
-            </button>
-            <button
-              type="button"
-              onClick={() => setTarifasCategory('productores')}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                tarifasCategory === 'productores'
-                  ? 'bg-rose-600 text-white font-bold shadow-md shadow-rose-950/40'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
-              }`}
-            >
-              Productores &amp; Cuarto
-            </button>
-          </div>
-
-          {tarifasCategory === 'populares' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
-              {/* Paquete 0: Promo Reapertura */}
-              <div 
-                onClick={() => handleSelectPackage('promo')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
-                  selectedPackage === 'promo'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded">
-                      Promo Reapertura
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$130 USD</span>
-                  </div>
-
-                  <div className="mt-2.5 bg-black/50 border border-zinc-800 p-1.5 rounded-lg flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-zinc-400">Cupos:</span>
-                    <span className={`font-bold px-1.5 py-0.2 rounded text-[10px] ${
-                      promoSlotsInfo.disponibles > 0 ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
-                    }`}>
-                      {promoSlotsInfo.disponibles > 0 ? `${promoSlotsInfo.disponibles} de 6 libres` : 'Agotado'}
-                    </span>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-white mt-2.5">Promo Reapertura</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Bloque de 4h de sesión, premezcla entregada al finalizar la sesión, master final en 24-48h y 2 revisiones gratis.
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400">Depósito ATH: <strong className="text-white">$65</strong></span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-
-              {/* Paquete 1: Grabación, Mezcla y Master Pro */}
-              <div 
-                onClick={() => handleSelectPackage('pro')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
-                  selectedPackage === 'pro'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-zinc-800 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded">
-                      Más Popular
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$200 USD</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Grabación, Mezcla &amp; Master</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Traes tu beat (YouTube/WAV), 4-5h de sesión, premezcla al salir, master final en 24-48h y 2 revisiones gratis incluidas.
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$100</strong></span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-
-              {/* Paquete 2: Full Pack */}
-              <div 
-                onClick={() => handleSelectPackage('full')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
-                  selectedPackage === 'full'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
-                      Producción Total
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$350 – $400 USD</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Producción Integral (Full Song)</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Desarrollo completo desde cero: instrumental exclusivo a medida, arreglos, grabación (4-5h), tuning Melodyne, mezcla y master comercial.
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$175</strong></span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-
-              {/* Paquete 3: Mezcla y Master */}
-              <div 
-                onClick={() => handleSelectPackage('mezcla')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
-                  selectedPackage === 'mezcla'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded">
-                      Post-Producción
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$125 USD</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Solo Mezcla &amp; Master</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Envías tus canales grabados y beat. Mezcla multitrack, afinación Melodyne y master comercial listo para streaming.
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$62.50</strong></span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* COMBOS DE TEMAS */}
-          {tarifasCategory === 'combos' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
-              {/* Combo 1: 3 Canciones */}
-              <div
-                onClick={() => handleSelectPackage('combo_3')}
-                className={`p-5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                  selectedPackage === 'combo_3'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-300 px-2.5 py-0.5 rounded">
-                      Pack 3 Canciones
-                    </span>
-                    <div className="text-right">
-                      <span className="text-xs text-zinc-500 line-through font-mono mr-2">$600</span>
-                      <span className="text-lg font-bold text-white font-mono">$425 USD</span>
-                    </div>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Combo 3 Canciones</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    3 temas completos con grabación de voces, mezcla multitrack, afinación y master listo para plataformas. Ahorras $175 USD.
-                  </p>
-                  <div className="mt-2.5 text-[11px] text-zinc-400 font-mono bg-black/40 p-2.5 rounded border border-zinc-800">
-                    Depósito Requerido (50%): <strong className="text-rose-400">$212.50 USD</strong>
-                  </div>
-                </div>
-                <div className="mt-4 pt-2.5 border-t border-zinc-800 flex justify-between items-center text-[11px]">
-                  <span className="text-emerald-400 font-mono">Ahorro -$175 USD</span>
-                  <span className="text-rose-400 font-medium">Elegir Combo 3 Temas →</span>
-                </div>
-              </div>
-
-              {/* Combo 2: 4 Canciones */}
-              <div
-                onClick={() => handleSelectPackage('combo_4')}
-                className={`p-5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                  selectedPackage === 'combo_4'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-300 px-2.5 py-0.5 rounded">
-                      Pack 4 Canciones
-                    </span>
-                    <div className="text-right">
-                      <span className="text-xs text-zinc-500 line-through font-mono mr-2">$800</span>
-                      <span className="text-lg font-bold text-white font-mono">$550 USD</span>
-                    </div>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Combo 4 Canciones</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    4 temas completos con grabación de voces, mezcla multitrack, afinación y master comercial. Ahorras $250 USD.
-                  </p>
-                  <div className="mt-2.5 text-[11px] text-zinc-400 font-mono bg-black/40 p-2.5 rounded border border-zinc-800">
-                    Depósito Requerido (50%): <strong className="text-rose-400">$275.00 USD</strong>
-                  </div>
-                </div>
-                <div className="mt-4 pt-2.5 border-t border-zinc-800 flex justify-between items-center text-[11px]">
-                  <span className="text-emerald-400 font-mono">Ahorro -$250 USD</span>
-                  <span className="text-rose-400 font-medium">Elegir Combo 4 Temas →</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PRODUCTORES & BEATMAKERS */}
-          {tarifasCategory === 'productores' && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fadeIn">
-              <div
-                onClick={() => handleSelectPackage('prod_cuarto')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                  selectedPackage === 'prod_cuarto'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
-                      Cuarto de Control
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$35 / h</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Solo Cuarto (Beats)</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Sala de control, monitores Focal y acústica para producir tus temas (Mínimo 3h = $105 USD).
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800 text-[11px] flex justify-between text-zinc-400">
-                  <span>Mínimo 3 horas</span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-
-              <div
-                onClick={() => handleSelectPackage('prod_artista')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                  selectedPackage === 'prod_artista'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
-                      Sin Ingeniero
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$50 / h</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Productor + Artista</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Graba a tu propio artista operando tú mismo el studio tratado y microfonía profesional (Mínimo 2h = $100 USD).
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800 text-[11px] flex justify-between text-zinc-400">
-                  <span>Mínimo 2 horas</span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-
-              <div
-                onClick={() => handleSelectPackage('prod_eng')}
-                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                  selectedPackage === 'prod_eng'
-                    ? 'bg-[#151722] border-rose-500 shadow-xl ring-1 ring-rose-500/50'
-                    : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
-                      Asistencia Badlenz
-                    </span>
-                    <span className="text-base font-bold text-white font-mono">$75 / h</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mt-2.5">Productor + Engineering</h4>
-                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                    Tú diriges la producción musical mientras Badlenz opera niveles, ruteo y tracking profesional.
-                  </p>
-                </div>
-                <div className="mt-3.5 pt-2.5 border-t border-zinc-800 text-[11px] flex justify-between text-zinc-400">
-                  <span>Sesión Asistida</span>
-                  <span className="text-rose-400 font-medium">Elegir →</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* BANNER DE UPSELL INTELIGENTE (SCRIPT DE VENTAS DE VOLUMEN) */}
-          <div className="bg-gradient-to-r from-red-950/40 via-[#0e1017] to-amber-950/30 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xl">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-mono font-black text-amber-300">
-                    Ahorro por Volumen (EPs & Proyectos)
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded">
+                    Promo Reapertura
                   </span>
-                  <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.2 rounded font-mono border border-red-800">
-                    Ahorras hasta $250
+                  <span className="text-base font-bold text-white font-mono">$130 USD</span>
+                </div>
+
+                <div className="mt-2.5 bg-black/50 border border-zinc-800 p-1.5 rounded-lg flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-zinc-400">Cupos:</span>
+                  <span className={`font-bold px-1.5 py-0.2 rounded text-[10px] ${
+                    promoSlotsInfo.disponibles > 0 ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
+                  }`}>
+                    {promoSlotsInfo.disponibles > 0 ? `${promoSlotsInfo.disponibles} de 6 libres` : 'Agotado'}
                   </span>
                 </div>
-                <p className="text-gray-200 font-medium text-xs mt-0.5">
-                  ¿Trabajando varias canciones? En vez de individuales, monta tu paquete: <strong>3 canciones por $425</strong> o <strong>4 canciones por $550</strong> con grabación, mezcla y master comercial.
+
+                <h4 className="text-sm font-bold text-white mt-2.5">Promo Reapertura</h4>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Bloque de 4h de sesión, premezcla entregada al finalizar la sesión, master final en 24-48h y 2 revisiones gratis.
                 </p>
               </div>
+              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-zinc-400">Depósito ATH: <strong className="text-white">$65</strong></span>
+                <span className="text-rose-400 font-medium">Elegir →</span>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setTarifasCategory('combos');
-                handleSelectPackage('combo_3');
-              }}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-gray-950 font-black text-xs uppercase tracking-wider transition shrink-0 cursor-pointer shadow-md active:scale-95"
+
+            {/* Paquete 1: Grabación, Mezcla y Master Pro */}
+            <div 
+              onClick={() => handleSelectPackage('pro')}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+                selectedPackage === 'pro'
+                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
+                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+              }`}
             >
-              Ver Packs de Ahorro →
-            </button>
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-zinc-800 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded">
+                    Más Popular
+                  </span>
+                  <span className="text-base font-bold text-white font-mono">$200 USD</span>
+                </div>
+                <h4 className="text-sm font-bold text-white mt-2.5">Grabación, Mezcla &amp; Master</h4>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Traes tu beat (YouTube/WAV), 4-5h de sesión, premezcla al salir, master final en 24-48h y 2 revisiones gratis incluidas.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$100</strong></span>
+                <span className="text-rose-400 font-medium">Elegir →</span>
+              </div>
+            </div>
+
+            {/* Paquete 2: Full Pack */}
+            <div 
+              onClick={() => handleSelectPackage('full')}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+                selectedPackage === 'full'
+                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
+                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
+                    Producción Total
+                  </span>
+                  <span className="text-base font-bold text-white font-mono">$350 – $400 USD</span>
+                </div>
+                <h4 className="text-sm font-bold text-white mt-2.5">Producción Integral (Full Song)</h4>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Desarrollo completo desde cero: instrumental exclusivo a medida, arreglos, grabación (4-5h), tuning Melodyne, mezcla y master comercial.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$175</strong></span>
+                <span className="text-rose-400 font-medium">Elegir →</span>
+              </div>
+            </div>
+
+            {/* Paquete 3: Solo Mezcla y Master ($150 USD) */}
+            <div 
+              onClick={() => handleSelectPackage('mezcla')}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+                selectedPackage === 'mezcla'
+                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
+                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded">
+                    Post-Producción
+                  </span>
+                  <span className="text-base font-bold text-white font-mono">$150 USD</span>
+                </div>
+                <h4 className="text-sm font-bold text-white mt-2.5">Solo Mezcla &amp; Master</h4>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Envías tus canales grabados y beat. Mezcla multitrack, afinación Melodyne y master comercial listo para streaming.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$75</strong></span>
+                <span className="text-rose-400 font-medium">Elegir →</span>
+              </div>
+            </div>
+
+            {/* Paquete 4: Instrumental Exclusiva ($200+ USD) */}
+            <div 
+              onClick={() => handleSelectPackage('instrumental')}
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+                selectedPackage === 'instrumental'
+                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
+                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded">
+                    Beat Exclusivo
+                  </span>
+                  <span className="text-base font-bold text-white font-mono">$200+ USD</span>
+                </div>
+                <h4 className="text-sm font-bold text-white mt-2.5">Instrumental Exclusiva</h4>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Creación de pista e instrumental 100% original y exclusiva a tu medida por Badlenz, con entrega de stems WAV 24-bit.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$100</strong></span>
+                <span className="text-rose-400 font-medium">Elegir →</span>
+              </div>
+            </div>
           </div>
 
           {/* TARJETA DEL PROGRAMA DE REFERIDOS ($25 STUDIO CREDIT) */}
@@ -1992,11 +1812,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                       <span className="text-amber-400 font-black font-mono bg-amber-950/70 border border-amber-800/60 px-2.5 py-0.5 rounded text-xs flex items-center gap-1.5 shadow-sm">
                         <span>🔥</span>
                         {selectedPackage === 'promo' && 'Promo Reapertura · $130 USD'}
-                        {selectedPackage === 'pro' && 'Sesión Pro (Voz+Master) · $200 USD'}
-                        {selectedPackage === 'full' && 'Full Pack (Beat+Voces) · $350 USD'}
-                        {selectedPackage === 'mezcla' && 'Solo Mezcla & Master · $125 USD'}
-                        {selectedPackage === 'combo_3' && 'Combo 3 Canciones · $425 USD'}
-                        {selectedPackage === 'combo_4' && 'Combo 4 Canciones · $550 USD'}
+                        {selectedPackage === 'pro' && 'Grabación, Mezcla & Master · $200 USD'}
+                        {selectedPackage === 'full' && 'Producción Integral (Full Song) · $350 – $400 USD'}
+                        {selectedPackage === 'mezcla' && 'Solo Mezcla & Master · $150 USD'}
+                        {selectedPackage === 'instrumental' && 'Instrumental Exclusiva · $200+ USD'}
                       </span>
                     </div>
 
@@ -2010,9 +1829,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     <span className="text-[10px] text-gray-500 font-medium mr-1 hidden sm:inline">Cambiar a:</span>
                     {[
                       { id: 'promo', label: '🔥 Promo ($130)' },
-                      { id: 'pro', label: '⚡ Sesión Pro ($200)' },
-                      { id: 'full', label: '★ Full Pack ($350)' },
-                      { id: 'mezcla', label: '🎚️ Solo Mezcla ($125)' }
+                      { id: 'pro', label: '⚡ Grabación + Mix ($200)' },
+                      { id: 'full', label: '★ Full Song ($350)' },
+                      { id: 'mezcla', label: '🎚️ Solo Mezcla ($150)' },
+                      { id: 'instrumental', label: '🎹 Instrumental ($200+)' }
                     ].map(p => (
                       <button
                         key={p.id}
