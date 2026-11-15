@@ -725,7 +725,7 @@ export const AudioShowcaseAB: React.FC = () => {
                 className="w-full bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-200 fill-amber-200" />
-                <span>🔥 Quiero este sonido en mi tema (Apartar con $130) ➔</span>
+                <span>🔥 Quiero este sonido en mi tema (Apartar con $50) ➔</span>
               </button>
             </div>
           </div>

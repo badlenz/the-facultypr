@@ -229,7 +229,7 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
                 onClick={onBookClick}
                 className="bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-[11px] px-3 sm:px-3.5 py-1.5 rounded-xl uppercase tracking-wider transition shadow-md whitespace-nowrap active:scale-95 cursor-pointer"
               >
-                Apartar $130
+                Apartar ($50)
               </button>
             )}
 
