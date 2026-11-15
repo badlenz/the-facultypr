@@ -1496,218 +1496,495 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         </div>
       </ScrollReveal>
 
-      {/* 2. PAQUETES OFICIALES EN 1 CLIC (MODULAR TABS - LANDING PAGE VIEW) */}
+      {/* 2. PAQUETES OFICIALES EN 1 CLIC (ANTIGRAVITY SPATIAL + DESIGN-TASTE BENTO) */}
       <ScrollReveal delayMs={60}>
-        <div id="tarifas-estudio" className="antigravity-glass-panel border border-white/10 p-5 sm:p-7 rounded-3xl space-y-6 shadow-[0_30px_70px_rgba(0,0,0,0.7)] scroll-mt-24">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+        <section
+          id="tarifas-estudio"
+          aria-labelledby="tarifas-estudio-heading"
+          className="antigravity-glass-panel relative overflow-hidden border border-white/10 p-5 sm:p-8 rounded-3xl space-y-6 shadow-[0_30px_70px_rgba(0,0,0,0.75)] scroll-mt-24"
+        >
+          {/* Top Specular Glass Highlight Streak */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
+          <div className="absolute -top-24 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[130px] pointer-events-none" />
+          <div className="absolute -bottom-24 left-1/4 w-96 h-96 bg-amber-500/08 rounded-full blur-[130px] pointer-events-none" />
+
+          {/* Section Header */}
+          <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-5">
             <div>
-              <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider block">
-                Tarifario Oficial · La Facultad Studio
-              </span>
-              <h2 className="font-syne text-xl sm:text-2xl font-bold text-white tracking-tight mt-0.5">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span className="text-[10px] font-mono text-zinc-300 font-bold uppercase tracking-[0.18em]">
+                  Tarifario Oficial · La Facultad Studio
+                </span>
+              </div>
+              <h2
+                id="tarifas-estudio-heading"
+                className="font-syne text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight"
+              >
                 Planes de Grabación &amp; Producción
               </h2>
+              <p className="font-dmsans text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl">
+                Selecciona tu plan para bloquear tu turno en el calendario. Todos los planes incluyen monitoreo analógico sin latencia, entrega en WAV 24-bit y 2 revisiones de mezcla sin cargo.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-start md:self-auto bg-zinc-950/80 border border-white/10 px-3.5 py-2 rounded-2xl backdrop-blur-md">
+              <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="text-[11px] font-mono leading-tight">
+                <span className="text-zinc-400 block text-[10px] uppercase">Reserva Directa ATH Móvil</span>
+                <strong className="text-white lining-nums">Desde $50 USD de depósito</strong>
+              </div>
             </div>
           </div>
 
-          {/* Planes principales de Grabación & Producción */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fadeIn">
-            {/* Paquete 0: Promo Reapertura */}
-            <div 
-              onClick={() => handleSelectPackage('promo')}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
-                selectedPackage === 'promo'
-                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded">
-                    Promo Reapertura
+          {/* DESTACADO ESPACIAL: PROMO REAPERTURA ($130 USD) */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => handleSelectPackage('promo')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelectPackage('promo');
+              }
+            }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+              e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+            }}
+            className={`fx-spotlight-card antigravity-glass-card taste-card relative z-10 p-5 sm:p-6 rounded-2xl border cursor-pointer transition-all ${
+              selectedPackage === 'promo'
+                ? 'bg-gradient-to-r from-[#1c1018]/95 via-[#141622]/95 to-[#181210]/95 border-rose-500 ring-1 ring-rose-500/50 shadow-[0_24px_50px_rgba(225,29,72,0.22)]'
+                : 'bg-gradient-to-r from-[#140d13]/90 via-[#10131d]/90 to-[#121016]/90 border-white/10 hover:border-rose-500/50'
+            }`}
+          >
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase font-mono font-bold bg-rose-500/20 text-rose-200 border border-rose-500/40 px-2.5 py-1 rounded-full">
+                    <Flame className="w-3 h-3 text-rose-400" />
+                    <span>Promo Reapertura · 35% OFF</span>
                   </span>
-                  <span className="text-base font-bold text-white font-mono">$130 USD</span>
-                </div>
 
-                <div className="mt-2.5 bg-black/50 border border-zinc-800 p-1.5 rounded-lg flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-zinc-400">Cupos:</span>
-                  <span className={`font-bold px-1.5 py-0.2 rounded text-[10px] ${
-                    promoSlotsInfo.disponibles > 0 ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                    promoSlotsInfo.disponibles > 0
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/50'
+                      : 'bg-red-950/80 text-red-300 border-red-700/50'
                   }`}>
-                    {promoSlotsInfo.disponibles > 0 ? `${promoSlotsInfo.disponibles} de 6 libres` : 'Agotado'}
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>
+                      {promoSlotsInfo.disponibles > 0
+                        ? `Cupos disponibles: ${promoSlotsInfo.disponibles} de 6`
+                        : 'Cupos agotados'}
+                    </span>
+                  </span>
+
+                  {selectedPackage === 'promo' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2.5 py-1 rounded-full">
+                      <Check className="w-3 h-3" /> Plan Seleccionado
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-syne text-lg sm:text-xl font-bold text-white tracking-tight">
+                    Promo Reapertura — Canción Completa Terminada
+                  </h3>
+                  <p className="font-dmsans text-xs sm:text-sm text-zinc-300 mt-1 leading-relaxed">
+                    Bloque oficial de 4 horas de grabación vocal con dirección de Badlenz, afinación Melodyne en vivo, premezcla entregada al salir del estudio y mezcla + máster comercial WAV 24-bit en 24 a 48 horas.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[11px] font-mono text-zinc-300">
+                  <span className="bg-black/45 border border-white/10 px-2.5 py-1 rounded-lg">✓ 4h de Sesión</span>
+                  <span className="bg-black/45 border border-white/10 px-2.5 py-1 rounded-lg">✓ Rough Mix el Mismo Día</span>
+                  <span className="bg-black/45 border border-white/10 px-2.5 py-1 rounded-lg">✓ Mezcla + Máster WAV 24-bit</span>
+                  <span className="bg-black/45 border border-white/10 px-2.5 py-1 rounded-lg">✓ 2 Revisiones Gratis</span>
+                </div>
+              </div>
+
+              <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-white/10 lg:pl-6 shrink-0">
+                <div className="text-left lg:text-right">
+                  <div className="flex items-baseline lg:justify-end gap-2">
+                    <span className="text-xs font-mono text-zinc-500 line-through lining-nums">$200</span>
+                    <span className="font-syne text-2xl sm:text-3xl font-extrabold text-white lining-nums tracking-tight">$130</span>
+                    <span className="text-xs font-mono text-zinc-400">USD</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-zinc-400 block mt-0.5">
+                    Depósito ATH: <strong className="text-amber-300 font-bold lining-nums">$50 USD</strong>
                   </span>
                 </div>
 
-                <h4 className="text-sm font-bold text-white mt-2.5">Promo Reapertura</h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Bloque de 4h de sesión, premezcla entregada al finalizar la sesión, master final en 24-48h y 2 revisiones gratis.
-                </p>
-              </div>
-              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito ATH: <strong className="text-white">$65</strong></span>
-                <span className="text-rose-400 font-medium">Elegir →</span>
+                <span className={`taste-btn inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-dmsans font-bold transition ${
+                  selectedPackage === 'promo'
+                    ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/60'
+                    : 'bg-white/10 hover:bg-rose-600 text-white border border-white/15'
+                }`}>
+                  <span>{selectedPackage === 'promo' ? 'Plan Activo' : 'Elegir Promo'}</span>
+                  <span>→</span>
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Paquete 1: Grabación, Mezcla y Master Pro */}
-            <div 
+          {/* CUADRÍCULA SIMÉTRICA DE 4 PLANES PRINCIPALES (EQUAL EDGES, ZERO ORPHAN COLUMNS) */}
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Plan 1: Grabación, Mezcla & Master ($200 USD) */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => handleSelectPackage('pro')}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectPackage('pro');
+                }
+              }}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+              className={`fx-spotlight-card antigravity-glass-card taste-card p-5 rounded-2xl border cursor-pointer flex flex-col justify-between ${
                 selectedPackage === 'pro'
-                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+                  ? 'bg-[#151824]/95 border-rose-500 ring-1 ring-rose-500/50 shadow-[0_20px_45px_rgba(225,29,72,0.2)]'
+                  : 'bg-[#0f121b]/90 border-white/10 hover:border-white/25'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono font-bold bg-zinc-800 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-zinc-800/90 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded-full">
                     Más Popular
                   </span>
-                  <span className="text-base font-bold text-white font-mono">$200 USD</span>
+                  {selectedPackage === 'pro' && (
+                    <span className="text-[10px] font-mono font-bold text-rose-400">● Activo</span>
+                  )}
                 </div>
-                <h4 className="text-sm font-bold text-white mt-2.5">Grabación, Mezcla &amp; Master</h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Traes tu beat (YouTube/WAV), 4-5h de sesión, premezcla al salir, master final en 24-48h y 2 revisiones gratis incluidas.
-                </p>
+
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-syne text-2xl font-extrabold text-white lining-nums tracking-tight">$200</span>
+                    <span className="text-xs font-mono text-zinc-400">USD / tema</span>
+                  </div>
+                  <h3 className="font-syne text-base font-bold text-white mt-1.5 leading-snug">
+                    Grabación, Mezcla &amp; Master
+                  </h3>
+                  <p className="font-dmsans text-xs text-zinc-400 mt-1.5 leading-relaxed">
+                    Traes tu pista (YouTube o WAV). Incluye 4–5h de grabación asistida, premezcla al salir y máster comercial en 24–48h.
+                  </p>
+                </div>
+
+                <ul className="space-y-1.5 pt-2 border-t border-white/10 text-[11px] font-dmsans text-zinc-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>Sesión de 4 a 5 horas en studio</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>Afinación Melodyne + Mezcla Pro</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>Máster WAV 24-bit + 2 revisiones</span>
+                  </li>
+                </ul>
               </div>
-              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito ATH: <strong className="text-white">$50</strong></span>
-                <span className="text-rose-400 font-medium">Elegir →</span>
+
+              <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+                <span className="font-mono text-[11px] text-zinc-400">
+                  Depósito ATH: <strong className="text-white font-bold lining-nums">$50</strong>
+                </span>
+                <span className={`taste-btn px-3 py-1.5 rounded-lg font-dmsans font-bold text-[11px] transition ${
+                  selectedPackage === 'pro'
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-rose-300'
+                }`}>
+                  {selectedPackage === 'pro' ? 'Seleccionado ✓' : 'Elegir Plan →'}
+                </span>
               </div>
             </div>
 
-            {/* Paquete 2: Full Pack */}
-            <div 
+            {/* Plan 2: Producción Integral (Full Song) ($350 - $400 USD) */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => handleSelectPackage('full')}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectPackage('full');
+                }
+              }}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+              className={`fx-spotlight-card antigravity-glass-card taste-card p-5 rounded-2xl border cursor-pointer flex flex-col justify-between ${
                 selectedPackage === 'full'
-                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+                  ? 'bg-[#151824]/95 border-amber-400 ring-1 ring-amber-400/50 shadow-[0_20px_45px_rgba(245,158,11,0.18)]'
+                  : 'bg-[#0f121b]/90 border-white/10 hover:border-amber-500/40'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full">
                     Producción Total
                   </span>
-                  <span className="text-base font-bold text-white font-mono">$350 – $400 USD</span>
+                  {selectedPackage === 'full' && (
+                    <span className="text-[10px] font-mono font-bold text-amber-400">● Activo</span>
+                  )}
                 </div>
-                <h4 className="text-sm font-bold text-white mt-2.5">Producción Integral (Full Song)</h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Desarrollo completo desde cero: instrumental exclusivo a medida, arreglos, grabación (4-5h), tuning Melodyne, mezcla y master comercial.
-                </p>
+
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-syne text-2xl font-extrabold text-white lining-nums tracking-tight">$350 – $400</span>
+                    <span className="text-xs font-mono text-zinc-400">USD</span>
+                  </div>
+                  <h3 className="font-syne text-base font-bold text-white mt-1.5 leading-snug">
+                    Producción Completa (Full Song)
+                  </h3>
+                  <p className="font-dmsans text-xs text-zinc-400 mt-1.5 leading-relaxed">
+                    Creación integral desde cero: instrumental exclusiva a tu medida, dirección vocal (4–5h), mezcla multitrack y máster final.
+                  </p>
+                </div>
+
+                <ul className="space-y-1.5 pt-2 border-t border-white/10 text-[11px] font-dmsans text-zinc-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Beat exclusivo + Arreglos a medida</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Grabación de voces (4–5h) + Tuning</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Mezcla por stems + Máster comercial</span>
+                  </li>
+                </ul>
               </div>
-              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$175</strong></span>
-                <span className="text-rose-400 font-medium">Elegir →</span>
+
+              <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+                <span className="font-mono text-[11px] text-zinc-400">
+                  Depósito 50%: <strong className="text-white font-bold lining-nums">$175</strong>
+                </span>
+                <span className={`taste-btn px-3 py-1.5 rounded-lg font-dmsans font-bold text-[11px] transition ${
+                  selectedPackage === 'full'
+                    ? 'bg-amber-500 text-gray-950'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-amber-300'
+                }`}>
+                  {selectedPackage === 'full' ? 'Seleccionado ✓' : 'Elegir Plan →'}
+                </span>
               </div>
             </div>
 
-            {/* Paquete 3: Solo Mezcla y Master ($150 USD) */}
-            <div 
+            {/* Plan 3: Solo Mezcla & Master ($150 USD) */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => handleSelectPackage('mezcla')}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectPackage('mezcla');
+                }
+              }}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+              className={`fx-spotlight-card antigravity-glass-card taste-card p-5 rounded-2xl border cursor-pointer flex flex-col justify-between ${
                 selectedPackage === 'mezcla'
-                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+                  ? 'bg-[#151824]/95 border-cyan-400 ring-1 ring-cyan-400/50 shadow-[0_20px_45px_rgba(34,211,238,0.18)]'
+                  : 'bg-[#0f121b]/90 border-white/10 hover:border-cyan-500/40'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2.5 py-1 rounded-full">
                     Post-Producción
                   </span>
-                  <span className="text-base font-bold text-white font-mono">$150 USD</span>
+                  {selectedPackage === 'mezcla' && (
+                    <span className="text-[10px] font-mono font-bold text-cyan-400">● Activo</span>
+                  )}
                 </div>
-                <h4 className="text-sm font-bold text-white mt-2.5">Solo Mezcla &amp; Master</h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Envías tus canales grabados y beat. Mezcla multitrack, afinación Melodyne y master comercial listo para streaming.
-                </p>
+
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-syne text-2xl font-extrabold text-white lining-nums tracking-tight">$150</span>
+                    <span className="text-xs font-mono text-zinc-400">USD / track</span>
+                  </div>
+                  <h3 className="font-syne text-base font-bold text-white mt-1.5 leading-snug">
+                    Solo Mezcla &amp; Master
+                  </h3>
+                  <p className="font-dmsans text-xs text-zinc-400 mt-1.5 leading-relaxed">
+                    Envías tus voces grabadas y pista. Balance multitrack, afinación vocal precisa y masterización comercial para plataformas.
+                  </p>
+                </div>
+
+                <ul className="space-y-1.5 pt-2 border-t border-white/10 text-[11px] font-dmsans text-zinc-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Mezcla vocal y balance de stems</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Afinación Melodyne + Procesamiento</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Máster comercial WAV 24-bit</span>
+                  </li>
+                </ul>
               </div>
-              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$75</strong></span>
-                <span className="text-rose-400 font-medium">Elegir →</span>
+
+              <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+                <span className="font-mono text-[11px] text-zinc-400">
+                  Depósito 50%: <strong className="text-white font-bold lining-nums">$75</strong>
+                </span>
+                <span className={`taste-btn px-3 py-1.5 rounded-lg font-dmsans font-bold text-[11px] transition ${
+                  selectedPackage === 'mezcla'
+                    ? 'bg-cyan-500 text-gray-950'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-cyan-300'
+                }`}>
+                  {selectedPackage === 'mezcla' ? 'Seleccionado ✓' : 'Elegir Plan →'}
+                </span>
               </div>
             </div>
 
-            {/* Paquete 4: Instrumental Exclusiva ($200+ USD) */}
-            <div 
+            {/* Plan 4: Instrumental Exclusiva ($200+ USD) — Zero Violet, Emerald/Gold Studio Palette */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => handleSelectPackage('instrumental')}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative flex flex-col justify-between ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectPackage('instrumental');
+                }
+              }}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+              className={`fx-spotlight-card antigravity-glass-card taste-card p-5 rounded-2xl border cursor-pointer flex flex-col justify-between ${
                 selectedPackage === 'instrumental'
-                  ? 'bg-[#151722] border-rose-500 shadow-xl shadow-rose-950/30 ring-1 ring-rose-500/50'
-                  : 'bg-[#10121a] border-zinc-800/90 hover:border-zinc-700'
+                  ? 'bg-[#151824]/95 border-emerald-400 ring-1 ring-emerald-400/50 shadow-[0_20px_45px_rgba(16,185,129,0.18)]'
+                  : 'bg-[#0f121b]/90 border-white/10 hover:border-emerald-500/40'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
                     Beat Exclusivo
                   </span>
-                  <span className="text-base font-bold text-white font-mono">$200+ USD</span>
+                  {selectedPackage === 'instrumental' && (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400">● Activo</span>
+                  )}
                 </div>
-                <h4 className="text-sm font-bold text-white mt-2.5">Instrumental Exclusiva</h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Creación de pista e instrumental 100% original y exclusiva a tu medida por Badlenz, con entrega de stems WAV 24-bit.
-                </p>
-              </div>
-              <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$100</strong></span>
-                <span className="text-rose-400 font-medium">Elegir →</span>
-              </div>
-            </div>
-          </div>
 
-          {/* TARJETA DEL PROGRAMA DE REFERIDOS ($25 STUDIO CREDIT) */}
-          <div className="bg-gradient-to-r from-emerald-950/30 via-[#0a0c12] to-zinc-950 border border-emerald-500/40 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
-                <DollarSign className="w-5 h-5" />
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-syne text-2xl font-extrabold text-white lining-nums tracking-tight">$200+</span>
+                    <span className="text-xs font-mono text-zinc-400">USD / beat</span>
+                  </div>
+                  <h3 className="font-syne text-base font-bold text-white mt-1.5 leading-snug">
+                    Instrumental Exclusiva
+                  </h3>
+                  <p className="font-dmsans text-xs text-zinc-400 mt-1.5 leading-relaxed">
+                    Pista 100% original y exclusiva producida desde cero a tu medida por Badlenz, con sonido comercial y licencia exclusiva.
+                  </p>
+                </div>
+
+                <ul className="space-y-1.5 pt-2 border-t border-white/10 text-[11px] font-dmsans text-zinc-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Composición y sound design original</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Entrega de Stems WAV 24-bit por canal</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Exclusividad total para tu lanzamiento</span>
+                  </li>
+                </ul>
               </div>
-              <div>
-                <span className="text-[10px] uppercase font-mono font-bold text-emerald-400 tracking-wider">
-                  Programa de Referidos Oficial
+
+              <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+                <span className="font-mono text-[11px] text-zinc-400">
+                  Depósito 50%: <strong className="text-white font-bold lining-nums">$100</strong>
                 </span>
-                <h4 className="text-sm font-bold text-white mt-0.5">
-                  Gana $25 de Crédito para tu Próxima Sesión
-                </h4>
-                <p className="text-zinc-400 text-xs mt-0.5 leading-relaxed">
-                  Refiere a un colega o cantante a La Facultad. Cuando reserve y complete su sesión, recibes <strong>$25 en Studio Credit</strong> directo para tus grabaciones, mezcla, master o beats.
+                <span className={`taste-btn px-3 py-1.5 rounded-lg font-dmsans font-bold text-[11px] transition ${
+                  selectedPackage === 'instrumental'
+                    ? 'bg-emerald-500 text-gray-950'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-emerald-300'
+                }`}>
+                  {selectedPackage === 'instrumental' ? 'Seleccionado ✓' : 'Elegir Plan →'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* PIE DE SECCIÓN UNIFICADO: PROGRAMA DE REFERIDOS + CONDICIONES DE OPERACIÓN */}
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 pt-1">
+            {/* Tarjeta del Programa de Referidos ($25 Studio Credit) */}
+            <div className="lg:col-span-5 bg-gradient-to-r from-emerald-950/35 via-[#0b0f17] to-[#0d1018] border border-emerald-500/35 rounded-2xl p-4 flex flex-col sm:flex-row lg:flex-col xl:flex-row sm:items-center justify-between gap-3.5 text-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-mono font-bold text-emerald-400 tracking-wider block">
+                    Programa de Referidos · Studio Credit
+                  </span>
+                  <h4 className="font-syne text-sm font-bold text-white mt-0.5">
+                    Gana $25 USD para tu próxima sesión
+                  </h4>
+                  <p className="font-dmsans text-zinc-400 text-[11px] mt-0.5 leading-snug">
+                    Refiere a un artista y recibe <strong className="text-zinc-200">$25 en crédito</strong> al completarse su sesión.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Quiero%20referir%20a%20un%20colega%20para%20grabar%20en%20La%20Facultad."
+                target="_blank"
+                rel="noreferrer"
+                className="taste-btn px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-dmsans font-bold rounded-xl text-xs whitespace-nowrap transition shrink-0 flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/50 cursor-pointer"
+              >
+                <span>Referir Artista</span>
+                <span>→</span>
+              </a>
+            </div>
+
+            {/* Condiciones de Operación */}
+            <div className="lg:col-span-7 bg-black/50 p-4 rounded-2xl border border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px] items-center">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono text-amber-400 uppercase font-bold block">01 · Depósito Oficial</span>
+                <p className="font-dmsans text-zinc-300 leading-snug">
+                  <strong className="text-white lining-nums">$50 USD</strong> en sesiones de grabación • <strong className="text-white lining-nums">50%</strong> en producción o post-producción.
+                </p>
+              </div>
+              <div className="space-y-0.5 sm:border-l sm:border-white/10 sm:pl-3">
+                <span className="text-[10px] font-mono text-rose-400 uppercase font-bold block">02 · Revisiones</span>
+                <p className="font-dmsans text-zinc-300 leading-snug">
+                  <strong className="text-white lining-nums">2 revisiones gratis</strong> incluidas en cada tema (adicionales: $10 c/u).
+                </p>
+              </div>
+              <div className="space-y-0.5 sm:border-l sm:border-white/10 sm:pl-3">
+                <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold block">03 · Tiempos de Entrega</span>
+                <p className="font-dmsans text-zinc-300 leading-snug">
+                  <strong className="text-white">Rough Mix</strong> al terminar la sesión • Máster WAV 24-bit en <strong className="text-white lining-nums">24–48h</strong>.
                 </p>
               </div>
             </div>
-            <a
-              href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Quiero%20referir%20a%20un%20colega%20para%20grabar%20en%20La%20Facultad."
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition shrink-0 flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 cursor-pointer active:scale-95"
-            >
-              <span>Referir Colega</span>
-              <span>➔</span>
-            </a>
           </div>
-
-          {/* POLÍTICAS DE SALA CLARAS Y TRANSPARENTES */}
-          <div className="bg-black/50 p-4 rounded-xl border border-zinc-800/80 text-xs">
-            <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider block mb-2">
-              Condiciones de Operación · La Facultad Studio
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-zinc-400 text-[11px]">
-              <div>
-                <strong className="text-white block font-mono">1. Depósito Oficial:</strong>
-                <span>$50 por canción individual • 50% para paquetes vía ATH Móvil (787) 240-8627.</span>
-              </div>
-              <div>
-                <strong className="text-white block font-mono">2. Revisiones de Mezcla:</strong>
-                <span>2 revisiones gratis incluidas • La 3ra y siguientes: $10 cada una.</span>
-              </div>
-              <div>
-                <strong className="text-white block font-mono">3. Entrega &amp; Backup:</strong>
-                <span>Premezcla hoy mismo • Master final comercial en 24 a 48 horas.</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
       </ScrollReveal>
 
   {/* 3. FORMULARIO PRINCIPAL DE RESERVA & PASE VIP */}
