@@ -361,7 +361,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
     // 0. Paquete Promo Reapertura Badlenz 2026 ($130 USD) - Canción Individual
     const isPromoPkg = selectedPackage === 'promo' ||
-      (formData.servicios.grabacion && formData.servicios.mezclaMaster && !formData.servicios.instrumental && !formData.servicios.produccionCompleta && durH === 4);
+      (selectedPackage === null && formData.servicios.grabacion && formData.servicios.mezclaMaster && !formData.servicios.instrumental && !formData.servicios.produccionCompleta && durH === 4);
 
     if (isPromoPkg) {
       baseSub = 130;
@@ -372,7 +372,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         { name: '🎚️ Mezcla & Master Comercial Completo', price: 80 },
         { name: '🔥 Descuento Promo Reapertura 35% OFF (Cupo oficial 1 de 6)', price: -70, isDiscount: true },
       ];
-    } else if (selectedPackage === 'pro' || (formData.servicios.grabacion && formData.servicios.mezclaMaster && !formData.servicios.instrumental && !formData.servicios.produccionCompleta && durH === 5)) {
+    } else if (selectedPackage === 'pro' || (selectedPackage === null && formData.servicios.grabacion && formData.servicios.mezclaMaster && !formData.servicios.instrumental && !formData.servicios.produccionCompleta && durH === 5)) {
       // 1. Paquete Más Popular: Grabación, Mezcla y Master ($200 USD)
       baseSub = 200;
       baseDep = 50; // $50 por canción individual
@@ -1571,7 +1571,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                 </p>
               </div>
               <div className="mt-3.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Depósito 50%: <strong className="text-white">$100</strong></span>
+                <span className="text-zinc-400">Depósito ATH: <strong className="text-white">$50</strong></span>
                 <span className="text-rose-400 font-medium">Elegir →</span>
               </div>
             </div>
