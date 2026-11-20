@@ -13,6 +13,8 @@ import {
   Radio,
   CheckCircle2,
   Layers,
+  ListMusic,
+  Globe,
 } from 'lucide-react';
 import {
   BADLENZ_CAREER_SUMMARY,
@@ -78,13 +80,17 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
+const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/7Cq8IwtVRrlWRXsXTu2kUT';
+const SPOTIFY_PLAYLIST_EMBED_URL = 'https://open.spotify.com/embed/playlist/7Cq8IwtVRrlWRXsXTu2kUT?utm_source=generator&theme=0';
+const OBRA_PROFILE_URL = BADLENZ_CAREER_SUMMARY.obraUrl;
+
 export interface CreditsBentoGridProps {
   onBookSession?: () => void;
 }
 
 export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSession }) => {
   const { credits } = useResolvedBadlenzCredits();
-  const [viewMode, setViewMode] = useState<'featured' | 'all'>('featured');
+  const [viewMode, setViewMode] = useState<'obra' | 'featured' | 'all' | 'playlist'>('obra');
   const [roleFilter, setRoleFilter] = useState<'ALL' | CreditRoleKey | 'BMG'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -239,15 +245,15 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
     // 4 Verified Metric Cards
     const metrics = [
       {
-        label: 'CRÉDITOS VERIFICADOS',
-        value: `${BADLENZ_CAREER_SUMMARY.totalCredits}`,
-        sub: `${BADLENZ_CAREER_SUMMARY.musoCreditsCount} Muso.AI + ${BADLENZ_CAREER_SUMMARY.extraCreditsCount} BMG / Beatmaker`,
+        label: 'PROYECTOS & CRÉDITOS',
+        value: `${BADLENZ_CAREER_SUMMARY.obraProjectsCount}`,
+        sub: `OBRA PRO (${BADLENZ_CAREER_SUMMARY.totalCredits} Muso.AI + BMG)`,
         color: '#ffffff',
       },
       {
-        label: 'VISTAS YOUTUBE REALES',
-        value: `${formatCompact(BADLENZ_CAREER_SUMMARY.totalVerifiedYoutubeViews)}+`,
-        sub: `Conteo público real (${BADLENZ_CAREER_SUMMARY.tracksWithRealYoutube} videos)`,
+        label: 'STREAMS VERIFICADOS OBRA',
+        value: `${Math.round(BADLENZ_CAREER_SUMMARY.obraVerifiedStreams / 1_000_000)}M+`,
+        sub: `${formatCompact(BADLENZ_CAREER_SUMMARY.obraSpotifyStreams)} Spotify · ${formatCompact(BADLENZ_CAREER_SUMMARY.obraYoutubeViews)} YT`,
         color: '#f5d061',
       },
       {
@@ -291,7 +297,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
     ctx.fillStyle = '#71717a';
     ctx.font = '600 14px "JetBrains Mono", monospace';
     ctx.fillText(
-      'the-facultypr.vercel.app  ·  muso.ai/profile/d2deaa03-a0c9-48e5-83a3-9480fab7baa8  ·  BMG PUBLISHING',
+      'the-facultypr.vercel.app  ·  obra.art/badlenz  ·  muso.ai/profile/d2deaa03-a0c9-48e5-83a3-9480fab7baa8',
       68,
       478,
       1464
@@ -349,7 +355,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/15 text-[10px] font-mono text-zinc-200 font-bold uppercase tracking-wider">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              <span>Muso.AI + BMG Publishing</span>
+              <span>OBRA PRO · Muso.AI · BMG</span>
             </span>
           </div>
 
@@ -376,8 +382,29 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
           </div>
         </div>
 
-        {/* Actions: Muso Verified Profile + Download HD Banner */}
+        {/* Actions: OBRA PRO + Spotify Playlist + Muso Verified Profile + Download HD Banner */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <a
+            href={OBRA_PROFILE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600/25 to-amber-500/25 hover:from-red-600/40 hover:to-amber-500/40 border border-amber-400/55 text-xs font-mono font-bold text-white transition"
+            title="Abrir portafolio oficial verificado en obra.art/badlenz"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-300" />
+            <span>OBRA PRO</span>
+            <ExternalLink className="w-3 h-3 text-amber-300/80" />
+          </a>
+          <a
+            href={SPOTIFY_PLAYLIST_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/45 text-xs font-mono font-bold text-emerald-300 transition"
+            title="Abrir playlist oficial Produced By Badlenz en Spotify"
+          >
+            <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Playlist Spotify</span>
+          </a>
           <a
             href={BADLENZ_CAREER_SUMMARY.profileUrl}
             target="_blank"
@@ -401,33 +428,39 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
 
       {/* 2. VERIFIED MILESTONE STRIP (4 REAL KPI CARDS — ZERO FAKE NUMBERS) */}
       <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="rounded-2xl bg-gradient-to-br from-amber-500/15 via-[#10121a] to-[#0a0b12] border border-amber-400/35 p-4 flex flex-col justify-between">
+        <a
+          href={OBRA_PROFILE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group rounded-2xl bg-gradient-to-br from-amber-500/15 via-[#10121a] to-[#0a0b12] border border-amber-400/35 hover:border-amber-300/70 p-4 flex flex-col justify-between transition"
+          title="Ver desglose en vivo en obra.art/badlenz"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
-              Vistas YouTube Verificadas
+              Streams Verificados (OBRA)
             </span>
-            <Youtube className="w-4 h-4 text-red-500" />
+            <Globe className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-white tabular-nums">
-            {formatCompact(BADLENZ_CAREER_SUMMARY.totalVerifiedYoutubeViews)}+
+            {Math.round(BADLENZ_CAREER_SUMMARY.obraVerifiedStreams / 1_000_000)}M+
           </div>
           <p className="text-[11px] text-zinc-400 mt-1">
-            Conteo público real en {BADLENZ_CAREER_SUMMARY.tracksWithRealYoutube} videos oficiales
+            {formatCompact(BADLENZ_CAREER_SUMMARY.obraSpotifyStreams)} Spotify · {formatCompact(BADLENZ_CAREER_SUMMARY.obraYoutubeViews)} YT · {formatCompact(BADLENZ_CAREER_SUMMARY.obraSoundcloudStreams)} SC
           </p>
-        </div>
+        </a>
 
         <div className="rounded-2xl bg-[#0e1018]/90 border border-white/10 p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
-              Créditos Oficiales
+              Proyectos &amp; Créditos
             </span>
             <Disc3 className="w-4 h-4 text-red-400" />
           </div>
           <div className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-white tabular-nums">
-            {BADLENZ_CAREER_SUMMARY.totalCredits}
+            {BADLENZ_CAREER_SUMMARY.obraProjectsCount}
           </div>
           <p className="text-[11px] text-zinc-400 mt-1">
-            {BADLENZ_CAREER_SUMMARY.musoCreditsCount} Muso.AI · {BADLENZ_CAREER_SUMMARY.extraCreditsCount} BMG / Beatmaker
+            {BADLENZ_CAREER_SUMMARY.obraProjectsCount} en OBRA · {BADLENZ_CAREER_SUMMARY.totalCredits} Muso.AI / BMG
           </p>
         </div>
 
@@ -462,13 +495,29 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
         </div>
       </div>
 
-      {/* 3. TWO-TAB SWITCHER: DESTACADOS VS CATÁLOGO COMPLETO (85) */}
+      {/* 3. FOUR-TAB SWITCHER: OBRA LIVE, DESTACADOS, CATÁLOGO COMPLETO & PLAYLIST */}
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div
           role="tablist"
           aria-label="Vistas del catálogo de créditos"
-          className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto p-1 rounded-2xl bg-black/50 border border-white/10 self-start"
+          className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto p-1 gap-1 sm:gap-0 rounded-2xl bg-black/50 border border-white/10 self-start"
         >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === 'obra'}
+            onClick={() => setViewMode('obra')}
+            className={`px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-syne font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+              viewMode === 'obra'
+                ? 'bg-gradient-to-r from-amber-600 to-red-600 text-white shadow-md shadow-amber-950/60'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+            <span className="sm:hidden">OBRA Live</span>
+            <span className="hidden sm:inline">OBRA PRO Live (130M+)</span>
+          </button>
+
           <button
             type="button"
             role="tab"
@@ -481,8 +530,8 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-            <span className="sm:hidden">Destacados ({featuredCredits.length})</span>
-            <span className="hidden sm:inline">Destacados &amp; Milestones ({featuredCredits.length})</span>
+            <span className="sm:hidden">Destacados</span>
+            <span className="hidden sm:inline">Destacados ({featuredCredits.length})</span>
           </button>
 
           <button
@@ -498,15 +547,71 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
           >
             <Layers className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             <span className="sm:hidden">Catálogo ({BADLENZ_CAREER_SUMMARY.totalCredits})</span>
-            <span className="hidden sm:inline">Catálogo Completo ({BADLENZ_CAREER_SUMMARY.totalCredits})</span>
+            <span className="hidden sm:inline">Catálogo ({BADLENZ_CAREER_SUMMARY.totalCredits})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === 'playlist'}
+            onClick={() => setViewMode('playlist')}
+            className={`px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-syne font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+              viewMode === 'playlist'
+                ? 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <ListMusic className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+            <span className="sm:hidden">Playlist</span>
+            <span className="hidden sm:inline">Playlist Spotify</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
           <BadlenzLogo size="sm" />
-          <span>· Solo métricas públicas verificadas</span>
+          <span>· Métricas en vivo · OBRA + Muso.AI</span>
         </div>
       </div>
+
+      {/* 4.0 VIEW MODE: OBRA PRO LIVE PORTFOLIO (obra.art/badlenz) */}
+      {viewMode === 'obra' && (
+        <div className="relative z-10 rounded-2xl bg-[#0c0e16]/95 border border-amber-400/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
+                OBRA PRO · PORTAFOLIO DE CRÉDITOS EN VIVO
+              </span>
+              <h3 className="font-syne text-lg font-bold text-white">
+                obra.art/badlenz · 130M+ Streams Verificados
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Conteo diario verificado en Spotify, YouTube y SoundCloud, lanzamientos recientes y discografía completa.
+              </p>
+            </div>
+            <a
+              href={OBRA_PROFILE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white font-mono font-extrabold text-xs transition self-start sm:self-auto shrink-0 shadow-lg shadow-amber-950/40"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Abrir obra.art/badlenz</span>
+            </a>
+          </div>
+
+          <div className="relative w-full rounded-xl overflow-hidden border border-white/10 bg-[#07080d]">
+            <iframe
+              title="OBRA PRO: Badlenz Verified Credits & Streams"
+              src={OBRA_PROFILE_URL}
+              width="100%"
+              height="760"
+              loading="lazy"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen"
+              className="w-full h-[640px] sm:h-[760px] bg-[#07080d]"
+            />
+          </div>
+        </div>
+      )}
 
       {/* 4A. VIEW MODE: DESTACADOS & MILESTONES (GRID DE IMPACTO) */}
       {viewMode === 'featured' && (
@@ -832,6 +937,42 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* 4C. VIEW MODE: PLAYLIST OFICIAL SPOTIFY (PRODUCED BY BADLENZ) */}
+      {viewMode === 'playlist' && (
+        <div className="relative z-10 rounded-2xl bg-[#0c0e16]/95 border border-emerald-500/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+                SPOTIFY OFFICIAL PLAYLIST
+              </span>
+              <h3 className="font-syne text-lg font-bold text-white">
+                Produced By Badlenz · La Facultad Studio
+              </h3>
+            </div>
+            <a
+              href={SPOTIFY_PLAYLIST_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-extrabold text-xs transition self-start sm:self-auto"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Abrir en Spotify</span>
+            </a>
+          </div>
+
+          <iframe
+            title="Spotify Embed: Produced By Badlenz"
+            src={SPOTIFY_PLAYLIST_EMBED_URL}
+            width="100%"
+            height="380"
+            frameBorder="0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            className="rounded-xl bg-[#07080d]"
+          />
         </div>
       )}
 

@@ -38,6 +38,12 @@ export interface VerifiedCreditItem {
 export interface BadlenzCareerSummary {
   profileId: string;
   profileUrl: string;
+  obraUrl: string;
+  obraVerifiedStreams: number;
+  obraSpotifyStreams: number;
+  obraYoutubeViews: number;
+  obraSoundcloudStreams: number;
+  obraProjectsCount: number;
   name: string;
   totalCredits: number;
   musoCreditsCount: number;
@@ -54,6 +60,12 @@ export interface BadlenzCareerSummary {
 export const BADLENZ_CAREER_SUMMARY: BadlenzCareerSummary = {
   "profileId": "d2deaa03-a0c9-48e5-83a3-9480fab7baa8",
   "profileUrl": "https://muso.ai/profile/d2deaa03-a0c9-48e5-83a3-9480fab7baa8",
+  "obraUrl": "https://obra.art/badlenz",
+  "obraVerifiedStreams": 129964613,
+  "obraSpotifyStreams": 114821142,
+  "obraYoutubeViews": 13657363,
+  "obraSoundcloudStreams": 1486108,
+  "obraProjectsCount": 108,
   "name": "Badlenz",
   "totalCredits": 85,
   "musoCreditsCount": 69,

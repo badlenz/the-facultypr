@@ -4,9 +4,9 @@ import {
   CheckCircle2,
   Disc3,
   ExternalLink,
+  Globe,
   Layers,
   Users,
-  Youtube,
   ArrowUpRight,
 } from 'lucide-react';
 import { BADLENZ_CAREER_SUMMARY } from '../data/badlenzVerifiedCredits';
@@ -51,7 +51,7 @@ export const CreditsMinimalSection: React.FC = () => {
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/15 text-[10px] font-mono text-zinc-300 font-bold uppercase tracking-wider">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              <span>Muso.AI + BMG</span>
+              <span>OBRA PRO · Muso.AI · BMG</span>
             </span>
           </div>
 
@@ -78,7 +78,7 @@ export const CreditsMinimalSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Primary Action: Opens Full Credits Window */}
+        {/* Primary Action: Opens Full Credits Window + OBRA PRO */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <a
             href="/creditos"
@@ -87,8 +87,20 @@ export const CreditsMinimalSection: React.FC = () => {
             className="taste-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-syne font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-950/50 transition"
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Abrir Catálogo Completo ({BADLENZ_CAREER_SUMMARY.totalCredits})</span>
+            <span>Abrir Catálogo Completo ({BADLENZ_CAREER_SUMMARY.obraProjectsCount})</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
+
+          <a
+            href={BADLENZ_CAREER_SUMMARY.obraUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/50 text-xs font-mono font-bold text-amber-200 transition"
+            title="Ver portafolio verificado en obra.art/badlenz"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-300" />
+            <span>OBRA PRO</span>
+            <ExternalLink className="w-3 h-3 text-amber-300/80" />
           </a>
 
           <a
@@ -105,23 +117,29 @@ export const CreditsMinimalSection: React.FC = () => {
 
       {/* Compact 4-KPI Strip */}
       <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-        <div className="rounded-2xl bg-gradient-to-br from-amber-500/12 via-[#10121a] to-[#0a0b12] border border-amber-400/30 px-3.5 py-3">
+        <a
+          href={BADLENZ_CAREER_SUMMARY.obraUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-2xl bg-gradient-to-br from-amber-500/12 via-[#10121a] to-[#0a0b12] border border-amber-400/30 hover:border-amber-300/60 px-3.5 py-3 transition"
+          title="Streams verificados en vivo en obra.art/badlenz"
+        >
           <div className="flex items-center justify-between text-[10px] font-mono uppercase text-amber-300 font-bold">
-            <span>YouTube Real</span>
-            <Youtube className="w-3.5 h-3.5 text-red-500" />
+            <span>Streams OBRA</span>
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-white tabular-nums">
-            {formatCompact(BADLENZ_CAREER_SUMMARY.totalVerifiedYoutubeViews)}+
+            {Math.round(BADLENZ_CAREER_SUMMARY.obraVerifiedStreams / 1_000_000)}M+
           </div>
-        </div>
+        </a>
 
         <div className="rounded-2xl bg-[#0e1018]/90 border border-white/10 px-3.5 py-3">
           <div className="flex items-center justify-between text-[10px] font-mono uppercase text-zinc-400 font-bold">
-            <span>Créditos</span>
+            <span>Proyectos</span>
             <Disc3 className="w-3.5 h-3.5 text-red-400" />
           </div>
           <div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-white tabular-nums">
-            {BADLENZ_CAREER_SUMMARY.totalCredits}
+            {BADLENZ_CAREER_SUMMARY.obraProjectsCount}
           </div>
         </div>
 
