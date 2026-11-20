@@ -1,6 +1,6 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { getReservas, Reserva } from './db';
+import { getAgendaOcupadaSlots, getReservas, AgendaOcupadaSlot, Reserva } from './db';
 
 export interface SlotDisponibilidad {
   diaNumero: number;
@@ -112,24 +112,49 @@ export function eliminarDisponibilidadDia(fechaStr: string) {
   persistirDisponibilidades(disponibilidades);
 }
 
-/** Determina si una reserva bloquea activamente su turno (confirmada, en proceso o hold < 30 min) */
-export function isReservaBlockingSlot(r: Reserva): boolean {
+type SlotLike = Pick<
+  AgendaOcupadaSlot,
+  'fecha' | 'fechasBloque' | 'horaInicio' | 'estado'
+> & {
+  creadoEn?: number;
+  tieneComprobante?: boolean;
+  comprobanteAthUrl?: string;
+  comprobanteNumReferencia?: string;
+};
+
+/** Determina si un slot/reserva bloquea activamente su turno (confirmada, en proceso o hold < 30 min) */
+export function isReservaBlockingSlot(r: Reserva | SlotLike): boolean {
   if (r.estado === 'Cancelada' || r.estado === 'Liberada') return false;
   if (r.estado === 'Confirmada' || r.estado === 'En Proceso' || r.estado === 'Completada') {
     return true;
   }
-  // Si está Pendiente con comprobante ATH subido, también mantiene el bloqueo
-  if (r.comprobanteAthUrl || r.comprobanteNumReferencia) return true;
+  // Si está Pendiente con comprobante ATH/Stripe subido, también mantiene el bloqueo
+  if (
+    ('tieneComprobante' in r && r.tieneComprobante) ||
+    ('comprobanteAthUrl' in r && r.comprobanteAthUrl) ||
+    ('comprobanteNumReferencia' in r && r.comprobanteNumReferencia)
+  ) {
+    return true;
+  }
   // Si está Pendiente sin comprobante, bloquea solo durante el hold de 30 minutos
   const creadoEn = r.creadoEn || 0;
   const thirtyMinMs = 30 * 60 * 1000;
   return Date.now() - creadoEn < thirtyMinMs;
 }
 
+/** Obtiene los slots ocupados usando primero la colección pública sanitizada `agenda_ocupada` */
+function getActiveSlotsForAvailability(): SlotLike[] {
+  const publicSlots = getAgendaOcupadaSlots();
+  if (publicSlots.length > 0) {
+    return publicSlots;
+  }
+  return getReservas();
+}
+
 export function obtenerBloquesOcupadosPorFecha(fechaStr: string): string[] {
-  const reservas = getReservas();
+  const slots = getActiveSlotsForAvailability();
   const ocupados: string[] = [];
-  for (const r of reservas) {
+  for (const r of slots) {
     if (!isReservaBlockingSlot(r)) continue;
     const matchMain = r.fecha === fechaStr;
     const matchBloque = Array.isArray(r.fechasBloque) && r.fechasBloque.includes(fechaStr);
@@ -146,7 +171,7 @@ export function obtenerDisponibilidadMes(año: number, mes: number): Record<numb
   const disponibilidad: Record<number, SlotDisponibilidad> = {};
   const diasEnMes = new Date(año, mes, 0).getDate();
   const personalizadas = obtenerTodasDisponibilidades();
-  const reservasActivas = getReservas().filter(isReservaBlockingSlot);
+  const reservasActivas = getActiveSlotsForAvailability().filter(isReservaBlockingSlot);
 
   for (let dia = 1; dia <= diasEnMes; dia++) {
     const diaStr = String(dia).padStart(2, '0');

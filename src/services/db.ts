@@ -1,5 +1,8 @@
 import { db, auth } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+
+const ADMIN_EMAIL = 'ellentemalo@gmail.com';
 
 export enum OperationType {
   CREATE = 'create',
@@ -143,10 +146,53 @@ export interface Reserva {
   tipoProyecto?: 'single' | 'ep_3_tracks' | 'ep_5_tracks' | 'album_completo' | 'pack_semanal';
   detallesTracklist?: string[];
   estrellaOtorgada?: boolean;
+  /** ID anónimo del slot en la colección pública sanitizada `agenda_ocupada` */
+  slotId?: string;
+}
+
+/**
+ * Proyección pública sanitizada de ocupación de calendario (cero PII, cero teléfonos, cero montos).
+ * Permite calcular disponibilidad en vivo sin exponer la colección privada `reservas`.
+ */
+export interface AgendaOcupadaSlot {
+  id: string;
+  fecha: string;
+  fechasBloque?: string[];
+  horaInicio: string;
+  horaSalida: string;
+  estado: Reserva['estado'];
+  tieneComprobante: boolean;
+  creadoEn: number;
 }
 
 const STORAGE_KEY_CLIENTES = 'la_facultad_clientes_db';
 const STORAGE_KEY_RESERVAS = 'la_facultad_reservas_db';
+const STORAGE_KEY_AGENDA_OCUPADA = 'la_facultad_agenda_ocupada_db';
+
+const generateRandomCode = (len = 4): string => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < len; i++) {
+    out += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return out;
+};
+
+const toSanitizedAgendaSlot = (r: Reserva, slotId: string): AgendaOcupadaSlot => {
+  const slot: AgendaOcupadaSlot = {
+    id: slotId,
+    fecha: r.fecha,
+    horaInicio: r.horaInicio,
+    horaSalida: r.horaSalida,
+    estado: r.estado,
+    tieneComprobante: Boolean(r.comprobanteAthUrl || r.comprobanteNumReferencia),
+    creadoEn: r.creadoEn || Date.now(),
+  };
+  if (Array.isArray(r.fechasBloque) && r.fechasBloque.length > 0) {
+    slot.fechasBloque = r.fechasBloque;
+  }
+  return slot;
+};
 
 // Real-time listener initialization for Firestore
 const notifyClientesUpdated = () => {
@@ -155,28 +201,82 @@ const notifyClientesUpdated = () => {
   }
 };
 
+const notifyReservasUpdated = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('la_facultad_reservas_updated'));
+  }
+};
+
+let unsubAdminClientes: (() => void) | null = null;
+let unsubAdminReservas: (() => void) | null = null;
+
+const stopAdminListeners = () => {
+  if (unsubAdminClientes) {
+    unsubAdminClientes();
+    unsubAdminClientes = null;
+  }
+  if (unsubAdminReservas) {
+    unsubAdminReservas();
+    unsubAdminReservas = null;
+  }
+};
+
+const startAdminListeners = () => {
+  stopAdminListeners();
+  try {
+    unsubAdminClientes = onSnapshot(
+      collection(db, 'clientes'),
+      (snapshot) => {
+        const list: Cliente[] = [];
+        snapshot.forEach((d) => list.push(d.data() as Cliente));
+        localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(list));
+        notifyClientesUpdated();
+      },
+      (err) => {
+        console.warn('Firestore Clientes sync notice:', err.message);
+      }
+    );
+
+    unsubAdminReservas = onSnapshot(
+      collection(db, 'reservas'),
+      (snapshot) => {
+        const list: Reserva[] = [];
+        snapshot.forEach((d) => list.push(d.data() as Reserva));
+        localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(list));
+        notifyReservasUpdated();
+      },
+      (err) => {
+        console.warn('Firestore Reservas sync notice:', err.message);
+      }
+    );
+  } catch (e) {
+    console.warn('Firestore admin listener initialization notice:', e);
+  }
+};
+
 try {
-  onSnapshot(collection(db, 'clientes'), (snapshot) => {
-    const list: Cliente[] = [];
-    snapshot.forEach(d => list.push(d.data() as Cliente));
-    if (list.length > 0) {
-      localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(list));
-      notifyClientesUpdated();
+  // Listeners privados (PII / Finanzas): solo se suscriben cuando el Admin inicia sesión
+  onAuthStateChanged(auth, (user) => {
+    if (user?.email === ADMIN_EMAIL) {
+      startAdminListeners();
+    } else {
+      stopAdminListeners();
     }
-  }, (err) => {
-    console.warn('Firestore Clientes sync offline mode:', err.message);
   });
 
-  onSnapshot(collection(db, 'reservas'), (snapshot) => {
-    const list: Reserva[] = [];
-    snapshot.forEach(d => list.push(d.data() as Reserva));
-    localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(list));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('la_facultad_reservas_updated'));
+  // Listener público sanitizado: únicamente bloques ocupados (sin nombres, teléfonos ni montos)
+  onSnapshot(
+    collection(db, 'agenda_ocupada'),
+    (snapshot) => {
+      const list: AgendaOcupadaSlot[] = [];
+      snapshot.forEach((d) => list.push(d.data() as AgendaOcupadaSlot));
+      localStorage.setItem(STORAGE_KEY_AGENDA_OCUPADA, JSON.stringify(list));
+      notifyReservasUpdated();
+    },
+    (err) => {
+      console.warn('Firestore agenda_ocupada sync notice:', err.message);
     }
-  }, (err) => {
-    console.warn('Firestore Reservas sync offline mode:', err.message);
-  });
+  );
 
   onSnapshot(doc(db, 'studio_config', 'main'), (snap) => {
     if (snap.exists()) {
@@ -260,6 +360,15 @@ export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'
 };
 
 // --- GESTIÓN DE RESERVAS Y ORDENES ---
+export const getAgendaOcupadaSlots = (): AgendaOcupadaSlot[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY_AGENDA_OCUPADA);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const getReservas = (): Reserva[] => {
   const data = localStorage.getItem(STORAGE_KEY_RESERVAS);
   return data ? JSON.parse(data) : [];
@@ -272,16 +381,21 @@ export const guardarReserva = (reservaData: Omit<Reserva, 'id' | 'estado' | 'met
     .toUpperCase()
     .trim()
     .replace(/[^A-Z0-9]/g, '_')
-    .replace(/__+/g, '_');
+    .replace(/__+/g, '_')
+    .slice(0, 28);
   
-  const baseId = `PS_${cleanName}`;
-  
-  let uniqueId = baseId;
+  // Sufijo aleatorio para evitar IDs predecibles en /reservas
+  let uniqueId = `PS_${cleanName}_${generateRandomCode(4)}`;
   let counter = 1;
   while (reservas.some(r => r.id === uniqueId)) {
-    uniqueId = `${baseId}_${counter}`;
+    uniqueId = `PS_${cleanName}_${generateRandomCode(4)}_${counter}`;
     counter++;
   }
+
+  // ID anónimo sin PII para la proyección pública /agenda_ocupada
+  const cleanFecha = (reservaData.fecha || '').replace(/-/g, '');
+  const cleanHora = (reservaData.horaInicio || '13:00').replace(':', '');
+  const slotId = reservaData.slotId || `SLOT_${cleanFecha}_${cleanHora}_${generateRandomCode(6)}`;
 
   const nuevaReserva: Reserva = {
     metodoPago: 'Efectivo',
@@ -289,7 +403,8 @@ export const guardarReserva = (reservaData: Omit<Reserva, 'id' | 'estado' | 'met
     depositoEstado: 'pendiente',
     creadoEn: Date.now(),
     ...reservaData,
-    id: uniqueId
+    id: uniqueId,
+    slotId,
   } as Reserva;
 
   if (reservaData.estado) {
@@ -299,9 +414,23 @@ export const guardarReserva = (reservaData: Omit<Reserva, 'id' | 'estado' | 'met
   reservas.push(nuevaReserva);
   localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(reservas));
 
-  // Sync to Firestore
+  // Proyección sanitizada en memoria local + Firestore /agenda_ocupada (cero PII / montos)
+  const sanitizedSlot = toSanitizedAgendaSlot(nuevaReserva, slotId);
+  const currentSlots = getAgendaOcupadaSlots().filter((s) => s.id !== slotId);
+  currentSlots.push(sanitizedSlot);
+  localStorage.setItem(STORAGE_KEY_AGENDA_OCUPADA, JSON.stringify(currentSlots));
+  notifyReservasUpdated();
+
+  // Sync to Firestore (privado /reservas + público sanitizado /agenda_ocupada)
+  const isAdminSession = auth.currentUser?.email === ADMIN_EMAIL;
   setDoc(doc(db, 'reservas', nuevaReserva.id), nuevaReserva).catch(err => {
     console.warn('Firestore guardarReserva async save notice:', err);
+  });
+  const slotForCreate: AgendaOcupadaSlot = isAdminSession
+    ? sanitizedSlot
+    : { ...sanitizedSlot, estado: 'Pendiente', tieneComprobante: false };
+  setDoc(doc(db, 'agenda_ocupada', slotId), slotForCreate).catch(err => {
+    console.warn('Firestore agenda_ocupada create notice:', err);
   });
 
   return nuevaReserva;
@@ -315,20 +444,62 @@ export const actualizarReserva = (id: string, updates: Partial<Reserva>): Reserv
     const updated = { ...reservas[index], ...updates };
     reservas[index] = updated;
     localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(reservas));
-    setDoc(doc(db, 'reservas', id), updated, { merge: true }).catch(err => {
-      console.warn('Firestore actualizarReserva async update notice:', err);
-    });
+
+    const isAdminSession = auth.currentUser?.email === ADMIN_EMAIL;
+    if (isAdminSession) {
+      setDoc(doc(db, 'reservas', id), updated, { merge: true }).catch(err => {
+        console.warn('Firestore actualizarReserva async update notice:', err);
+      });
+    } else {
+      // Visitante público: solo puede adjuntar comprobante en estado Pendiente
+      const publicPatch: Record<string, string> = {};
+      if (updates.comprobanteAthUrl) publicPatch.comprobanteAthUrl = updates.comprobanteAthUrl;
+      if (updates.comprobanteNumReferencia) publicPatch.comprobanteNumReferencia = updates.comprobanteNumReferencia;
+      if (Object.keys(publicPatch).length > 0) {
+        updateDoc(doc(db, 'reservas', id), publicPatch).catch(err => {
+          console.warn('Firestore public comprobante update notice:', err);
+        });
+      }
+    }
+
+    // Mantener sincronizada la proyección pública /agenda_ocupada
+    if (updated.slotId) {
+      const sanitizedSlot = toSanitizedAgendaSlot(updated, updated.slotId);
+      const currentSlots = getAgendaOcupadaSlots().filter((s) => s.id !== updated.slotId);
+      currentSlots.push(sanitizedSlot);
+      localStorage.setItem(STORAGE_KEY_AGENDA_OCUPADA, JSON.stringify(currentSlots));
+      notifyReservasUpdated();
+
+      if (isAdminSession) {
+        setDoc(doc(db, 'agenda_ocupada', updated.slotId), sanitizedSlot, { merge: true }).catch(err => {
+          console.warn('Firestore agenda_ocupada admin update notice:', err);
+        });
+      } else if (sanitizedSlot.tieneComprobante) {
+        updateDoc(doc(db, 'agenda_ocupada', updated.slotId), { tieneComprobante: true }).catch(err => {
+          console.warn('Firestore agenda_ocupada public comprobante notice:', err);
+        });
+      }
+    }
   }
   return reservas;
 };
 
 export const eliminarReserva = (id: string): Reserva[] => {
   const reservas = getReservas();
+  const target = reservas.find(r => r.id === id);
   const filtradas = reservas.filter(r => r.id !== id);
   localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(filtradas));
   deleteDoc(doc(db, 'reservas', id)).catch(err => {
     console.warn('Firestore eliminarReserva async delete notice:', err);
   });
+  if (target?.slotId) {
+    const slots = getAgendaOcupadaSlots().filter((s) => s.id !== target.slotId);
+    localStorage.setItem(STORAGE_KEY_AGENDA_OCUPADA, JSON.stringify(slots));
+    deleteDoc(doc(db, 'agenda_ocupada', target.slotId)).catch(err => {
+      console.warn('Firestore agenda_ocupada delete notice:', err);
+    });
+  }
+  notifyReservasUpdated();
   return filtradas;
 };
 

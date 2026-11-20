@@ -35,47 +35,5 @@ export function compressImageToDataUrl(
   });
 }
 
-/**
- * Genera y descarga un archivo .ics compatible con Apple Calendar y Google Calendar.
- */
-export function downloadSessionIcs(params: {
-  id: string;
-  nombreArtistico: string;
-  fecha: string; // YYYY-MM-DD
-  horaInicio: string; // HH:mm
-  horaSalida: string; // HH:mm
-  deposito: number;
-  balance: number;
-}) {
-  const cleanDate = params.fecha.replace(/-/g, '');
-  const cleanStart = params.horaInicio.replace(':', '') + '00';
-  const cleanEnd = params.horaSalida.replace(':', '') + '00';
-  const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//La Facultad Studio//Badlenz//ES',
-    'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
-    `UID:${params.id}@the-facultypr.vercel.app`,
-    `DTSTAMP:${nowStamp}`,
-    `DTSTART;TZID=America/Puerto_Rico:${cleanDate}T${cleanStart}`,
-    `DTEND;TZID=America/Puerto_Rico:${cleanDate}T${cleanEnd}`,
-    `SUMMARY:Sesión en La Facultad Studio · ${params.nombreArtistico}`,
-    `LOCATION:La Facultad Studio, Hormigueros, Puerto Rico`,
-    `DESCRIPTION:Pase VIP #${params.id}\\nDepósito: $${params.deposito} USD\\nBalance al llegar: $${params.balance} USD\\nWhatsApp Badlenz: +1 (787) 240-8627`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n');
-
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `La_Facultad_Sesion_${params.fecha}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+export { downloadSessionIcs, buildSessionIcsContent } from './calendarIcs';
+export type { SessionIcsParams } from './calendarIcs';

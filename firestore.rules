@@ -4,11 +4,12 @@ rules_version = '2';
 // Assumed Data Model — La Facultad Studio (the-facultypr.vercel.app)
 // ===============================================================
 //
-// Collection: reservas
+// Collection: reservas (CONTAINS CLIENT/FINANCIAL DATA — admin-only read/delete)
 // Document ID: reservaId (matches data.id, e.g., PS_ARTISTA)
 // Fields:
 //   - id: string (required, immutable, 1..128 chars, == reservaId)
 //   - clienteId: string (optional, <= 128 chars)
+//   - slotId: string (optional, <= 128 chars, links to agenda_ocupada/{slotId})
 //   - nombreArtistico: string (required, 1..120 chars)
 //   - fecha: string (required, 1..32 chars)
 //   - fechasBloque: list (optional, <= 30 items)
@@ -16,7 +17,7 @@ rules_version = '2';
 //   - horaSalida: string (required, 1..20 chars)
 //   - totalHoras: number (optional, 0..500)
 //   - servicios: list (optional, <= 30 items)
-//   - metodoPago: string (optional, enum: Efectivo | ATH Movil | PayPal | Zelle)
+//   - metodoPago: string (optional, enum: Efectivo | ATH Movil | Tarjeta / Stripe | PayPal | Zelle)
 //   - subtotal: number (required, 0..100000)
 //   - deposito: number (required, 0..100000)
 //   - balance: number (required, 0..100000)
@@ -33,6 +34,18 @@ rules_version = '2';
 //   - tipoProyecto: string (optional, enum: single | ep_3_tracks | ep_5_tracks | album_completo | pack_semanal)
 //   - detallesTracklist: list (optional, <= 50 items)
 //   - estrellaOtorgada: bool (optional)
+//
+// Collection: agenda_ocupada (SANITIZED PUBLIC AVAILABILITY — NO PII, NO FINANCIALS)
+// Document ID: slotId (matches data.id)
+// Fields:
+//   - id: string (required, immutable, 1..128 chars, == slotId)
+//   - fecha: string (required, 1..32 chars)
+//   - fechasBloque: list (optional, <= 30 items)
+//   - horaInicio: string (required, 1..20 chars)
+//   - horaSalida: string (required, 1..20 chars)
+//   - estado: string (required, enum: Pendiente | Confirmada | En Proceso | Completada | Cancelada | Liberada)
+//   - tieneComprobante: bool (optional; public create must be false/null/omitted; public update only false -> true while Pendiente)
+//   - creadoEn: number (required, epoch ms 0..9999999999999)
 //
 // Collection: clientes (CONTAINS PII — admin-only read/update/delete)
 // Document ID: clienteId (matches data.id, e.g., CLI-1234)
@@ -116,6 +129,12 @@ service cloud.firestore {
         (data[field] is string && data[field].size() <= maxLen);
     }
 
+    function isUnsetOrEmptyString(data, field) {
+      return !(field in data) ||
+        data[field] == null ||
+        data[field] == '';
+    }
+
     function isNumberInRange(val, minVal, maxVal) {
       return (val is int || val is float) && val >= minVal && val <= maxVal;
     }
@@ -144,7 +163,7 @@ service cloud.firestore {
 
     function isValidReserva(data, reservaId) {
       return data.keys().hasOnly([
-          'id', 'clienteId', 'nombreArtistico', 'fecha', 'fechasBloque',
+          'id', 'clienteId', 'slotId', 'nombreArtistico', 'fecha', 'fechasBloque',
           'horaInicio', 'horaSalida', 'totalHoras', 'servicios', 'metodoPago',
           'subtotal', 'deposito', 'balance', 'estado', 'depositoEstado',
           'firma', 'creadoEn', 'comprobanteAthUrl', 'comprobanteNumReferencia',
@@ -158,6 +177,7 @@ service cloud.firestore {
         isNonEmptyString(data.id, 128) &&
         data.id == reservaId &&
         isValidOptionalString(data, 'clienteId', 128) &&
+        isValidOptionalString(data, 'slotId', 128) &&
         isNonEmptyString(data.nombreArtistico, 120) &&
         isNonEmptyString(data.fecha, 32) &&
         isValidOptionalList(data, 'fechasBloque', 30) &&
@@ -166,7 +186,7 @@ service cloud.firestore {
         isValidOptionalNumberRange(data, 'totalHoras', 0, 500) &&
         isValidOptionalList(data, 'servicios', 30) &&
         (!('metodoPago' in data) || data.metodoPago == null ||
-          data.metodoPago in ['Efectivo', 'ATH Movil', 'PayPal', 'Zelle']) &&
+          data.metodoPago in ['Efectivo', 'ATH Movil', 'Tarjeta / Stripe', 'PayPal', 'Zelle']) &&
         isNumberInRange(data.subtotal, 0, 100000) &&
         isNumberInRange(data.deposito, 0, 100000) &&
         isNumberInRange(data.balance, 0, 100000) &&
@@ -196,9 +216,47 @@ service cloud.firestore {
     }
 
     function isValidPublicComprobanteUpdate() {
+      let diffKeys = request.resource.data.diff(resource.data).affectedKeys();
       return resource.data.estado == 'Pendiente' &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['comprobanteAthUrl', 'comprobanteNumReferencia']);
+        diffKeys.hasOnly(['comprobanteAthUrl', 'comprobanteNumReferencia']) &&
+        diffKeys.size() > 0 &&
+        isUnsetOrEmptyString(resource.data, 'comprobanteAthUrl') &&
+        isUnsetOrEmptyString(resource.data, 'comprobanteNumReferencia');
+    }
+
+    function isValidAgendaSlot(data, slotId) {
+      return data.keys().hasOnly([
+          'id', 'fecha', 'fechasBloque', 'horaInicio', 'horaSalida',
+          'estado', 'tieneComprobante', 'creadoEn'
+        ]) &&
+        data.keys().hasAll([
+          'id', 'fecha', 'horaInicio', 'horaSalida', 'estado', 'creadoEn'
+        ]) &&
+        isNonEmptyString(data.id, 128) &&
+        data.id == slotId &&
+        isNonEmptyString(data.fecha, 32) &&
+        isValidOptionalList(data, 'fechasBloque', 30) &&
+        isNonEmptyString(data.horaInicio, 20) &&
+        isNonEmptyString(data.horaSalida, 20) &&
+        data.estado in ['Pendiente', 'Confirmada', 'En Proceso', 'Completada', 'Cancelada', 'Liberada'] &&
+        isValidOptionalBool(data, 'tieneComprobante') &&
+        isNumberInRange(data.creadoEn, 0, 9999999999999);
+    }
+
+    function isValidPublicAgendaSlotCreate(data) {
+      return data.estado == 'Pendiente' &&
+        (!('tieneComprobante' in data) || data.tieneComprobante == null ||
+          data.tieneComprobante == false);
+    }
+
+    function isValidPublicAgendaSlotComprobanteUpdate() {
+      let diffKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return resource.data.estado == 'Pendiente' &&
+        diffKeys.hasOnly(['tieneComprobante']) &&
+        diffKeys.size() == 1 &&
+        (!('tieneComprobante' in resource.data) || resource.data.tieneComprobante == null ||
+          resource.data.tieneComprobante == false) &&
+        request.resource.data.tieneComprobante == true;
     }
 
     function isValidCliente(data, clienteId) {
@@ -280,13 +338,27 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Studio reservations
-    // - Public can read (availability & active pass) and create 'Pendiente' bookings.
-    // - Public can attach ATH Movil proof ONLY while estado == 'Pendiente' and ONLY
-    //   modifying comprobanteAthUrl / comprobanteNumReferencia.
-    // - Only admin can confirm/complete/cancel/release or delete reservations.
-    match /reservas/{reservaId} {
+    // Sanitized public availability slots (NO PII, NO financial amounts)
+    // - Public can read availability, create 'Pendiente' slots (tieneComprobante false/unset),
+    //   and flip tieneComprobante false -> true once while estado == 'Pendiente'.
+    // - Only admin can confirm/complete/cancel/release or delete slots.
+    match /agenda_ocupada/{slotId} {
       allow read: if true;
+      allow create: if isValidAgendaSlot(request.resource.data, slotId) &&
+        (isAdmin() || isValidPublicAgendaSlotCreate(request.resource.data));
+      allow update: if isValidAgendaSlot(request.resource.data, slotId) &&
+        request.resource.data.id == resource.data.id &&
+        (isAdmin() || isValidPublicAgendaSlotComprobanteUpdate());
+      allow delete: if isAdmin();
+    }
+
+    // Studio reservations (Level 3 security: admin-only read)
+    // - No public visitor can list or read any client's reservation, amounts, signature, or receipts.
+    // - Public can create 'Pendiente' bookings and submit ATH Movil proof ONCE while estado == 'Pendiente'
+    //   (only modifying comprobanteAthUrl / comprobanteNumReferencia when both are currently unset/empty).
+    // - Only admin can read, confirm/complete/cancel/release, or delete reservations.
+    match /reservas/{reservaId} {
+      allow read: if isAdmin();
       allow create: if isValidReserva(request.resource.data, reservaId) &&
         (isAdmin() || isValidPublicReservaCreate(request.resource.data));
       allow update: if isValidReserva(request.resource.data, reservaId) &&
