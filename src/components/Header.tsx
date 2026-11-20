@@ -118,10 +118,11 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const scrollToSection = (sectionId: string) => {
-    if (activeTab !== 'cliente') handleTabSelect('cliente');
+    const needsSwitch = activeTab !== 'cliente';
+    if (needsSwitch) handleTabSelect('cliente');
     setTimeout(() => {
       document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-    }, 80);
+    }, needsSwitch ? 140 : 80);
   };
 
   return (
@@ -229,14 +230,27 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="font-syne">Tarifas</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => scrollToSection('creditos')}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span className="text-red-400 font-bold">★</span>
-                <span className="font-syne">Créditos</span>
-              </button>
+              {activeTab === 'creditos' ? (
+                <button
+                  type="button"
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-red-950/70 border border-red-700/60 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="text-red-400 font-bold">★</span>
+                  <span className="font-syne">Créditos</span>
+                </button>
+              ) : (
+                <a
+                  href="/creditos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Abrir Destacados y Catálogo Completo (85 créditos) en otra ventana"
+                >
+                  <span className="text-red-400 font-bold">★</span>
+                  <span className="font-syne">Créditos</span>
+                </a>
+              )}
 
               <button
                 type="button"
@@ -303,14 +317,27 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-syne">Tarifas</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => scrollToSection('creditos')}
-            className="min-h-[44px] flex items-center justify-center gap-1 px-1.5 rounded-xl bg-white/5 active:bg-white/10 cursor-pointer"
-          >
-            <span className="text-red-400 font-bold shrink-0">★</span>
-            <span className="font-syne">Créditos</span>
-          </button>
+          {activeTab === 'creditos' ? (
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="min-h-[44px] flex items-center justify-center gap-1 px-1.5 rounded-xl bg-red-950/70 border border-red-700/60 text-white cursor-pointer"
+            >
+              <span className="text-red-400 font-bold shrink-0">★</span>
+              <span className="font-syne">Créditos</span>
+            </button>
+          ) : (
+            <a
+              href="/creditos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-h-[44px] flex items-center justify-center gap-1 px-1.5 rounded-xl bg-white/5 active:bg-white/10 cursor-pointer"
+              title="Abrir Destacados y Catálogo Completo en otra ventana"
+            >
+              <span className="text-red-400 font-bold shrink-0">★</span>
+              <span className="font-syne">Créditos</span>
+            </a>
+          )}
 
           <button
             type="button"

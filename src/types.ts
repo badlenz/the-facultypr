@@ -9,6 +9,7 @@ export type NavigationTab =
   | 'asistente'
   | 'cliente'
   | 'muestras'
+  | 'creditos'
   | 'historial';
 
 export type AppMode = 'admin' | 'public';

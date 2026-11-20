@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Header from './components/Header';
 import { SlotDisponibilidad } from './services/schedule';
 import { NavigationTab, AppMode } from './types';
-import { Loader2, MessageCircle, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Loader2, MessageCircle, Lock, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -15,6 +15,7 @@ import { BadlenzBackgroundBackdrop } from './components/BadlenzBackgroundBackdro
 // Módulos pesados cargados de forma diferida (solo cuando se necesitan)
 const PanelAdmin = lazyWithRetry(() => import('./components/PanelAdmin'));
 const AudioShowcaseAB = lazyWithRetry(() => import('./components/AudioShowcaseAB'));
+const CreditsBentoGrid = lazyWithRetry(() => import('./components/CreditsBentoGrid'));
 
 const SectionLoadingFallback = () => (
   <div className="min-h-[40vh] flex flex-col items-center justify-center p-8 space-y-4 text-center">
@@ -34,10 +35,16 @@ const isAdminRoute = () => {
   return p === '/admin' || p === '/control-room' || p === '/badlenz' || h === '#admin';
 };
 
+const isCreditsRoute = () => {
+  if (typeof window === 'undefined') return false;
+  const p = window.location.pathname.toLowerCase();
+  return p === '/creditos' || p === '/credits';
+};
+
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>(() => (isAdminRoute() ? 'admin' : 'public'));
   const [activeTab, setActiveTab] = useState<NavigationTab>(() =>
-    isAdminRoute() ? 'panel_admin' : 'cliente'
+    isAdminRoute() ? 'panel_admin' : isCreditsRoute() ? 'creditos' : 'cliente'
   );
   const [adminUser, setAdminUser] = useState<FirebaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
@@ -56,12 +63,15 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  // Sincronización de URL (/admin <-> /)
+  // Sincronización de URL (/admin <-> /creditos <-> /)
   useEffect(() => {
     const handlePopState = () => {
       if (isAdminRoute()) {
         setAppMode('admin');
         setActiveTab('panel_admin');
+      } else if (isCreditsRoute()) {
+        setAppMode('public');
+        setActiveTab('creditos');
       } else {
         setAppMode('public');
         setActiveTab('cliente');
@@ -118,6 +128,26 @@ export default function App() {
     }
     setPasswordInput('');
     handleRoleChange('cliente');
+  };
+
+  const handleTabChange = (tab: NavigationTab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined' && window.history && appMode !== 'admin') {
+      const targetPath = tab === 'creditos' ? '/creditos' : '/';
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+  };
+
+  const navigateToBooking = () => {
+    setAppMode('public');
+    handleTabChange('cliente');
+    setTimeout(() => {
+      document
+        .getElementById('seccion-calendario-booking')
+        ?.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
   };
 
   const isAdminAuthenticated = Boolean(adminUser);
@@ -219,6 +249,35 @@ export default function App() {
       return <PanelAdmin />;
     }
 
+    if (activeTab === 'creditos') {
+      return (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#10121b]/90 border border-white/10 px-4 py-3 shadow-xl">
+            <button
+              type="button"
+              onClick={() => {
+                handleTabChange('cliente');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-2 text-xs font-mono font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-amber-400" />
+              <span>Volver a La Facultad Studio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={navigateToBooking}
+              className="text-xs bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-syne font-bold px-4 py-2 rounded-xl uppercase tracking-wider transition shadow-lg cursor-pointer shrink-0"
+            >
+              Apartar Sesión ($130 USD) →
+            </button>
+          </div>
+          <CreditsBentoGrid onBookSession={navigateToBooking} />
+        </div>
+      );
+    }
+
     if (activeTab === 'muestras') {
       return (
         <div className="space-y-6">
@@ -265,12 +324,12 @@ export default function App() {
       <div className="relative z-10">
         <Header
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           appMode={appMode}
           setAppMode={setAppMode}
           currentRole={appMode === 'admin' ? 'admin' : 'cliente'}
           onRoleChange={handleRoleChange}
-          onTabChange={(tab) => setActiveTab(tab)}
+          onTabChange={(tab) => handleTabChange(tab)}
           onSecretAdminTrigger={() => handleRoleChange('admin')}
           onLogoutAdmin={handleLogoutAdmin}
           isAdminAuthenticated={isAdminAuthenticated}
@@ -289,14 +348,7 @@ export default function App() {
       {appMode !== 'admin' && (
         <>
           <AudioDockPlayer
-            onBookClick={() => {
-              setActiveTab('cliente');
-              setTimeout(() => {
-                document
-                  .getElementById('seccion-calendario-booking')
-                  ?.scrollIntoView({ behavior: 'smooth' });
-              }, 80);
-            }}
+            onBookClick={navigateToBooking}
           />
 
           <a

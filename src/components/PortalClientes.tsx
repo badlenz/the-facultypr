@@ -12,7 +12,7 @@ import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 const CalendarioSection = lazyWithRetry(() => import('./Calendario/CalendarioSection').then(m => ({ default: m.CalendarioSection })));
 const AudioShowcaseAB = lazyWithRetry(() => import('./AudioShowcaseAB'));
-const CreditsBentoGrid = lazyWithRetry(() => import('./CreditsBentoGrid'));
+const CreditsMinimalSection = lazyWithRetry(() => import('./CreditsMinimalSection'));
 import { 
   UploadCloud, 
   Music, 
@@ -3689,10 +3689,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     <StudioGuaranteesBento />
   </ScrollReveal>
 
-  {/* 5. CRÉDITOS OFICIALES & STREAM MILESTONES (MUSO.AI + BMG PUBLISHING + YOUTUBE REAL) */}
+  {/* 5. CRÉDITOS OFICIALES & STREAM MILESTONES — VERSIÓN MINIMALISTA (ABRE CATÁLOGO COMPLETO EN /creditos) */}
   <ScrollReveal delayMs={70}>
-    <Suspense fallback={<div id="creditos" className="h-72 rounded-3xl bg-[#11131d] border border-white/10 animate-pulse scroll-mt-32 md:scroll-mt-24" />}>
-      <CreditsBentoGrid />
+    <Suspense fallback={<div id="creditos" className="h-64 rounded-3xl bg-[#11131d] border border-white/10 animate-pulse scroll-mt-32 md:scroll-mt-24" />}>
+      <CreditsMinimalSection />
     </Suspense>
   </ScrollReveal>
 

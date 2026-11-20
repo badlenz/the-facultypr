@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
+  Award,
   Calendar,
   CheckCircle2,
   XCircle,
@@ -65,8 +66,11 @@ import {
 import { saveAudioToStorage } from '../services/audioStorage';
 import { ARTIST_PORTAL_BASE_URL } from '../config/portalConfig';
 import { CalendarioSection } from './Calendario/CalendarioSection';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
 
-type AdminTab = 'reservas' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'ajustes';
+const AdminCreditsRolesEditor = lazyWithRetry(() => import('./AdminCreditsRolesEditor'));
+
+type AdminTab = 'reservas' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'creditos' | 'ajustes';
 
 interface PanelAdminProps {
   defaultSection?: 'all' | 'calendario';
@@ -544,6 +548,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
             { id: 'calendario', label: 'Bloqueo de Fechas', icon: Calendar, badge: null },
             { id: 'estado', label: 'Estado del Estudio', icon: Radio, badge: null },
             { id: 'showcase', label: 'Audio A/B', icon: Music, badge: tracks.length },
+            { id: 'creditos', label: 'Créditos & Roles', icon: Award, badge: 85 },
             { id: 'ajustes', label: 'Ajustes & Pagos', icon: Settings, badge: null },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1616,6 +1621,17 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
             </button>
           </div>
         </form>
+      )}
+
+      {/* TAB: CRÉDITOS & ROLES */}
+      {activeTab === 'creditos' && (
+        <Suspense
+          fallback={
+            <div className="h-64 rounded-3xl bg-[#0e1018] border border-white/10 animate-pulse" />
+          }
+        >
+          <AdminCreditsRolesEditor onNotify={notify} />
+        </Suspense>
       )}
 
       {/* MODAL NUEVA SESIÓN MANUAL */}

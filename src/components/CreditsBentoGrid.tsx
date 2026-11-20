@@ -16,16 +16,16 @@ import {
 } from 'lucide-react';
 import {
   BADLENZ_CAREER_SUMMARY,
-  BADLENZ_VERIFIED_CREDITS,
   CreditRoleKey,
   VerifiedCreditItem,
 } from '../data/badlenzVerifiedCredits';
+import { useResolvedBadlenzCredits } from '../services/creditsRoles';
 import { LFCrestLogo, BadlenzLogo } from './BrandingLogos';
 
 const ROLE_TABS: { key: 'ALL' | CreditRoleKey | 'BMG'; label: string }[] = [
   { key: 'ALL', label: 'Todos' },
   { key: 'Producer', label: 'Productor' },
-  { key: 'Engineer', label: 'Ingeniero' },
+  { key: 'Engineer', label: 'Mezcla' },
   { key: 'Mastering', label: 'Mastering' },
   { key: 'Songwriter', label: 'Compositor' },
   { key: 'BMG', label: 'BMG Publishing' },
@@ -78,7 +78,12 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
-export const CreditsBentoGrid: React.FC = () => {
+export interface CreditsBentoGridProps {
+  onBookSession?: () => void;
+}
+
+export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSession }) => {
+  const { credits } = useResolvedBadlenzCredits();
   const [viewMode, setViewMode] = useState<'featured' | 'all'>('featured');
   const [roleFilter, setRoleFilter] = useState<'ALL' | CreditRoleKey | 'BMG'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,12 +135,12 @@ export const CreditsBentoGrid: React.FC = () => {
   };
 
   const featuredCredits = useMemo(() => {
-    return BADLENZ_VERIFIED_CREDITS.filter((c) => c.featured);
-  }, []);
+    return credits.filter((c) => c.featured);
+  }, [credits]);
 
   const filteredAllCredits = useMemo(() => {
     const q = normalizeText(searchQuery.trim());
-    return BADLENZ_VERIFIED_CREDITS.filter((c) => {
+    return credits.filter((c) => {
       if (roleFilter === 'BMG' && c.source !== 'BMG') return false;
       if (
         roleFilter !== 'ALL' &&
@@ -146,31 +151,31 @@ export const CreditsBentoGrid: React.FC = () => {
       }
       if (q) {
         const hay = normalizeText(
-          `${c.title} ${c.artists} ${c.album} ${c.label} ${c.isrc || ''} ${c.sourceLabel}`
+          `${c.title} ${c.artists} ${c.album} ${c.label} ${c.isrc || ''} ${c.sourceLabel} ${c.roleLabels.join(' ')}`
         );
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [roleFilter, searchQuery]);
+  }, [credits, roleFilter, searchQuery]);
 
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = {
-      ALL: BADLENZ_VERIFIED_CREDITS.length,
+      ALL: credits.length,
       Producer: 0,
       Engineer: 0,
       Mastering: 0,
       Songwriter: 0,
       BMG: 0,
     };
-    for (const c of BADLENZ_VERIFIED_CREDITS) {
+    for (const c of credits) {
       if (c.source === 'BMG') counts.BMG += 1;
       for (const r of c.roles) {
         if (counts[r] !== undefined) counts[r] += 1;
       }
     }
     return counts;
-  }, []);
+  }, [credits]);
 
   // High-res PNG Milestone Banner Exporter (1600x540 Press Kit / Header Banner)
   const handleDownloadBannerPng = () => {
@@ -849,7 +854,11 @@ export const CreditsBentoGrid: React.FC = () => {
         <button
           type="button"
           onClick={() => {
-            document.getElementById('seccion-calendario-booking')?.scrollIntoView({ behavior: 'smooth' });
+            if (onBookSession) {
+              onBookSession();
+            } else {
+              document.getElementById('seccion-calendario-booking')?.scrollIntoView({ behavior: 'smooth' });
+            }
           }}
           className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-wider transition shrink-0 shadow-lg shadow-red-950/50 cursor-pointer"
         >
