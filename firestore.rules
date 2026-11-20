@@ -1,69 +1,344 @@
 rules_version = '2';
 
+// ===============================================================
+// Assumed Data Model — La Facultad Studio (the-facultypr.vercel.app)
+// ===============================================================
+//
+// Collection: reservas
+// Document ID: reservaId (matches data.id, e.g., PS_ARTISTA)
+// Fields:
+//   - id: string (required, immutable, 1..128 chars, == reservaId)
+//   - clienteId: string (optional, <= 128 chars)
+//   - nombreArtistico: string (required, 1..120 chars)
+//   - fecha: string (required, 1..32 chars)
+//   - fechasBloque: list (optional, <= 30 items)
+//   - horaInicio: string (required, 1..20 chars)
+//   - horaSalida: string (required, 1..20 chars)
+//   - totalHoras: number (optional, 0..500)
+//   - servicios: list (optional, <= 30 items)
+//   - metodoPago: string (optional, enum: Efectivo | ATH Movil | PayPal | Zelle)
+//   - subtotal: number (required, 0..100000)
+//   - deposito: number (required, 0..100000)
+//   - balance: number (required, 0..100000)
+//   - estado: string (required, enum: Pendiente | Confirmada | En Proceso | Completada | Cancelada | Liberada)
+//   - depositoEstado: string (optional, enum: depositado | pendiente | paga_en_sesion)
+//   - firma: string (optional, base64 signature <= 300000 chars)
+//   - creadoEn: number (optional, epoch ms >= 0)
+//   - comprobanteAthUrl: string (optional, URL or base64 <= 500000 chars)
+//   - comprobanteNumReferencia: string (optional, <= 100 chars)
+//   - reagendadoDeFecha: string (optional, <= 32 chars)
+//   - motivoCancelacion: string (optional, <= 500 chars)
+//   - roughMixUrl: string (optional, <= 2048 chars)
+//   - roughMixNombre: string (optional, <= 200 chars)
+//   - tipoProyecto: string (optional, enum: single | ep_3_tracks | ep_5_tracks | album_completo | pack_semanal)
+//   - detallesTracklist: list (optional, <= 50 items)
+//   - estrellaOtorgada: bool (optional)
+//
+// Collection: clientes (CONTAINS PII — admin-only read/update/delete)
+// Document ID: clienteId (matches data.id, e.g., CLI-1234)
+// Fields:
+//   - id: string (required, immutable, 1..128 chars, == clienteId)
+//   - nombreArtistico: string (required, 1..120 chars)
+//   - nombreReal: string (optional, <= 120 chars)
+//   - email: string (optional, <= 160 chars)
+//   - telefono: string (required, 1..40 chars)
+//   - instagram: string (optional, <= 100 chars)
+//   - fechaCreacion: string (optional, <= 40 chars)
+//   - estrellasVip: number (optional, 0..20; public create must be 0 or omitted)
+//   - codigoSesion: string (optional, <= 64 chars; public create must be empty or omitted)
+//   - historialEstrellas: list (optional, <= 100 items; public create must be empty or omitted)
+//
+// Collection: leads_espera (CONTAINS PII — admin-only read/update/delete)
+// Document ID: leadId (matches data.id, e.g., VIP-1234)
+// Fields:
+//   - id: string (required, immutable, 1..128 chars, == leadId)
+//   - nombreArtistico: string (required, 1..120 chars)
+//   - nombreReal: string (optional, <= 120 chars)
+//   - telefono: string (required, 1..40 chars)
+//   - email: string (optional, <= 160 chars)
+//   - instagram: string (optional, <= 100 chars)
+//   - tipoProyecto: string (required, enum: grabacion_voces | mezcla_master | album_ep | instrumental | otro)
+//   - fechaTentativa: string (optional, <= 32 chars)
+//   - motivoCierre: string (required, 1..200 chars)
+//   - mensaje: string (optional, <= 1000 chars)
+//   - fechaRegistro: string (required, 1..40 chars)
+//   - contactado: bool (optional; public create must be false or omitted)
+//
+// Collection: studio_config, promo_slots, showcase_tracks
+//   - Public read; admin-only write (studio_config/main includes metaMensualUsd, paypalMeUrl, etc.).
+//
+// Collection: test
+//   - Public read (connectivity health check); no writes.
+//
+// Collection: finanzas (Admin-only studio ledger — income/expenses & monthly goal tracking)
+// Document ID: movId (e.g., FIN-123456)
+// Fields:
+//   - id: string (required, == movId)
+//   - fecha: string (required, YYYY-MM-DD)
+//   - concepto: string (required)
+//   - monto: number (required)
+//   - tipo: string (required, enum: ingreso | gasto)
+//   - metodoPago: string (required, enum: ATH Movil | Tarjeta / Stripe | PayPal | Efectivo)
+//   - nota: string (optional)
+//   - creadoEn: number (required, epoch ms)
+//
+// Collections: feedbacks, archivos, recibos, finanzas
+//   - Admin-only read/write.
+//
+// ===============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isValidId(id) {
-      return id is string && id.size() <= 128;
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Users and artist profiles
-    match /users/{userId} {
-      allow read, write: if true;
+    // Admin identified by Firebase Auth email claim.
+    // Note: email_verified is intentionally not required so manually created
+    // Firebase Console admin accounts work immediately.
+    function isAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email == 'ellentemalo@gmail.com';
     }
 
-    // Recibos and digital receipts
-    match /recibos/{reciboId} {
-      allow read, write: if true;
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() > 0 && val.size() <= maxLen;
     }
 
-    // Archivos de sesion (stems, mezclas, masters)
-    match /archivos/{archivoId} {
-      allow read, write: if true;
+    function isValidOptionalString(data, field, maxLen) {
+      return !(field in data) ||
+        data[field] == null ||
+        (data[field] is string && data[field].size() <= maxLen);
     }
 
-    // Clientes collection
-    match /clientes/{clienteId} {
-      allow read, write: if true;
+    function isNumberInRange(val, minVal, maxVal) {
+      return (val is int || val is float) && val >= minVal && val <= maxVal;
     }
 
-    // Reservas collection
+    function isValidOptionalNumberRange(data, field, minVal, maxVal) {
+      return !(field in data) ||
+        data[field] == null ||
+        isNumberInRange(data[field], minVal, maxVal);
+    }
+
+    function isValidOptionalList(data, field, maxSize) {
+      return !(field in data) ||
+        data[field] == null ||
+        (data[field] is list && data[field].size() <= maxSize);
+    }
+
+    function isValidOptionalBool(data, field) {
+      return !(field in data) ||
+        data[field] == null ||
+        data[field] is bool;
+    }
+
+    // ===============================================================
+    // Domain Validators (Called on BOTH create and update)
+    // ===============================================================
+
+    function isValidReserva(data, reservaId) {
+      return data.keys().hasOnly([
+          'id', 'clienteId', 'nombreArtistico', 'fecha', 'fechasBloque',
+          'horaInicio', 'horaSalida', 'totalHoras', 'servicios', 'metodoPago',
+          'subtotal', 'deposito', 'balance', 'estado', 'depositoEstado',
+          'firma', 'creadoEn', 'comprobanteAthUrl', 'comprobanteNumReferencia',
+          'reagendadoDeFecha', 'motivoCancelacion', 'roughMixUrl',
+          'roughMixNombre', 'tipoProyecto', 'detallesTracklist', 'estrellaOtorgada'
+        ]) &&
+        data.keys().hasAll([
+          'id', 'nombreArtistico', 'fecha', 'horaInicio', 'horaSalida',
+          'subtotal', 'deposito', 'balance', 'estado'
+        ]) &&
+        isNonEmptyString(data.id, 128) &&
+        data.id == reservaId &&
+        isValidOptionalString(data, 'clienteId', 128) &&
+        isNonEmptyString(data.nombreArtistico, 120) &&
+        isNonEmptyString(data.fecha, 32) &&
+        isValidOptionalList(data, 'fechasBloque', 30) &&
+        isNonEmptyString(data.horaInicio, 20) &&
+        isNonEmptyString(data.horaSalida, 20) &&
+        isValidOptionalNumberRange(data, 'totalHoras', 0, 500) &&
+        isValidOptionalList(data, 'servicios', 30) &&
+        (!('metodoPago' in data) || data.metodoPago == null ||
+          data.metodoPago in ['Efectivo', 'ATH Movil', 'PayPal', 'Zelle']) &&
+        isNumberInRange(data.subtotal, 0, 100000) &&
+        isNumberInRange(data.deposito, 0, 100000) &&
+        isNumberInRange(data.balance, 0, 100000) &&
+        data.estado in ['Pendiente', 'Confirmada', 'En Proceso', 'Completada', 'Cancelada', 'Liberada'] &&
+        (!('depositoEstado' in data) || data.depositoEstado == null ||
+          data.depositoEstado in ['depositado', 'pendiente', 'paga_en_sesion']) &&
+        isValidOptionalString(data, 'firma', 300000) &&
+        isValidOptionalNumberRange(data, 'creadoEn', 0, 9999999999999) &&
+        isValidOptionalString(data, 'comprobanteAthUrl', 500000) &&
+        isValidOptionalString(data, 'comprobanteNumReferencia', 100) &&
+        isValidOptionalString(data, 'reagendadoDeFecha', 32) &&
+        isValidOptionalString(data, 'motivoCancelacion', 500) &&
+        isValidOptionalString(data, 'roughMixUrl', 2048) &&
+        isValidOptionalString(data, 'roughMixNombre', 200) &&
+        (!('tipoProyecto' in data) || data.tipoProyecto == null ||
+          data.tipoProyecto in ['single', 'ep_3_tracks', 'ep_5_tracks', 'album_completo', 'pack_semanal']) &&
+        isValidOptionalList(data, 'detallesTracklist', 50) &&
+        isValidOptionalBool(data, 'estrellaOtorgada');
+    }
+
+    function isValidPublicReservaCreate(data) {
+      return data.estado == 'Pendiente' &&
+        (!('depositoEstado' in data) || data.depositoEstado == null ||
+          data.depositoEstado in ['pendiente', 'paga_en_sesion']) &&
+        (!('estrellaOtorgada' in data) || data.estrellaOtorgada == null ||
+          data.estrellaOtorgada == false);
+    }
+
+    function isValidPublicComprobanteUpdate() {
+      return resource.data.estado == 'Pendiente' &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['comprobanteAthUrl', 'comprobanteNumReferencia']);
+    }
+
+    function isValidCliente(data, clienteId) {
+      return data.keys().hasOnly([
+          'id', 'nombreArtistico', 'nombreReal', 'email', 'telefono',
+          'instagram', 'fechaCreacion', 'estrellasVip', 'codigoSesion',
+          'historialEstrellas'
+        ]) &&
+        data.keys().hasAll(['id', 'nombreArtistico', 'telefono']) &&
+        isNonEmptyString(data.id, 128) &&
+        data.id == clienteId &&
+        isNonEmptyString(data.nombreArtistico, 120) &&
+        isNonEmptyString(data.telefono, 40) &&
+        isValidOptionalString(data, 'nombreReal', 120) &&
+        isValidOptionalString(data, 'email', 160) &&
+        isValidOptionalString(data, 'instagram', 100) &&
+        isValidOptionalString(data, 'fechaCreacion', 40) &&
+        isValidOptionalNumberRange(data, 'estrellasVip', 0, 20) &&
+        isValidOptionalString(data, 'codigoSesion', 64) &&
+        isValidOptionalList(data, 'historialEstrellas', 100);
+    }
+
+    function isValidPublicClienteCreate(data) {
+      return (!('estrellasVip' in data) || data.estrellasVip == null || data.estrellasVip == 0) &&
+        (!('codigoSesion' in data) || data.codigoSesion == null || data.codigoSesion == '') &&
+        (!('historialEstrellas' in data) || data.historialEstrellas == null || data.historialEstrellas.size() == 0);
+    }
+
+    function isValidLeadEspera(data, leadId) {
+      return data.keys().hasOnly([
+          'id', 'nombreArtistico', 'nombreReal', 'telefono', 'email',
+          'instagram', 'tipoProyecto', 'fechaTentativa', 'motivoCierre',
+          'mensaje', 'fechaRegistro', 'contactado'
+        ]) &&
+        data.keys().hasAll([
+          'id', 'nombreArtistico', 'telefono', 'tipoProyecto',
+          'motivoCierre', 'fechaRegistro'
+        ]) &&
+        isNonEmptyString(data.id, 128) &&
+        data.id == leadId &&
+        isNonEmptyString(data.nombreArtistico, 120) &&
+        isValidOptionalString(data, 'nombreReal', 120) &&
+        isNonEmptyString(data.telefono, 40) &&
+        isValidOptionalString(data, 'email', 160) &&
+        isValidOptionalString(data, 'instagram', 100) &&
+        data.tipoProyecto in ['grabacion_voces', 'mezcla_master', 'album_ep', 'instrumental', 'otro'] &&
+        isValidOptionalString(data, 'fechaTentativa', 32) &&
+        isNonEmptyString(data.motivoCierre, 200) &&
+        isValidOptionalString(data, 'mensaje', 1000) &&
+        isNonEmptyString(data.fechaRegistro, 40) &&
+        isValidOptionalBool(data, 'contactado');
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Public studio configuration, blocked dates, and status
+    match /studio_config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Promo Reapertura slot counters
+    match /promo_slots/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // A/B Showcase audio tracks
+    match /showcase_tracks/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Connectivity check document (read-only)
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Studio reservations
+    // - Public can read (availability & active pass) and create 'Pendiente' bookings.
+    // - Public can attach ATH Movil proof ONLY while estado == 'Pendiente' and ONLY
+    //   modifying comprobanteAthUrl / comprobanteNumReferencia.
+    // - Only admin can confirm/complete/cancel/release or delete reservations.
     match /reservas/{reservaId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if isValidReserva(request.resource.data, reservaId) &&
+        (isAdmin() || isValidPublicReservaCreate(request.resource.data));
+      allow update: if isValidReserva(request.resource.data, reservaId) &&
+        request.resource.data.id == resource.data.id &&
+        (isAdmin() || isValidPublicComprobanteUpdate());
+      allow delete: if isAdmin();
     }
 
-    // Showcase Tracks collection
-    match /showcase_tracks/{trackId} {
-      allow read, write: if true;
+    // CRM client records (contains PII: email, phone, real name)
+    // - Public can only create a new client record during booking (0 VIP stars).
+    // - Only admin can read, update, or delete client records.
+    match /clientes/{clienteId} {
+      allow read: if isAdmin();
+      allow create: if isValidCliente(request.resource.data, clienteId) &&
+        (isAdmin() || isValidPublicClienteCreate(request.resource.data));
+      allow update: if isAdmin() &&
+        isValidCliente(request.resource.data, clienteId) &&
+        request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
     }
 
-    // Song Feedbacks collection
-    match /song_feedbacks/{feedbackId} {
-      allow read, write: if true;
+    // Waitlist leads when studio is paused (contains PII)
+    match /leads_espera/{leadId} {
+      allow read: if isAdmin();
+      allow create: if isValidLeadEspera(request.resource.data, leadId) &&
+        (isAdmin() || !('contactado' in request.resource.data) || request.resource.data.contactado == false);
+      allow update: if isAdmin() &&
+        isValidLeadEspera(request.resource.data, leadId) &&
+        request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
     }
 
+    // Admin-managed internal collections
     match /feedbacks/{feedbackId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
 
-    // Studio config
-    match /studio_config/{configId} {
-      allow read, write: if true;
+    match /archivos/{archivoId} {
+      allow read, write: if isAdmin();
     }
 
-    // Promo slots counter
-    match /promo_slots/{slotId} {
-      allow read, write: if true;
+    match /recibos/{reciboId} {
+      allow read, write: if isAdmin();
     }
 
-    // Test connection doc
-    match /test/{testId} {
-      allow read, write: if true;
+    match /finanzas/{movId} {
+      allow read, write: if isAdmin();
     }
 
-    // Fallback catch-all rule
+    // Default deny everything else
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

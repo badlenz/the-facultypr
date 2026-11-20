@@ -100,20 +100,20 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
   return (
     <aside 
       aria-label="Reproductor de audio del estudio"
-      className="fixed bottom-2 sm:bottom-3 left-2 sm:left-4 right-2 sm:right-4 max-w-5xl mx-auto z-40 antigravity-glass rounded-2xl border border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.75)] transition-all duration-300 overflow-hidden"
+      className="fixed bottom-2 sm:bottom-3 left-2 sm:left-4 right-2 sm:right-4 max-w-5xl mx-auto z-40 antigravity-glass rounded-2xl border border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.75)] transition-all duration-300 overflow-hidden pb-[env(safe-area-inset-bottom)]"
     >
-      {/* Hidden audio tags for seamless A/B switching */}
+      {/* Hidden audio tags for seamless A/B switching (preload="none" para velocidad 4G/5G) */}
       <audio
         ref={audioARef}
         src="/zyron-tukutu-reff.mp3"
-        preload="auto"
+        preload="none"
         loop
         onTimeUpdate={handleTimeUpdate}
       />
       <audio
         ref={audioBRef}
         src="/zyron-tukutu-master.m4a"
-        preload="auto"
+        preload="none"
         loop
       />
 

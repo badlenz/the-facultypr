@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Phone, MessageCircle, Clock, ShieldCheck, Car, Sparkles } from 'lucide-react';
+import { getStudioConfig, StudioConfig } from '../services/db';
 
 export const UbicacionPuertoRico: React.FC = () => {
+  const [config, setConfig] = useState<StudioConfig>(() => getStudioConfig());
+
+  useEffect(() => {
+    const sync = () => setConfig(getStudioConfig());
+    window.addEventListener('la_facultad_config_updated', sync);
+    return () => window.removeEventListener('la_facultad_config_updated', sync);
+  }, []);
+
+  const googleUrl = config.googleMapsLocationUrl || 'https://maps.google.com/?q=Hormigueros,+Puerto+Rico';
+  const wazeUrl = config.wazeLocationUrl || 'https://waze.com/ul?ll=18.1397,-67.1274&navigate=yes';
+  const appleUrl = config.appleMapsLocationUrl || 'https://maps.apple/p/unF0mQRXa_jENT';
+
   return (
     <div id="ubicacion-estudio" className="rounded-3xl antigravity-glass-panel border border-white/10 p-6 sm:p-8 space-y-6 relative overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.7)] scroll-mt-24">
       <div className="absolute top-0 left-1/3 w-80 h-40 bg-red-600/10 rounded-full blur-[90px] pointer-events-none" />
@@ -59,7 +72,7 @@ export const UbicacionPuertoRico: React.FC = () => {
                 La Facultad Studio • Prod. Badlenz
               </h3>
               <p className="text-xs text-gray-300">
-                Sector Hormigueros Pueblo / Carr. PR-344, Hormigueros, PR 00660
+                {config.direccionTexto || 'Sector Hormigueros Pueblo / Carr. PR-344, Hormigueros, PR 00660'}
               </p>
             </div>
             <span className="text-[10px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono font-bold">
@@ -83,26 +96,36 @@ export const UbicacionPuertoRico: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          {/* Navigation Action Buttons (Google Maps, Waze, Apple Maps) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
             <a
-              href="https://maps.google.com/?q=Hormigueros,+Puerto+Rico"
+              href={googleUrl}
               target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
+              rel="noopener noreferrer"
+              className="min-h-[44px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
             >
-              <Navigation className="w-4 h-4" />
-              <span>Abrir en Google Maps</span>
+              <Navigation className="w-4 h-4 shrink-0" />
+              <span>Google Maps</span>
             </a>
 
             <a
-              href="https://waze.com/ul?q=Hormigueros+Puerto+Rico"
+              href={wazeUrl}
               target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center gap-2 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 text-[#33ccff] border border-[#33ccff]/40 font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
+              rel="noopener noreferrer"
+              className="min-h-[44px] flex items-center justify-center gap-2 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 text-[#33ccff] border border-[#33ccff]/40 font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
             >
-              <Navigation className="w-4 h-4 text-[#33ccff]" />
-              <span>Abrir en Waze</span>
+              <Navigation className="w-4 h-4 text-[#33ccff] shrink-0" />
+              <span>Waze</span>
+            </a>
+
+            <a
+              href={appleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-h-[44px] flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600/80 font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
+            >
+              <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Apple Maps</span>
             </a>
           </div>
         </div>

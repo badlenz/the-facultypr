@@ -124,7 +124,7 @@ export interface Reserva {
   horaSalida: string;
   totalHoras: number;
   servicios: string[];
-  metodoPago: 'Efectivo' | 'ATH Movil' | 'PayPal' | 'Zelle';
+  metodoPago: 'Efectivo' | 'ATH Movil' | 'Tarjeta / Stripe' | 'PayPal' | 'Zelle';
   subtotal: number;
   deposito: number;
   balance: number;
@@ -170,11 +170,51 @@ try {
   onSnapshot(collection(db, 'reservas'), (snapshot) => {
     const list: Reserva[] = [];
     snapshot.forEach(d => list.push(d.data() as Reserva));
-    if (list.length > 0) {
-      localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(list));
+    localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(list));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('la_facultad_reservas_updated'));
     }
   }, (err) => {
     console.warn('Firestore Reservas sync offline mode:', err.message);
+  });
+
+  onSnapshot(doc(db, 'studio_config', 'main'), (snap) => {
+    if (snap.exists()) {
+      const merged = { ...DEFAULT_STUDIO_CONFIG, ...snap.data() };
+      localStorage.setItem(STORAGE_KEY_STUDIO_CONFIG, JSON.stringify(merged));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('la_facultad_config_updated'));
+      }
+    }
+  }, (err) => {
+    console.warn('Firestore studio_config sync notice:', err.message);
+  });
+
+  onSnapshot(doc(db, 'promo_slots', 'main'), (snap) => {
+    if (snap.exists()) {
+      const data = snap.data() as { reservados?: number };
+      if (typeof data?.reservados === 'number') {
+        localStorage.setItem(STORAGE_KEY_PROMO_SLOTS, String(data.reservados));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('la_facultad_promo_slots_updated'));
+        }
+      }
+    }
+  }, (err) => {
+    console.warn('Firestore promo_slots sync notice:', err.message);
+  });
+
+  onSnapshot(collection(db, 'showcase_tracks'), (snapshot) => {
+    const list: ShowcaseTrack[] = [];
+    snapshot.forEach(d => list.push(d.data() as ShowcaseTrack));
+    if (list.length > 0) {
+      localStorage.setItem(STORAGE_KEY_SHOWCASE_TRACKS, JSON.stringify(list));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('la_facultad_showcase_updated'));
+      }
+    }
+  }, (err) => {
+    console.warn('Firestore showcase_tracks sync notice:', err.message);
   });
 } catch (e) {
   console.warn('Firestore background listener initialization notice:', e);
@@ -225,7 +265,7 @@ export const getReservas = (): Reserva[] => {
   return data ? JSON.parse(data) : [];
 };
 
-export const guardarReserva = (reservaData: Omit<Reserva, 'id' | 'estado' | 'metodoPago'> & { estado?: Reserva['estado'], metodoPago?: 'Efectivo' | 'ATH Movil' | 'PayPal' | 'Zelle' }): Reserva => {
+export const guardarReserva = (reservaData: Omit<Reserva, 'id' | 'estado' | 'metodoPago'> & { estado?: Reserva['estado'], metodoPago?: 'Efectivo' | 'ATH Movil' | 'Tarjeta / Stripe' | 'PayPal' | 'Zelle' }): Reserva => {
   const reservas = getReservas();
   
   const cleanName = (reservaData.nombreArtistico || 'ARTISTA')
@@ -393,21 +433,31 @@ export const eliminarCliente = (id: string): Cliente[] => {
 export interface StudioConfig {
   googleMapsLocationUrl: string;
   wazeLocationUrl: string;
+  appleMapsLocationUrl?: string;
   direccionTexto: string;
   instruccionesEstacionamiento: string;
   maxAcompanantes: number;
   politicaEntregaTexto: string;
+  stripeDepositLink?: string;
+  athMovilTelefono?: string;
+  paypalMeUrl?: string;
+  metaMensualUsd?: number;
 }
 
 const STORAGE_KEY_STUDIO_CONFIG = 'la_facultad_studio_config_db';
 
 export const DEFAULT_STUDIO_CONFIG: StudioConfig = {
   googleMapsLocationUrl: 'https://maps.google.com/?q=Hormigueros+Puerto+Rico',
-  wazeLocationUrl: 'https://waze.com/ul?ll=18.1397,-67.1274',
+  wazeLocationUrl: 'https://waze.com/ul?ll=18.1397,-67.1274&navigate=yes',
+  appleMapsLocationUrl: 'https://maps.apple/p/unF0mQRXa_jENT',
   direccionTexto: 'Hormigueros, Puerto Rico (Sector Central)',
   instruccionesEstacionamiento: 'Estacionamiento privado exclusivo disponible frente a las instalaciones del estudio. Favor de estacionar de frente en los espacios rotulados.',
   maxAcompanantes: 2,
-  politicaEntregaTexto: 'Rough Mix MP3/WAV inmediato al finalizar las 4 horas de sesión. De 24 a 72 horas se entrega la mezcla y el máster completo en tu Bóveda VIP.'
+  politicaEntregaTexto: 'Rough Mix MP3/WAV inmediato al finalizar las 4 horas de sesión. De 24 a 72 horas se entrega la mezcla y el máster completo en tu Bóveda VIP en Faculty Projects.',
+  stripeDepositLink: ((import.meta as any).env?.VITE_STRIPE_DEPOSIT_LINK || '').trim(),
+  athMovilTelefono: '(787) 240-8627',
+  paypalMeUrl: 'https://paypal.me/badlenzprod',
+  metaMensualUsd: 700,
 };
 
 export const getStudioConfig = (): StudioConfig => {
@@ -925,4 +975,106 @@ export const guardarLeadEspera = async (lead: LeadEspera): Promise<void> => {
     console.error('Error guardando lead en espera:', err);
     throw err;
   }
+};
+
+// ==========================================
+// FINANZAS DEL STUDIO (INGRESOS / GASTOS + META MENSUAL + SERVICIOS)
+// ==========================================
+export type CategoriaServicioFinanza =
+  | 'grabacion_voces'
+  | 'mezcla_master'
+  | 'mezcla_sola'
+  | 'master_solo'
+  | 'instrumental'
+  | 'renta_estudio'
+  | 'produccion_completa'
+  | 'otro';
+
+export const CATEGORIAS_SERVICIO_FINANZA: { id: CategoriaServicioFinanza; label: string }[] = [
+  { id: 'grabacion_voces', label: 'Grabación de Voces' },
+  { id: 'mezcla_master', label: 'Mezcla y Máster' },
+  { id: 'mezcla_sola', label: 'Mezcla Sola' },
+  { id: 'master_solo', label: 'Máster Solo' },
+  { id: 'instrumental', label: 'Instrumental / Beat' },
+  { id: 'renta_estudio', label: 'Renta de Estudio / Horas' },
+  { id: 'produccion_completa', label: 'Producción Completa' },
+  { id: 'otro', label: 'Otro / Gasto Operativo' },
+];
+
+export interface MovimientoFinanciero {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  concepto: string;
+  monto: number;
+  tipo: 'ingreso' | 'gasto';
+  categoriaServicio?: CategoriaServicioFinanza;
+  metodoPago: 'ATH Movil' | 'Tarjeta / Stripe' | 'PayPal' | 'Efectivo';
+  nota?: string;
+  creadoEn: number;
+}
+
+const STORAGE_KEY_FINANZAS = 'la_facultad_finanzas_db';
+export const FINANZAS_UPDATED_EVENT = 'la_facultad_finanzas_updated';
+
+let finanzasListenerStarted = false;
+export const iniciarSyncFinanzas = () => {
+  if (finanzasListenerStarted || typeof window === 'undefined') return;
+  finanzasListenerStarted = true;
+  try {
+    onSnapshot(
+      collection(db, 'finanzas'),
+      (snap) => {
+        const list: MovimientoFinanciero[] = [];
+        snap.forEach((d) => list.push(d.data() as MovimientoFinanciero));
+        localStorage.setItem(STORAGE_KEY_FINANZAS, JSON.stringify(list));
+        window.dispatchEvent(new Event(FINANZAS_UPDATED_EVENT));
+      },
+      (err) => {
+        console.warn('Firestore finanzas sync notice:', err.message);
+      }
+    );
+  } catch (err) {
+    console.warn('Finanzas sync init notice:', err);
+  }
+};
+
+export const getMovimientosFinancieros = (): MovimientoFinanciero[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FINANZAS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const guardarMovimientoFinanciero = (
+  data: Omit<MovimientoFinanciero, 'id' | 'creadoEn'>
+): MovimientoFinanciero[] => {
+  const list = getMovimientosFinancieros();
+  const nuevo: MovimientoFinanciero = {
+    ...data,
+    id: `FIN-${Date.now().toString().slice(-6)}`,
+    creadoEn: Date.now(),
+  };
+  const updated = [nuevo, ...list];
+  localStorage.setItem(STORAGE_KEY_FINANZAS, JSON.stringify(updated));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(FINANZAS_UPDATED_EVENT));
+  }
+  setDoc(doc(db, 'finanzas', nuevo.id), nuevo).catch((err) => {
+    console.warn('Firestore guardarMovimientoFinanciero notice:', err);
+  });
+  return updated;
+};
+
+export const eliminarMovimientoFinanciero = (id: string): MovimientoFinanciero[] => {
+  const list = getMovimientosFinancieros().filter((m) => m.id !== id);
+  localStorage.setItem(STORAGE_KEY_FINANZAS, JSON.stringify(list));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(FINANZAS_UPDATED_EVENT));
+  }
+  deleteDoc(doc(db, 'finanzas', id)).catch((err) => {
+    console.warn('Firestore eliminarMovimientoFinanciero notice:', err);
+  });
+  return list;
 };

@@ -370,7 +370,7 @@ export const AudioShowcaseAB: React.FC = () => {
         <audio 
           ref={audioARef} 
           src={playableAudioA} 
-          preload="auto" 
+          preload="none" 
           loop 
           onTimeUpdate={(e) => {
             if (hasCustomAudio) {
@@ -391,7 +391,7 @@ export const AudioShowcaseAB: React.FC = () => {
         <audio 
           ref={audioBRef} 
           src={playableAudioB} 
-          preload="auto" 
+          preload="none" 
           loop 
           onTimeUpdate={(e) => {
             if (hasCustomAudio) {

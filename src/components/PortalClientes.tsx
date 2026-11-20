@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { guardarCliente, guardarReserva, actualizarReserva, Reserva, getPromoSlotsCount, getStudioConfig, StudioConfig } from '../services/db';
-import { CalendarioSection } from './Calendario/CalendarioSection';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { guardarCliente, guardarReserva, actualizarReserva, getReservas, Reserva, getPromoSlotsCount, getStudioConfig, StudioConfig } from '../services/db';
 import { SlotDisponibilidad, obtenerDisponibilidadMes } from '../services/schedule';
 import { UbicacionPuertoRico } from './UbicacionPuertoRico';
 import { AvisoEstudioCerrado } from './AvisoEstudioCerrado';
 import { getStudioLiveStatus, subscribeToStudioStatus, StudioLiveStatus } from '../services/studioStatus';
-import { jsPDF } from 'jspdf';
+import { compressImageToDataUrl, downloadSessionIcs } from '../utils/compressImage';
 import { ScrollReveal } from './ScrollReveal';
 import { BadlenzLogo, LFCrestLogo } from './BrandingLogos';
 import { StudioGuaranteesBento } from './StudioGuaranteesBento';
-import AudioShowcaseAB from './AudioShowcaseAB';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
+
+const CalendarioSection = lazyWithRetry(() => import('./Calendario/CalendarioSection').then(m => ({ default: m.CalendarioSection })));
+const AudioShowcaseAB = lazyWithRetry(() => import('./AudioShowcaseAB'));
 import { 
   UploadCloud, 
   Music, 
@@ -107,7 +109,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     tempoBpm: '120 BPM' as string,
 
     // Método de Pago
-    metodoPago: 'ATH Movil' as 'Efectivo' | 'ATH Movil' | 'PayPal' | 'Zelle',
+    metodoPago: 'ATH Movil' as 'Efectivo' | 'ATH Movil' | 'Tarjeta / Stripe' | 'PayPal' | 'Zelle',
 
     // 3. Referencias Musicales
     referencias: '',
@@ -127,7 +129,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   const [athComprobanteUrl, setAthComprobanteUrl] = useState<string>('');
   const [athComprobanteNombre, setAthComprobanteNombre] = useState<string>('');
 
-  const handleAthScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAthScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -135,13 +137,13 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       return;
     }
     setAthComprobanteNombre(file.name);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setAthComprobanteUrl(base64);
-      showToast('📸 ¡Captura de ATH Móvil adjunta con éxito!', 'success');
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageToDataUrl(file, 1000, 0.72);
+      setAthComprobanteUrl(compressed);
+      showToast('📸 ¡Captura de ATH Móvil optimizada y adjunta con éxito!', 'success');
+    } catch {
+      showToast('No se pudo procesar la imagen. Intenta con otra captura.', 'error');
+    }
   };
 
   const handleRemoveAthScreenshot = () => {
@@ -201,6 +203,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
   const [reservaActiva, setReservaActiva] = useState<Reserva | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isStartingStripe, setIsStartingStripe] = useState(false);
   const [archivosSubidos, setArchivosSubidos] = useState<{ nombre: string, tamano: string }[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [playingFileIndex, setPlayingFileIndex] = useState<number | null>(null);
@@ -227,6 +230,34 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     }, 4500);
   };
 
+  // Detectar retorno exitoso o cancelado desde Stripe Checkout
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const stripePaid = params.get('stripe_paid');
+    const stripeCanceled = params.get('stripe_canceled');
+    const reservaId = params.get('reserva');
+    const sessionId = params.get('session_id');
+
+    if (stripePaid === '1' && reservaId) {
+      const found = getReservas().find((r) => r.id === reservaId);
+      const stripeRef = sessionId ? `STRIPE_${sessionId.slice(-12).toUpperCase()}` : 'STRIPE_PAGADO';
+      if (found) {
+        actualizarReserva(found.id, { comprobanteNumReferencia: stripeRef });
+        setReservaActiva({ ...found, comprobanteNumReferencia: stripeRef });
+        setComprobanteEnviadoExito(true);
+        setTimeout(() => {
+          document.getElementById('seccion-resumen')?.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+      showToast(`✅ ¡Depósito con Stripe procesado! Referencia ${stripeRef} registrada en tu Pase #${reservaId}.`, 'success');
+      window.history.replaceState(null, '', window.location.pathname);
+    } else if (stripeCanceled === '1') {
+      showToast('Pago con Stripe cancelado. Puedes intentar de nuevo o usar ATH Móvil.', 'info');
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
   // Temporizador de 30 minutos activo al generar la reserva pendiente
   useEffect(() => {
     if (!reservaActiva) return;
@@ -245,21 +276,22 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     return () => clearInterval(interval);
   }, [reservaActiva]);
 
-  // Manejador para subir foto/captura del recibo ATH Móvil
-  const handleUploadAthReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Manejador para subir foto/captura del recibo ATH Móvil (comprimida para Firestore <150 KB)
+  const handleUploadAthReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      showToast('La imagen no debe superar los 8MB.', 'error');
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('La imagen no debe superar los 12MB.', 'error');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setComprobanteAthFile(base64);
+    try {
+      const compressed = await compressImageToDataUrl(file, 1000, 0.72);
+      setComprobanteAthFile(compressed);
       setComprobanteAthNombre(file.name);
-    };
-    reader.readAsDataURL(file);
+      showToast('📸 Captura optimizada lista para enviar.', 'success');
+    } catch {
+      showToast('No se pudo leer la captura. Intenta con JPG o PNG.', 'error');
+    }
   };
 
   // Digital Signature Canvas States & Ref
@@ -771,6 +803,102 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     }, 100);
   };
 
+  const handlePayWithStripe = async () => {
+    const errors: { nombreArtistico?: string; telefono?: string } = {};
+    if (!formData.nombreArtistico.trim()) {
+      errors.nombreArtistico = 'Ingresa tu nombre artístico para pagar con Stripe';
+    }
+    if (!formData.telefono.trim()) {
+      errors.telefono = 'Ingresa tu número de WhatsApp para enviarte tu Pase VIP';
+    }
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      setCheckoutStep(2);
+      showToast('Completa tu Nombre Artístico y WhatsApp en el Paso 2 antes de pagar con Stripe.', 'warning');
+      return;
+    }
+
+    setIsStartingStripe(true);
+    try {
+      const listaServicios: string[] = [];
+      if (formData.servicios.grabacion) listaServicios.push('Grabación de Voces/Instr.');
+      if (formData.servicios.instrumental) listaServicios.push('Servicio de Instrumental');
+      if (formData.servicios.mezclaMaster) listaServicios.push('Mezcla y Masterización');
+      if (formData.servicios.produccionCompleta) listaServicios.push('Producción Completa');
+      if (listaServicios.length === 0) listaServicios.push('Sesión de Grabación (4h)');
+
+      const cliente = guardarCliente({
+        nombreArtistico: formData.nombreArtistico.trim(),
+        nombreReal: formData.nombreReal || formData.nombreArtistico.trim(),
+        email: formData.email || `${formData.nombreArtistico.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
+        telefono: formData.telefono.trim(),
+        instagram: formData.redesSociales,
+      });
+
+      const nuevaReserva = guardarReserva({
+        clienteId: cliente.id,
+        nombreArtistico: formData.nombreArtistico.trim(),
+        fecha: formData.fecha,
+        fechasBloque: esReservaEnBloque ? fechasSeleccionadasBloque : undefined,
+        horaInicio: formData.horaInicio,
+        horaSalida: formData.horaSalida,
+        totalHoras: duracionHoras,
+        servicios: listaServicios,
+        metodoPago: 'Tarjeta / Stripe',
+        subtotal,
+        deposito,
+        balance,
+        estado: 'Pendiente',
+      });
+
+      // Enviar alerta por correo en segundo plano
+      fetch('/api/enviar-email-reserva', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cliente, reserva: nuevaReserva }),
+      }).catch(() => {});
+
+      const res = await fetch('/api/crear-checkout-stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reservaId: nuevaReserva.id,
+          nombreArtistico: nuevaReserva.nombreArtistico,
+          email: formData.email,
+          fecha: nuevaReserva.fecha,
+          horaInicio: nuevaReserva.horaInicio,
+          horaSalida: nuevaReserva.horaSalida,
+          deposito: nuevaReserva.deposito,
+          paquete: listaServicios.join(' + '),
+          origin: window.location.origin,
+        }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+      }
+
+      // Fallback si se prueba en Vite local sin Vercel Functions o si hay Payment Link manual
+      if (studioConfig.stripeDepositLink) {
+        setReservaActiva(nuevaReserva);
+        window.open(studioConfig.stripeDepositLink, '_blank', 'noopener,noreferrer');
+        showToast('Se abrió tu link seguro de Stripe. Tu Pase VIP ya quedó generado.', 'info');
+      } else {
+        setReservaActiva(nuevaReserva);
+        showToast('Reserva creada (# ' + nuevaReserva.id + '). El Checkout automático de Stripe funcionará en vivo al desplegar en Vercel con STRIPE_SECRET_KEY.', 'info');
+      }
+    } catch {
+      showToast('No se pudo conectar con Stripe ahora. Puedes completar tu depósito por ATH Móvil.', 'error');
+    } finally {
+      setIsStartingStripe(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -879,8 +1007,9 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     });
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!reservaActiva) return;
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1394,67 +1523,56 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
             </p>
           </div>
 
-          {/* Action Row & Live Reopening Offer */}
-          <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
-            <div className="flex flex-wrap items-center gap-3">
+          {/* Action Row & Live Reopening Offer (UI/UX Pro Max: 1 Dominant CTA + 1 Secondary) */}
+          <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 type="button"
                 onClick={() => {
                   document.getElementById('tarifas-estudio')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="taste-btn px-6 py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-dmsans font-bold text-sm tracking-wide shadow-lg shadow-red-950/50 hover:shadow-red-900/60 cursor-pointer text-center"
+                className="taste-btn min-h-[48px] px-7 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-syne font-extrabold text-sm uppercase tracking-wider shadow-[0_12px_32px_rgba(220,38,38,0.45)] hover:shadow-[0_16px_40px_rgba(220,38,38,0.6)] cursor-pointer flex items-center justify-center gap-2"
               >
-                Elegir Paquete &amp; Ver Fechas →
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCopyAthPhone}
-                className="taste-btn px-4 py-3.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 font-mono text-xs flex items-center justify-center gap-2 cursor-pointer"
-                title="Copiar número de ATH Móvil"
-              >
-                <Smartphone className="w-4 h-4 text-amber-400" />
-                <span>{copiedAthPhone ? '¡Copiado!' : 'ATH Móvil: (787) 240-8627'}</span>
+                <Calendar className="w-4 h-4" />
+                <span>Reservar Sesión ($50 Depósito) →</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('open-artist-portal-modal'));
+                  document.getElementById('seccion-muestras-ab')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="taste-btn px-4 py-3.5 rounded-xl bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/60 hover:border-amber-400 font-syne font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.18)] cursor-pointer transition-all"
-                title="Abrir Portal de Artista VIP, Temas, Recibos y Recompensas"
+                className="taste-btn min-h-[48px] px-5 py-3.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-100 border border-zinc-700/80 hover:border-amber-400/60 font-syne font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Headphones className="w-4 h-4 text-amber-400" />
-                <span>Portal de Artista VIP</span>
-                <Sparkles className="w-3.5 h-3.5 text-amber-400/80" />
+                <span>Escuchar Sonido A/B</span>
               </button>
 
-              <a
-                href="https://wa.me/17872408627?text=¡Saludos%20Badlenz!%20Vi%20la%20página%20y%20quiero%20hacerte%20una%20consulta%20para%20grabar%20mi%20sesión%20en%20La%20Facultad."
-                target="_blank"
-                rel="noreferrer"
-                className="taste-btn px-4 py-3.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-300 border border-emerald-700/50 font-dmsans font-medium text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              <button
+                type="button"
+                onClick={handleCopyAthPhone}
+                className="taste-btn min-h-[48px] px-4 py-3 rounded-2xl bg-black/50 hover:bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800 font-mono text-xs flex items-center justify-center gap-2 cursor-pointer"
+                title="Copiar número de ATH Móvil"
               >
-                <MessageCircle className="w-4 h-4 text-emerald-400" />
-                <span>WhatsApp</span>
-              </a>
+                <Smartphone className="w-4 h-4 text-amber-400" />
+                <span>{copiedAthPhone ? '¡Copiado!' : 'ATH · Stripe · PayPal'}</span>
+              </button>
             </div>
 
             {/* Reopening Promo Badge */}
-            <div className="bg-[#12141c]/90 border border-red-900/50 p-3 rounded-2xl flex items-center justify-between sm:justify-start gap-3.5 shrink-0 shadow-lg">
+            <div className="bg-[#12141c]/95 border border-red-900/50 p-3 rounded-2xl flex items-center justify-between sm:justify-start gap-3.5 shrink-0 shadow-lg">
               <div>
                 <span className="text-[10px] font-mono text-red-400 font-bold uppercase tracking-wider block">
                   Promo Reapertura ($130 USD)
                 </span>
-                <span className="text-xs text-zinc-300 font-medium">
+                <span className="text-xs text-zinc-200 font-medium tabular-nums">
                   {promoSlotsInfo.disponibles > 0 ? `Quedan ${promoSlotsInfo.disponibles} de 6 turnos` : 'Cupos de reapertura agotados'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => handleSelectPackage('promo')}
-                className="taste-btn text-xs bg-red-600/25 hover:bg-red-600/40 text-red-300 border border-red-500/50 font-bold px-3 py-1.5 rounded-lg cursor-pointer whitespace-nowrap"
+                className="taste-btn min-h-[40px] text-xs bg-red-600/25 hover:bg-red-600/40 text-red-200 border border-red-500/50 font-bold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap"
               >
                 Elegir Promo
               </button>
@@ -1492,7 +1610,9 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       {/* DEMOSTRACIÓN AUDITIVA A/B EN VIVO BADLENZ */}
       <ScrollReveal delayMs={40}>
         <div id="seccion-muestras-ab" className="scroll-mt-24">
-          <AudioShowcaseAB />
+          <Suspense fallback={<div className="h-64 rounded-3xl bg-[#11131d] border border-white/10 animate-pulse" />}>
+            <AudioShowcaseAB />
+          </Suspense>
         </div>
       </ScrollReveal>
 
@@ -2141,22 +2261,24 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     </div>
                   </div>
                   
-                  <CalendarioSection 
-                    selectedDate={formData.fecha}
-                    onSelectSlot={(slot) => {
-                      const diaStr = String(slot.diaNumero).padStart(2, '0');
-                      const fechaSeleccionada = slot.fechaStr || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${diaStr}`;
-                      const bloques = generarBloquesDeSesion(slot.horarioPermitido);
-                      const primerBloque = bloques[0] || { start: '13:00', end: '17:00' };
-                      setFormData(prev => ({
-                        ...prev,
-                        fecha: fechaSeleccionada,
-                        horaInicio: primerBloque.start,
-                        horaSalida: primerBloque.end
-                      }));
-                      showToast(`📅 Día ${slot.diaNumero} seleccionado con éxito`, 'success');
-                    }} 
-                  />
+                  <Suspense fallback={<div className="h-72 rounded-xl bg-black/40 border border-zinc-800 animate-pulse" />}>
+                    <CalendarioSection 
+                      selectedDate={formData.fecha}
+                      onSelectSlot={(slot) => {
+                        const diaStr = String(slot.diaNumero).padStart(2, '0');
+                        const fechaSeleccionada = slot.fechaStr || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${diaStr}`;
+                        const bloques = generarBloquesDeSesion(slot.horarioPermitido);
+                        const primerBloque = bloques[0] || { start: '13:00', end: '17:00' };
+                        setFormData(prev => ({
+                          ...prev,
+                          fecha: fechaSeleccionada,
+                          horaInicio: primerBloque.start,
+                          horaSalida: primerBloque.end
+                        }));
+                        showToast(`📅 Día ${slot.diaNumero} seleccionado con éxito`, 'success');
+                      }} 
+                    />
+                  </Suspense>
                 </div>
 
                 {/* BLOQUES OFICIALES DE HORARIO BADLENZ (2 TURNOS DIARIOS) */}
@@ -2555,7 +2677,124 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   </div>
                 </div>
 
+                {/* SELECTOR DE DEPÓSITO: ATH MÓVIL, TARJETA / APPLE PAY (STRIPE) O PAYPAL */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, metodoPago: 'ATH Movil' }))}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      formData.metodoPago === 'ATH Movil'
+                        ? 'bg-[#ff6b00]/15 border-[#ff6b00] text-white shadow-lg'
+                        : 'bg-black/40 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono uppercase font-black text-amber-400 block">Opción 1 · Puerto Rico</span>
+                    <strong className="text-xs sm:text-sm block mt-0.5">ATH Móvil Personal</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, metodoPago: 'Tarjeta / Stripe' }))}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      formData.metodoPago === 'Tarjeta / Stripe'
+                        ? 'bg-indigo-600/20 border-indigo-400 text-white shadow-lg'
+                        : 'bg-black/40 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono uppercase font-black text-indigo-300 block">Opción 2 · Instantáneo</span>
+                    <strong className="text-xs sm:text-sm block mt-0.5">Tarjeta / Apple Pay</strong>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, metodoPago: 'PayPal' }))}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      formData.metodoPago === 'PayPal'
+                        ? 'bg-[#0070ba]/20 border-[#009cde] text-white shadow-lg'
+                        : 'bg-black/40 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono uppercase font-black text-sky-300 block">Opción 3 · Internacional</span>
+                    <strong className="text-xs sm:text-sm block mt-0.5">PayPal (@badlenzprod)</strong>
+                  </button>
+                </div>
+
+                {formData.metodoPago === 'PayPal' && (
+                  <div className="bg-gradient-to-r from-[#003087]/35 via-black to-[#009cde]/20 border-2 border-[#009cde]/70 p-4 rounded-xl space-y-3 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                      <div>
+                        <span className="bg-[#0070ba] text-white font-black text-[10px] uppercase px-2.5 py-0.5 rounded tracking-wider">
+                          PAYPAL OFICIAL
+                        </span>
+                        <span className="text-white font-black text-xs ml-2">
+                          paypal.me/badlenzprod
+                        </span>
+                      </div>
+                      <span className="text-xs text-sky-300 font-mono font-black">
+                        {formatMoney(deposito)} USD
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 leading-relaxed">
+                      Envía tu depósito exacto de <strong>{formatMoney(deposito)} USD</strong> vía PayPal con el monto precargado, y luego adjunta la captura abajo o presiona <strong>"Confirmar & Emitir Pase VIP"</strong>.
+                    </p>
+                    <a
+                      href={`${(studioConfig.paypalMeUrl || 'https://paypal.me/badlenzprod').replace(/\/+$/, '')}/${deposito}USD`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0070ba] to-[#009cde] hover:from-[#005ea6] hover:to-[#008ac5] text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98]"
+                    >
+                      <span>Enviar Depósito de {formatMoney(deposito)} por PayPal →</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    <div>
+                      <label className="block text-gray-300 text-[11px] font-bold mb-1">
+                        ID de Transacción PayPal <span className="text-gray-500 font-normal">(Opcional):</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: 8XY12345AB678901C o correo de PayPal"
+                        className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-xl border border-gray-700 focus:border-sky-400 focus:outline-none text-xs font-mono"
+                        value={athNumReferenciaInput}
+                        onChange={e => setAthNumReferenciaInput(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.metodoPago === 'Tarjeta / Stripe' && (
+                  <div className="bg-gradient-to-r from-indigo-950/60 via-black to-purple-950/40 border-2 border-indigo-500/60 p-4 rounded-xl space-y-3 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                      <div>
+                        <span className="bg-indigo-600 text-white font-black text-[10px] uppercase px-2.5 py-0.5 rounded tracking-wider">
+                          STRIPE · PAGO SEGURO
+                        </span>
+                        <span className="text-white font-black text-xs ml-2">
+                          Tarjeta de Crédito / Débito / Apple Pay
+                        </span>
+                      </div>
+                      <span className="text-xs text-indigo-300 font-mono font-black">
+                        {formatMoney(deposito)} USD
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 leading-relaxed">
+                      Paga tu depósito de <strong>{formatMoney(deposito)} USD</strong> con Visa, Mastercard, Amex o Apple Pay a través de <strong>Stripe Checkout</strong>. Al completar el pago volverás automáticamente con tu Pase VIP confirmado.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handlePayWithStripe}
+                      disabled={isStartingStripe}
+                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-60 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition cursor-pointer active:scale-[0.98]"
+                    >
+                      <span>
+                        {isStartingStripe
+                          ? 'Abriendo pasarela segura de Stripe...'
+                          : `Pagar Depósito de ${formatMoney(deposito)} con Tarjeta / Apple Pay →`}
+                      </span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
                 {/* TARJETA INTERACTIVA DE ATH MÓVIL EN PUERTO RICO */}
+                {formData.metodoPago === 'ATH Movil' && (
                 <div className="bg-gradient-to-r from-[#ff6b00]/15 via-black to-[#009fe3]/15 border-2 border-[#ff6b00]/70 p-4 rounded-xl space-y-3 shadow-xl">
                   <div className="flex items-center justify-between border-b border-gray-800 pb-2">
                     <div className="flex items-center gap-2">
@@ -2651,6 +2890,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     />
                   </div>
                 </div>
+                )}
 
                 {/* ========================================================= */}
                 {/* SUBIDA DE CAPTURA DE PANTALLA ATH MÓVIL (REQUERIDO)        */}
@@ -3156,18 +3396,16 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                           return;
                         }
 
-                        // Actualizar reserva en DB local
+                        // Actualizar solo comprobante en Firestore (Badlenz valida y confirma desde /admin)
                         const updates: Partial<Reserva> = {
                           comprobanteAthUrl: comprobanteAthFile || undefined,
                           comprobanteNumReferencia: numReferenciaAth.trim() || undefined,
-                          depositoEstado: 'depositado',
-                          estado: 'Confirmada'
                         };
 
                         actualizarReserva(reservaActiva.id, updates);
                         setReservaActiva(prev => prev ? { ...prev, ...updates } : null);
                         setComprobanteEnviadoExito(true);
-                        showToast('¡Comprobante guardado exitosamente en tu reserva de La Facultad Studio!', 'success');
+                        showToast('✅ ¡Comprobante recibido! Badlenz verificará tu depósito y te enviará tu confirmación oficial.', 'success');
                       }}
                       className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-[11px] uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow cursor-pointer active:scale-95"
                     >
@@ -3219,6 +3457,25 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     >
                       <Calendar className="w-3.5 h-3.5" />
                       <span>Google Cal</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadSessionIcs({
+                          id: reservaActiva.id,
+                          nombreArtistico: reservaActiva.nombreArtistico,
+                          fecha: reservaActiva.fecha,
+                          horaInicio: reservaActiva.horaInicio,
+                          horaSalida: reservaActiva.horaSalida,
+                          deposito: reservaActiva.deposito,
+                          balance: reservaActiva.balance,
+                        })
+                      }
+                      className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-2 px-1.5 rounded-lg text-[10px] uppercase tracking-wide transition shadow active:scale-95 cursor-pointer"
+                      title="Descargar evento .ics para Apple Calendar / Outlook"
+                    >
+                      <Download className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Apple Cal (.ics)</span>
                     </button>
                     <button
                       type="button"

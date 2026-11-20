@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { obtenerDisponibilidadMes, SlotDisponibilidad, formatRangeTo12h } from '../../services/schedule';
+import React, { useState, useMemo, useEffect } from 'react';
+import { obtenerDisponibilidadMes, SlotDisponibilidad, formatRangeTo12h, DISPONIBILIDAD_UPDATED_EVENT } from '../../services/schedule';
 
 interface CalendarioSectionProps {
   selectedDate?: string;
@@ -27,10 +27,22 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
 
+  const [syncVersion, setSyncVersion] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setSyncVersion((v) => v + 1);
+    window.addEventListener(DISPONIBILIDAD_UPDATED_EVENT, refresh);
+    window.addEventListener('la_facultad_reservas_updated', refresh);
+    return () => {
+      window.removeEventListener(DISPONIBILIDAD_UPDATED_EVENT, refresh);
+      window.removeEventListener('la_facultad_reservas_updated', refresh);
+    };
+  }, []);
+
   // Obtener disponibilidad dinámica para el mes y año actual
   const disponibilidad = useMemo(() => {
     return obtenerDisponibilidadMes(year, month + 1);
-  }, [year, month]);
+  }, [year, month, syncVersion]);
 
   const diasSemana = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
   const nombresMeses = [

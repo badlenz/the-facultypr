@@ -1,12 +1,31 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   html, body, #root {
     background-color: #07080d !important;
     color-scheme: dark !important;
     color: #f1f5f9;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* Accessible keyboard-only focus ring (UI/UX Pro Max WCAG 2.2) */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #f59e0b !important;
+    outline-offset: 2px !important;
   }
 
   /* Custom Studio Dark Scrollbar */
@@ -65,10 +84,24 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .reveal-module {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+  }
+  .animate-eq-1,
+  .animate-eq-2,
+  .animate-eq-3,
+  .animate-eq-4,
+  .animate-eq-5,
+  .animate-studio-glow,
+  .animate-ambient-pulse,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
   }
 }
 
