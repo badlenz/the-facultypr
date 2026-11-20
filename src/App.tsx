@@ -6,13 +6,13 @@ import { Loader2, MessageCircle, Lock, Mail, AlertCircle, ArrowLeft } from 'luci
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth } from './firebase';
 
-import PortalClientes from './components/PortalClientes';
 import { AudioDockPlayer } from './components/AudioDockPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import { BadlenzBackgroundBackdrop } from './components/BadlenzBackgroundBackdrop';
 
 // Módulos pesados cargados de forma diferida (solo cuando se necesitan)
+const PortalClientes = lazyWithRetry(() => import('./components/PortalClientes'));
 const PanelAdmin = lazyWithRetry(() => import('./components/PanelAdmin'));
 const AudioShowcaseAB = lazyWithRetry(() => import('./components/AudioShowcaseAB'));
 const CreditsBentoGrid = lazyWithRetry(() => import('./components/CreditsBentoGrid'));
