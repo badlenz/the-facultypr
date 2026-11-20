@@ -12,6 +12,7 @@ import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 const CalendarioSection = lazyWithRetry(() => import('./Calendario/CalendarioSection').then(m => ({ default: m.CalendarioSection })));
 const AudioShowcaseAB = lazyWithRetry(() => import('./AudioShowcaseAB'));
+const CreditsBentoGrid = lazyWithRetry(() => import('./CreditsBentoGrid'));
 import { 
   UploadCloud, 
   Music, 
@@ -3686,6 +3687,13 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   {/* 4. ESTÁNDARES OFICIALES & GARANTÍAS DE ESTUDIO (CONDICIONES Y GARANTÍAS DE SESIÓN) */}
   <ScrollReveal delayMs={80}>
     <StudioGuaranteesBento />
+  </ScrollReveal>
+
+  {/* 5. CRÉDITOS OFICIALES & STREAM MILESTONES (MUSO.AI + BMG PUBLISHING + YOUTUBE REAL) */}
+  <ScrollReveal delayMs={70}>
+    <Suspense fallback={<div id="creditos" className="h-72 rounded-3xl bg-[#11131d] border border-white/10 animate-pulse scroll-mt-32 md:scroll-mt-24" />}>
+      <CreditsBentoGrid />
+    </Suspense>
   </ScrollReveal>
 
   {/* UBICACIÓN HORMIGUEROS, PUERTO RICO & ACCESOS */}
