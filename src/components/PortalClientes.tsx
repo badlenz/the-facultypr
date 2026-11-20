@@ -1445,7 +1445,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
 
       {/* 1. MASTER STUDIO HERO (URBAN BOUTIQUE RECORDING STUDIO) */}
       <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
-          {/* Background Studio Photo (Flipped & Soft Blur with Seamless Gradient Blend) */}
+          {/* Background Studio Photo (Clean Studio Shot + Soft Blur with Seamless Gradient Blend) */}
           <div 
             className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[60%] pointer-events-none overflow-hidden select-none z-0"
             aria-hidden="true"
@@ -1453,7 +1453,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
             <img
               src="/assets/studio/hero-session-badlenz.jpg"
               alt="Badlenz produciendo en La Facultad Studio"
-              className="w-full h-full object-cover object-right sm:object-center scale-x-[-1] filter blur-[2.5px] opacity-40 sm:opacity-55"
+              className="w-full h-full object-cover object-right sm:object-[65%_center] filter blur-[2.5px] opacity-40 sm:opacity-55"
             />
             {/* Gradientes de fusión hacia negro (#0a0c10) para garantizar 100% legibilidad del texto */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#0a0c10] via-[#0a0c10]/85 via-35% to-transparent" />
@@ -3700,6 +3700,36 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   <ScrollReveal delayMs={60}>
     <UbicacionPuertoRico />
   </ScrollReveal>
+
+  {/* ESCENA FINAL: VENTANA ABIERTA PARA VER EL LOGO COMPLETO DE BADLENZ Y CIERRE DE PÁGINA */}
+  <section
+    data-badlenz-finale="true"
+    aria-label="Cierre oficial Badlenz · La Facultad Studio"
+    className="relative min-h-[72vh] sm:min-h-[82vh] flex flex-col items-center justify-end pb-12 sm:pb-16 pt-16 text-center pointer-events-none"
+  >
+    <div className="pointer-events-auto relative z-10 w-full max-w-2xl mx-auto px-4 space-y-3">
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+        <div className="text-center sm:text-left">
+          <p className="font-syne font-extrabold text-xs sm:text-sm uppercase tracking-[0.18em] text-white">
+            LA FACULTAD <span className="text-red-500">STUDIO</span> · PROD.{' '}
+            <span className="text-amber-400">BADLENZ</span>
+          </p>
+          <p className="font-mono text-[10px] sm:text-[11px] text-zinc-400 tracking-wider mt-0.5">
+            HORMIGUEROS, PUERTO RICO · GRABACIÓN · MEZCLA · MÁSTER
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="taste-btn px-3.5 py-2 rounded-xl bg-black/60 hover:bg-zinc-900/90 border border-white/15 hover:border-amber-400/50 text-[11px] font-mono font-bold text-zinc-200 hover:text-amber-200 transition cursor-pointer backdrop-blur-md whitespace-nowrap shrink-0"
+        >
+          ↑ Volver arriba
+        </button>
+      </div>
+    </div>
+  </section>
 </div>
 );
 }

@@ -368,9 +368,42 @@
   animation: glowPulseSubtle 7s ease-in-out infinite;
 }
 
+@keyframes badlenzBreath {
+  0%, 100% {
+    transform: translate3d(0, 0px, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) scale(1.025);
+  }
+}
+
+.animate-badlenz-breath {
+  animation: badlenzBreath 6.5s ease-in-out infinite;
+}
+
+@keyframes badlenzRingOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-badlenz-orbit-slow {
+  animation: badlenzRingOrbit 38s linear infinite;
+}
+
+.animate-badlenz-orbit-reverse {
+  animation: badlenzRingOrbit 28s linear infinite reverse;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float-gentle,
   .animate-ambient-pulse,
+  .animate-badlenz-breath,
+  .animate-badlenz-orbit-slow,
+  .animate-badlenz-orbit-reverse,
   .antigravity-glass-card {
     animation: none !important;
     transition: none !important;
