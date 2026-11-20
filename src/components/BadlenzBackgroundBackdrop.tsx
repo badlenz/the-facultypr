@@ -62,14 +62,15 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
     const applyVisuals = (scrollP: number, finaleRaw: number) => {
       const finale = easeOutCubic(clamp(finaleRaw, 0, 1));
       const invFinale = 1 - finale;
+      const isMobile = window.innerWidth < 640;
+      const finaleY = isMobile ? -44 : -54;
 
       // 1. Badlenz 3D Emblem (transform + opacity only)
       if (logoStageRef.current) {
-        const isMobile = window.innerWidth < 640;
         if (prefersReduced) {
           const finalOpacity = opacity + finale * (0.95 - opacity);
           logoStageRef.current.style.opacity = finalOpacity.toFixed(3);
-          logoStageRef.current.style.transform = `translate3d(0, ${(-22 * finale).toFixed(1)}px, 0) scale(${(
+          logoStageRef.current.style.transform = `translate3d(0, ${(finaleY * finale).toFixed(1)}px, 0) scale(${(
             0.96 +
             finale * 0.08
           ).toFixed(3)})`;
@@ -83,12 +84,12 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
           const rotX = waveX * (isMobile ? 8 : 11) * invFinale;
           const rotZ = waveZ * (isMobile ? 6 : 8.5) * invFinale;
 
-          // Subtle parallax vertical glide while scrolling -> settles centered above bottom dock at finale
-          const translateY = (scrollP - 0.5) * -46 * invFinale + -34 * finale;
+          // Subtle parallax vertical glide while scrolling -> locks dead-center with rings at finale
+          const translateY = (scrollP - 0.5) * -44 * invFinale + finaleY * finale;
 
           // Dynamic scale: subtle pulse on scroll -> majestic hero reveal at finale
           const scrollScale = 0.88 + Math.sin(scrollP * Math.PI) * 0.12;
-          const targetFinaleScale = isMobile ? 0.96 : 1.06;
+          const targetFinaleScale = isMobile ? 0.96 : 1.04;
           const scale = scrollScale * invFinale + targetFinaleScale * finale;
 
           // Opacity: crisp atmospheric watermark mid-page -> full vibrant color reveal at finale
@@ -104,23 +105,23 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
         }
       }
 
-      // 2. Counter-rotating Studio Acoustic Rings
+      // 2. Counter-rotating Studio Acoustic Rings (locked to exact same finaleY center)
       if (outerRingRef.current) {
         const deg = prefersReduced ? 0 : scrollP * 260;
-        const ringScale = 0.9 + scrollP * 0.14 + finale * 0.08;
-        const ringOpacity = 0.1 + scrollP * 0.08 + finale * 0.52;
+        const ringScale = 0.92 + scrollP * 0.1 + finale * 0.04;
+        const ringOpacity = 0.1 + scrollP * 0.08 + finale * 0.56;
         outerRingRef.current.style.opacity = ringOpacity.toFixed(3);
-        outerRingRef.current.style.transform = `translate3d(0, ${(-34 * finale).toFixed(
+        outerRingRef.current.style.transform = `translate3d(0, ${(finaleY * finale).toFixed(
           1
         )}px, 0) rotate(${deg.toFixed(2)}deg) scale(${ringScale.toFixed(3)})`;
       }
 
       if (innerRingRef.current) {
         const deg = prefersReduced ? 0 : -scrollP * 195;
-        const ringScale = 0.94 + Math.sin(scrollP * Math.PI) * 0.08 + finale * 0.06;
-        const ringOpacity = 0.08 + scrollP * 0.06 + finale * 0.42;
+        const ringScale = 0.94 + Math.sin(scrollP * Math.PI) * 0.06 + finale * 0.04;
+        const ringOpacity = 0.08 + scrollP * 0.06 + finale * 0.46;
         innerRingRef.current.style.opacity = ringOpacity.toFixed(3);
-        innerRingRef.current.style.transform = `translate3d(0, ${(-34 * finale).toFixed(
+        innerRingRef.current.style.transform = `translate3d(0, ${(finaleY * finale).toFixed(
           1
         )}px, 0) rotate(${deg.toFixed(2)}deg) scale(${ringScale.toFixed(3)})`;
       }
@@ -128,8 +129,8 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
       // 3. Opposite Parallax Atmospheric Glows (crimson & gold)
       if (crimsonGlowRef.current) {
         const dx = prefersReduced ? 0 : Math.sin(scrollP * Math.PI * 2) * 55 * invFinale;
-        const dy = prefersReduced ? 0 : (scrollP - 0.5) * -70 * invFinale - 30 * finale;
-        const glowScale = 0.95 + finale * 0.3;
+        const dy = prefersReduced ? 0 : (scrollP - 0.5) * -70 * invFinale + finaleY * finale;
+        const glowScale = 0.95 + finale * 0.28;
         const glowOpacity = 0.35 + finale * 0.6;
         crimsonGlowRef.current.style.opacity = glowOpacity.toFixed(3);
         crimsonGlowRef.current.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(
@@ -139,8 +140,8 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
 
       if (goldGlowRef.current) {
         const dx = prefersReduced ? 0 : -Math.sin(scrollP * Math.PI * 2) * 55 * invFinale;
-        const dy = prefersReduced ? 0 : (scrollP - 0.5) * 60 * invFinale - 20 * finale;
-        const glowScale = 0.9 + finale * 0.35;
+        const dy = prefersReduced ? 0 : (scrollP - 0.5) * 60 * invFinale + finaleY * finale;
+        const glowScale = 0.9 + finale * 0.32;
         const glowOpacity = 0.28 + finale * 0.62;
         goldGlowRef.current.style.opacity = glowOpacity.toFixed(3);
         goldGlowRef.current.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(
@@ -221,7 +222,7 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
       {/* Anillo orbital exterior acústico (rotación vinculada al scroll + órbita suave) */}
       <div
         ref={outerRingRef}
-        className="absolute w-[340px] h-[340px] sm:w-[540px] sm:h-[540px] md:w-[650px] md:h-[650px] pointer-events-none"
+        className="absolute w-[315px] h-[315px] sm:w-[470px] sm:h-[470px] md:w-[550px] md:h-[550px] pointer-events-none"
         style={{ opacity: 0.1 }}
       >
         <svg
@@ -259,7 +260,7 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
       {/* Anillo orbital interior (contra-rotación en scroll) */}
       <div
         ref={innerRingRef}
-        className="absolute w-[270px] h-[270px] sm:w-[430px] sm:h-[430px] md:w-[520px] md:h-[520px] pointer-events-none"
+        className="absolute w-[250px] h-[250px] sm:w-[375px] sm:h-[375px] md:w-[440px] md:h-[440px] pointer-events-none"
         style={{ opacity: 0.08 }}
       >
         <svg
@@ -290,7 +291,7 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
       {!imgError && (
         <div
           ref={logoStageRef}
-          className="relative w-[290px] h-[290px] sm:w-[440px] sm:h-[440px] md:w-[520px] md:h-[520px] flex items-center justify-center will-change-transform"
+          className="relative w-[280px] h-[280px] sm:w-[410px] sm:h-[410px] md:w-[480px] md:h-[480px] flex items-center justify-center will-change-transform"
           style={{ opacity }}
         >
           <div className="w-full h-full flex items-center justify-center animate-badlenz-breath">
@@ -300,6 +301,7 @@ export const BadlenzBackgroundBackdrop: React.FC<BadlenzBackgroundBackdropProps>
               decoding="async"
               draggable={false}
               onError={() => setImgError(true)}
+              style={{ transform: 'translate3d(-0.8%, 6.8%, 0)' }}
               className="w-full h-full object-contain filter drop-shadow-[0_12px_36px_rgba(220,38,38,0.38)]"
             />
           </div>

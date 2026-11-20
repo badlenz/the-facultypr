@@ -370,10 +370,10 @@
 
 @keyframes badlenzBreath {
   0%, 100% {
-    transform: translate3d(0, 0px, 0) scale(1);
+    transform: translate3d(0, 4px, 0) scale(0.992);
   }
   50% {
-    transform: translate3d(0, -10px, 0) scale(1.025);
+    transform: translate3d(0, -4px, 0) scale(1.02);
   }
 }
 
