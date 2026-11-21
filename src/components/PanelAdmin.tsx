@@ -183,12 +183,21 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
     .filter((r) => r.estado === 'Confirmada' || r.estado === 'Completada')
     .reduce((acc, r) => acc + (Number(r.deposito) || 0), 0);
 
+  const triggerGuildReservaWebhook = (r: Partial<Reserva>) => {
+    fetch('/api/guild-reserva-webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(r),
+    }).catch(() => {});
+  };
+
   const handleConfirmarReserva = (r: Reserva, openWhatsApp = false) => {
     const next = actualizarReserva(r.id, {
       estado: 'Confirmada',
       depositoEstado: 'depositado',
     });
     setReservas(next);
+    triggerGuildReservaWebhook(r);
     notify(`Reserva #${r.id} confirmada y sincronizada en Firestore.`);
 
     if (openWhatsApp) {
@@ -230,6 +239,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
       depositoEstado: 'depositado',
     });
     setReservas(getReservas());
+    triggerGuildReservaWebhook(created);
     setShowNewBooking(false);
     setNewBooking({ ...newBooking, nombreArtistico: '' });
     notify(`Sesión manual #${created.id} agregada y bloqueada en el calendario.`);
