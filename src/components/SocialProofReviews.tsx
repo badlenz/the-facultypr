@@ -21,20 +21,20 @@ const ARTIST_TESTIMONIALS: ArtistTestimonial[] = [
     projectTitle: 'Mix y Máster · WhatsApp',
   },
   {
-    id: 'zyron-grabacion',
+    id: 'k-lead-grabacion',
     rating: 5,
     quote:
       'El último tema que me grabaste allí me pasó escuchando… la calidad está mortal.',
-    artistName: 'Zyron',
+    artistName: 'K Lead',
     projectTitle: 'Grabación en el estudio · WhatsApp',
   },
   {
-    id: 'nei-master',
+    id: 'jvo-the-writer-adelanto',
     rating: 5,
     quote:
-      'Q se repita 🔥🔥🫡 … Voy es a pasarlo y platinarlo.',
-    artistName: 'Nei',
-    projectTitle: 'Máster · Instagram DM',
+      'Durolllllll. 🔥🔥🔥🫡🫡',
+    artistName: 'JVO The Writer',
+    projectTitle: 'Adelanto de Sesión · WhatsApp',
   },
 ];
 
