@@ -257,41 +257,39 @@ export const StudioGuaranteesBento: React.FC = () => {
       </div>
 
       {/* Standard 5: Política Oficial de Cancelación, Reagendación y No-Show */}
-      <div className="relative z-10 rounded-2xl bg-[#0c0f18]/95 border border-amber-500/25 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-2 max-w-4xl">
+      <div className="relative z-10 rounded-2xl bg-[#0c0f18]/95 border border-amber-500/25 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="space-y-1.5 max-w-4xl">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <CalendarX2 className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <CalendarX2 className="w-3.5 h-3.5" />
             </div>
-            <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/50 border border-amber-800/40 px-2.5 py-0.5 rounded-full uppercase">
+            <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-950/50 border border-amber-800/40 px-2 py-0.5 rounded-full uppercase">
               05 · Política de Depósito
             </span>
-            <h3 className="font-syne font-bold text-white text-base sm:text-lg leading-snug">
+            <h3 className="font-syne font-bold text-white text-sm sm:text-base leading-snug">
               Cancelación, Reagendación y No-Show
             </h3>
           </div>
 
-          <div className="font-dmsans text-zinc-300 text-xs sm:text-[13px] leading-relaxed space-y-1.5 pl-0 sm:pl-10">
+          <div className="font-dmsans text-zinc-300 text-[11px] sm:text-xs leading-snug space-y-1 pl-0 sm:pl-9">
             <p>
               Tu bloque de 4–5 horas queda reservado exclusivamente para tu proyecto desde el momento en que se confirma tu depósito.
             </p>
             <p>
-              <strong className="text-emerald-300">Si cancelas o reagendas con 48 horas o más de anticipación</strong>, tu depósito se devuelve completo o se aplica a tu nueva fecha, sin penalidad.
-            </p>
-            <p>
-              <strong className="text-rose-300">Si cancelas con menos de 48 horas de anticipación, o no te presentas a tu sesión (no-show)</strong>, el depósito no es reembolsable: tu bloque quedó apartado para ti y no se pudo ofrecer a otro artista.
+              <strong className="text-emerald-300">Si cancelas o reagendas con 48 horas o más de anticipación</strong>, tu depósito se devuelve completo o se aplica a tu nueva fecha, sin penalidad.{' '}
+              <strong className="text-rose-300">Con menos de 48 horas o no-show</strong>, el depósito no es reembolsable: tu bloque quedó apartado para ti y no se pudo ofrecer a otro artista.
             </p>
           </div>
         </div>
 
-        <div className="shrink-0 pl-0 sm:pl-10 lg:pl-0">
+        <div className="shrink-0 pl-0 sm:pl-9 lg:pl-0">
           <a
             href="https://wa.me/17872408627?text=%C2%A1Saludos%20Badlenz!%20Necesito%20consultar%20o%20reagendar%20mi%20sesi%C3%B3n%20en%20La%20Facultad%20Studio."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/45 text-emerald-300 font-mono font-bold text-xs transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/45 text-emerald-300 font-mono font-bold text-[11px] transition"
           >
-            <MessageCircle className="w-4 h-4 text-[#25D366]" />
+            <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
             <span>WhatsApp (787) 240-8627</span>
           </a>
         </div>

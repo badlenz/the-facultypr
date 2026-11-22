@@ -905,29 +905,29 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         <StudioGuaranteesBento />
       </ScrollReveal>
 
-      {/* 4B. TESTIMONIOS — LO QUE DICEN LOS ARTISTAS */}
-      <ScrollReveal delayMs={75}>
-        <SocialProofReviews />
-      </ScrollReveal>
-
       {/* 5. CRÉDITOS OFICIALES & STREAM MILESTONES */}
-      <ScrollReveal delayMs={70}>
+      <ScrollReveal delayMs={75}>
         <Suspense fallback={<div className="h-44 rounded-3xl bg-[#0e1017] border border-white/10 animate-pulse" />}>
           <CreditsMinimalSection />
         </Suspense>
       </ScrollReveal>
 
       {/* 6. UBICACIÓN HORMIGUEROS, PUERTO RICO */}
-      <ScrollReveal delayMs={60}>
+      <ScrollReveal delayMs={70}>
         <UbicacionPuertoRico />
       </ScrollReveal>
 
-      {/* 6B. PREGUNTAS FRECUENTES (FAQ) */}
+      {/* 7. TESTIMONIOS — LO QUE DICEN LOS ARTISTAS */}
+      <ScrollReveal delayMs={60}>
+        <SocialProofReviews />
+      </ScrollReveal>
+
+      {/* 8. PREGUNTAS FRECUENTES (FAQ) */}
       <ScrollReveal delayMs={50}>
         <StudioFaqSection />
       </ScrollReveal>
 
-      {/* 7. ESCENA FINAL */}
+      {/* 9. ESCENA FINAL */}
       <StudioFinaleSection />
     </div>
   );

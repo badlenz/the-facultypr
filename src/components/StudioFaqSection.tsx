@@ -86,30 +86,30 @@ export const StudioFaqSection: React.FC = () => {
     <section
       id="preguntas-frecuentes"
       aria-labelledby="faq-estudio-heading"
-      className="relative overflow-hidden rounded-3xl border border-white/10 antigravity-glass-panel p-5 sm:p-8 space-y-6 shadow-[0_24px_60px_rgba(0,0,0,0.7)] scroll-mt-24"
+      className="relative overflow-hidden rounded-3xl border border-white/10 antigravity-glass-panel p-4 sm:p-6 space-y-4 shadow-[0_24px_60px_rgba(0,0,0,0.7)] scroll-mt-24"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
       <div className="absolute -bottom-24 left-1/4 w-80 h-80 bg-red-600/8 rounded-full blur-[110px] pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-5">
-        <div className="space-y-1.5">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/35 text-[10px] font-mono text-red-300 font-bold uppercase tracking-widest">
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-white/10 pb-3.5">
+        <div className="space-y-1">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/35 text-[9px] font-mono text-red-300 font-bold uppercase tracking-widest">
             <HelpCircle className="w-3 h-3 text-red-400" />
             <span>Dudas Comunes</span>
           </span>
           <h2
             id="faq-estudio-heading"
-            className="font-syne text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight"
+            className="font-syne text-xl sm:text-2xl font-bold text-white tracking-tight leading-tight"
           >
             Preguntas Frecuentes
           </h2>
-          <p className="font-dmsans text-xs sm:text-sm text-zinc-400">
+          <p className="font-dmsans text-xs text-zinc-400">
             Todo lo que necesitas saber antes de apartar tu bloque en La Facultad Studio.
           </p>
         </div>
       </div>
 
-      <div className="relative z-10 space-y-2.5">
+      <div className="relative z-10 space-y-1.5">
         {FAQ_ITEMS.map((item, idx) => {
           const isOpen = openId === item.id;
           const buttonId = `faq-btn-${item.id}`;
@@ -118,7 +118,7 @@ export const StudioFaqSection: React.FC = () => {
           return (
             <div
               key={item.id}
-              className={`rounded-2xl border transition-colors ${
+              className={`rounded-xl border transition-colors ${
                 isOpen
                   ? 'bg-[#121521]/95 border-amber-400/40'
                   : 'bg-[#0c0f18]/85 border-white/10 hover:border-white/20'
@@ -131,18 +131,18 @@ export const StudioFaqSection: React.FC = () => {
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                   onClick={() => toggleItem(item.id)}
-                  className="w-full px-4 sm:px-5 py-4 text-left flex items-center justify-between gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-2xl"
+                  className="w-full px-3.5 sm:px-4 py-3 text-left flex items-center justify-between gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-xl"
                 >
-                  <span className="flex items-center gap-3">
-                    <span className="text-[11px] font-mono font-bold text-amber-400/90 tabular-nums shrink-0">
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-[10px] font-mono font-bold text-amber-400/90 tabular-nums shrink-0">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <span className="font-syne font-bold text-sm sm:text-base text-white leading-snug">
+                    <span className="font-syne font-bold text-xs sm:text-sm text-white leading-snug">
                       {item.question}
                     </span>
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${
                       isOpen ? 'rotate-180 text-amber-300' : ''
                     }`}
                     aria-hidden="true"
@@ -155,9 +155,9 @@ export const StudioFaqSection: React.FC = () => {
                 role="region"
                 aria-labelledby={buttonId}
                 hidden={!isOpen}
-                className="px-4 sm:px-5 pb-4 pl-10 sm:pl-12"
+                className="px-3.5 sm:px-4 pb-3 pl-9 sm:pl-10"
               >
-                <p className="font-dmsans text-xs sm:text-[13px] text-zinc-300 leading-relaxed">
+                <p className="font-dmsans text-[11px] sm:text-xs text-zinc-300 leading-relaxed">
                   {item.answer}
                 </p>
               </div>
