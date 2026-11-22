@@ -10,40 +10,31 @@ export interface ArtistTestimonial {
   isExample?: boolean;
 }
 
-// ============================================================================
-// EJEMPLO — REEMPLAZAR POR TESTIMONIOS REALES DE TUS CLIENTES ANTES DE PUBLICAR
-// Estructura lista para actualizar cada tarjeta sin tocar el diseño ni el layout.
-// ============================================================================
+// Testimonios reales verificados (WhatsApp e Instagram DM)
 const ARTIST_TESTIMONIALS: ArtistTestimonial[] = [
   {
-    // EJEMPLO 1 — REEMPLAZAR POR TESTIMONIO REAL
-    id: 'ejemplo-1',
+    id: 'zyron-mix-master',
     rating: 5,
     quote:
-      'Salí del estudio con la premezcla el mismo día y el máster me llegó al otro día sonando comercial. El A/B que escuchas en la página es real: así mismo quedó mi tema.',
-    artistName: '[Nombre artístico]',
-    projectTitle: '[Tema grabado]',
-    isExample: true,
+      'Suena cabron! Papi quedó cm mejor es posible, no le hace falta nada.',
+    artistName: 'Zyron',
+    projectTitle: 'Mix y Máster · WhatsApp',
   },
   {
-    // EJEMPLO 2 — REEMPLAZAR POR TESTIMONIO REAL
-    id: 'ejemplo-2',
+    id: 'zyron-grabacion',
     rating: 5,
     quote:
-      'Badlenz te dirige la voz ahí mismo, no pierdes tiempo. El bloque de 4 horas rindió como si fueran 8.',
-    artistName: '[Nombre artístico]',
-    projectTitle: '[Tema grabado]',
-    isExample: true,
+      'El último tema que me grabaste allí me pasó escuchando… la calidad está mortal.',
+    artistName: 'Zyron',
+    projectTitle: 'Grabación en el estudio · WhatsApp',
   },
   {
-    // EJEMPLO 3 — REEMPLAZAR POR TESTIMONIO REAL
-    id: 'ejemplo-3',
+    id: 'nei-master',
     rating: 5,
     quote:
-      'Aparté con los $50 y todo fue claro desde el principio: precio, revisiones y entrega en 48 horas. Ya voy por mi segundo tema.',
-    artistName: '[Nombre artístico]',
-    projectTitle: '[Tema grabado]',
-    isExample: true,
+      'Q se repita 🔥🔥🫡 … Voy es a pasarlo y platinarlo.',
+    artistName: 'Nei',
+    projectTitle: 'Máster · Instagram DM',
   },
 ];
 
