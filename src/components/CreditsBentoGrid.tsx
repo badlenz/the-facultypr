@@ -642,7 +642,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
                         {track.title[0]}
                       </div>
                     )}
-                    {track.previewUrl && (
+                    {track.previewUrl ? (
                       <button
                         type="button"
                         onClick={() => toggleAudioPreview(track)}
@@ -655,7 +655,21 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
                           <Play className="w-5 h-5 text-white fill-current ml-0.5" />
                         )}
                       </button>
-                    )}
+                    ) : (track.spotifyUrl || track.youtubeUrl) ? (
+                      <a
+                        href={track.spotifyUrl || track.youtubeUrl || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 bg-black/55 hover:bg-black/40 flex flex-col items-center justify-center gap-0.5 transition"
+                        aria-label={`Escuchar ${track.title} en ${track.spotifyUrl ? 'Spotify' : 'YouTube'}`}
+                        title={`Preview 30s no disponible · Abrir en ${track.spotifyUrl ? 'Spotify' : 'YouTube'}`}
+                      >
+                        <ExternalLink className="w-4 h-4 text-emerald-300" />
+                        <span className="text-[8px] font-mono font-bold text-white uppercase tracking-tight">
+                          {track.spotifyUrl ? 'Spotify' : 'YouTube'}
+                        </span>
+                      </a>
+                    ) : null}
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -707,7 +721,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
                       title={`Vistas públicas verificadas en YouTube: ${track.youtubeViews.toLocaleString('en-US')}`}
                     >
                       <Youtube className="w-3 h-3 text-red-400" />
-                      <span>{formatCompact(track.youtubeViews)} vistas</span>
+                      <span>{formatCompact(track.youtubeViews)} vistas YT</span>
                     </a>
                   ) : track.popularity !== null ? (
                     <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded bg-black/40 border border-white/10">
@@ -756,7 +770,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
           {/* Search + Role Filters */}
           <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 sm:p-4 space-y-3">
             <div className="flex flex-wrap items-center gap-1.5">
-              {ROLE_TABS.map((rt) => (
+              {ROLE_TABS.filter((rt) => rt.key !== 'BMG').map((rt) => (
                 <button
                   key={rt.key}
                   type="button"
@@ -770,6 +784,19 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
                   {rt.label} ({roleCounts[rt.key] ?? 0})
                 </button>
               ))}
+              <span className="hidden sm:inline-block h-5 w-px bg-white/15 mx-1" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => setRoleFilter('BMG')}
+                title="Filtrar por editorial BMG Publishing (subconjunto incluido en los roles)"
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer ${
+                  roleFilter === 'BMG'
+                    ? 'bg-amber-600 text-white shadow'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 border border-amber-400/30'
+                }`}
+              >
+                Editorial: BMG ({roleCounts.BMG ?? 0})
+              </button>
             </div>
 
             <div className="relative">

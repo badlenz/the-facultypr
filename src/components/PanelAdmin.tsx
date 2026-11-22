@@ -59,6 +59,7 @@ import {
 import {
   obtenerTodasDisponibilidades,
   guardarDisponibilidadDia,
+  guardarDisponibilidadesLote,
   eliminarDisponibilidadDia,
   DISPONIBILIDAD_UPDATED_EVENT,
   DisponibilidadCustomMap,
@@ -107,9 +108,62 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Bloqueo de fecha
+  // Bloqueo de fecha & #21 El Cronomante
   const [fechaBloqueo, setFechaBloqueo] = useState(() => new Date().toISOString().split('T')[0]);
   const [motivoBloqueo, setMotivoBloqueo] = useState('Bloqueado por Badlenz');
+  const [syncingCronomante, setSyncingCronomante] = useState(false);
+  const [cronomanteJsonText, setCronomanteJsonText] = useState('');
+
+  const syncFromCronomanteBridge = async () => {
+    setSyncingCronomante(true);
+    try {
+      const resp = await fetch('/api/guild-horarios-sync');
+      const data = await resp.json();
+      if (data?.ok && data?.dias && typeof data.dias === 'object') {
+        guardarDisponibilidadesLote(data.dias as DisponibilidadCustomMap, true);
+        notify(`✅ Sincronizados ${Object.keys(data.dias).length} días desde #21 El Cronomante a Firestore.`);
+      } else {
+        notify('⚠️ No hay horario pendiente en el Puente o falta configurar GUILD_GOOGLE_BRIDGE_URL.');
+      }
+    } catch {
+      notify('⚠️ Error conectando con /api/guild-horarios-sync.');
+    } finally {
+      setSyncingCronomante(false);
+    }
+  };
+
+  const applyCronomanteJson = (rawText: string) => {
+    try {
+      const parsed = JSON.parse(rawText);
+      const dias = (parsed?.dias && typeof parsed.dias === 'object' ? parsed.dias : parsed) as DisponibilidadCustomMap;
+      const count = Object.keys(dias || {}).length;
+      if (count === 0) {
+        notify('⚠️ El JSON no contiene días válidos.');
+        return;
+      }
+      guardarDisponibilidadesLote(dias, true);
+      setCronomanteJsonText('');
+      notify(`✅ Aplicados ${count} días de #21 El Cronomante en Firestore y Calendario en vivo.`);
+    } catch {
+      notify('⚠️ JSON inválido de #21 El Cronomante.');
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash || '';
+    if (hash.includes('cronomante=')) {
+      try {
+        const b64 = decodeURIComponent(hash.split('cronomante=')[1].split('&')[0]);
+        const jsonStr = decodeURIComponent(escape(window.atob(b64)));
+        setActiveTab('calendario');
+        applyCronomanteJson(jsonStr);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch {
+        // ignore invalid hash
+      }
+    }
+  }, []);
 
   // Nueva reserva manual
   const [showNewBooking, setShowNewBooking] = useState(false);
@@ -558,7 +612,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
             { id: 'calendario', label: 'Bloqueo de Fechas', icon: Calendar, badge: null },
             { id: 'estado', label: 'Estado del Estudio', icon: Radio, badge: null },
             { id: 'showcase', label: 'Audio A/B', icon: Music, badge: tracks.length },
-            { id: 'creditos', label: 'Créditos & Roles', icon: Award, badge: 85 },
+            { id: 'creditos', label: 'Créditos & Roles', icon: Award, badge: 84 },
             { id: 'ajustes', label: 'Ajustes & Pagos', icon: Settings, badge: null },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1194,12 +1248,74 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
                 <button
                   type="button"
                   onClick={() => {
-                    guardarDisponibilidadDia(fechaBloqueo, true, '18:00 - 22:00', 'Solo Bloque Noche disponible');
+                    guardarDisponibilidadDia(fechaBloqueo, true, '18:00 - 22:00', 'Solo Bloque Noche disponible', [
+                      { label: 'Bloque Noche', desc: '06:00 PM - 10:00 PM (4 Horas)', start: '18:00', end: '22:00' },
+                    ]);
                     notify(`${fechaBloqueo}: solo Noche (6–10 PM) abierto.`);
                   }}
                   className="py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-300 text-xs font-semibold cursor-pointer"
                 >
                   Solo Noche (6–10 PM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    guardarDisponibilidadDia(fechaBloqueo, true, '13:00 - 21:00', 'Turno Trabajo 11PM-7AM (Abre 1–9 PM)', [
+                      { label: 'Bloque 1 · Tarde', desc: '01:00 PM - 05:00 PM (4 Horas)', start: '13:00', end: '17:00' },
+                      { label: 'Bloque 2 · Tarde-Noche', desc: '05:00 PM - 09:00 PM (4 Horas)', start: '17:00', end: '21:00' },
+                    ]);
+                    notify(`${fechaBloqueo}: abierto 1–9 PM (2 bloques).`);
+                  }}
+                  className="py-2 px-3 rounded-xl bg-amber-950/60 border border-amber-700/40 hover:bg-amber-900/50 text-amber-200 text-xs font-semibold cursor-pointer"
+                >
+                  Trabajo 11PM–7AM (1–9 PM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    guardarDisponibilidadDia(fechaBloqueo, true, '17:00 - 23:00', 'Turno Trabajo 7AM-3PM (Abre 5–11 PM)', [
+                      { label: 'Opción A · Tarde-Noche', desc: '05:00 PM - 09:00 PM (4 Horas)', start: '17:00', end: '21:00' },
+                      { label: 'Opción B · Noche', desc: '06:00 PM - 10:00 PM (4 Horas)', start: '18:00', end: '22:00' },
+                    ]);
+                    notify(`${fechaBloqueo}: abierto 5–11 PM (5-9 o 6-10 PM).`);
+                  }}
+                  className="py-2 px-3 rounded-xl bg-amber-950/60 border border-amber-700/40 hover:bg-amber-900/50 text-amber-200 text-xs font-semibold cursor-pointer"
+                >
+                  Trabajo 7AM–3PM (5–11 PM)
+                </button>
+              </div>
+            </div>
+
+            {/* Sincronizador #21 El Cronomante */}
+            <div className="pt-3 border-t border-zinc-800 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-mono uppercase text-amber-400 font-bold">
+                  🤖 #21 El Cronomante (Gremio)
+                </span>
+                <button
+                  type="button"
+                  disabled={syncingCronomante}
+                  onClick={syncFromCronomanteBridge}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${syncingCronomante ? 'animate-spin' : ''}`} />
+                  <span>Sincronizar desde Gremio</span>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={cronomanteJsonText}
+                  onChange={(e) => setCronomanteJsonText(e.target.value)}
+                  placeholder="O pega aquí el JSON de cronomante_disponibilidad.json..."
+                  className="flex-1 bg-[#131622] border border-zinc-700 rounded-xl px-3 py-2 text-[11px] text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => applyCronomanteJson(cronomanteJsonText)}
+                  className="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-bold cursor-pointer"
+                >
+                  Aplicar
                 </button>
               </div>
             </div>

@@ -243,7 +243,7 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
               const mesStr = String(month + 1).padStart(2, '0');
               const fullDateStr = `${year}-${mesStr}-${diaStr}`;
               const isSelectable = slot.disponible || isAdmin;
-              const isSelected = selectedDate === fullDateStr || internalSelectedDate === fullDateStr;
+              const isSelected = isSelectable && (selectedDate === fullDateStr || internalSelectedDate === fullDateStr);
 
               return (
                 <div
@@ -393,11 +393,10 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
               const dDiaStr = String(dDia).padStart(2, '0');
               const dMesStr = String(dMes + 1).padStart(2, '0');
               const fullDateStr = `${dYear}-${dMesStr}-${dDiaStr}`;
-              const isSelected = selectedDate === fullDateStr || internalSelectedDate === fullDateStr;
-
               // Obtenemos la disponibilidad para ese día específico
               const dDisponibilidad = obtenerDisponibilidadMes(dYear, dMes + 1);
               const slot = dDisponibilidad[dDia] || { diaNumero: dDia, disponible: false, motivo: 'Fuera de rango' };
+              const isSelected = (slot.disponible || isAdmin) && (selectedDate === fullDateStr || internalSelectedDate === fullDateStr);
 
               return (
                 <div

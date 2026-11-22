@@ -87,7 +87,7 @@ export const CreditsMinimalSection: React.FC = () => {
             className="taste-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-syne font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-950/50 transition"
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Abrir Catálogo Completo ({BADLENZ_CAREER_SUMMARY.obraProjectsCount})</span>
+            <span>Abrir Catálogo Completo ({BADLENZ_CAREER_SUMMARY.totalCredits})</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
 

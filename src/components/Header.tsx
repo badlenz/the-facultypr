@@ -245,7 +245,7 @@ export const Header: React.FC<HeaderProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-                  title="Abrir Destacados y Catálogo Completo (85 créditos) en otra ventana"
+                  title="Abrir Destacados y Catálogo Completo (84 créditos verificados) en otra ventana"
                 >
                   <span className="text-red-400 font-bold">★</span>
                   <span className="font-syne">Créditos</span>

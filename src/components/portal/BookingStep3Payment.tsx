@@ -420,6 +420,7 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
             • Cuentas con <strong>20 minutos de gracia</strong> al inicio de tu sesión en Hormigueros.
             <br />• Máximo <strong>2 acompañantes</strong> en el studio para máxima concentración creativa.
             <br />• Tu contrato de cesión y firma digital se completan directamente en tu Pase VIP al pisar el estudio.
+            <br />• <strong>Depósito y cancelación:</strong> Cancela o reagenda con 48 horas o más de anticipación y tu depósito se devuelve completo o se mueve de fecha. Con menos de 48 horas, o si no te presentas, el depósito no se devuelve.
           </p>
         </div>
 
@@ -487,14 +488,14 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
             </div>
           </div>
         ) : (
-          <div className="bg-black/60 border border-gray-800 p-3 rounded-xl flex items-center justify-between text-xs">
+          <div className="bg-black/60 border border-amber-500/30 p-3 rounded-xl flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center text-[10px] font-bold">
-                ✓
+              <span className="w-6 h-6 rounded-full bg-amber-950 text-amber-300 border border-amber-700/70 flex items-center justify-center text-[10px] font-bold">
+                👁
               </span>
               <div>
-                <span className="text-[9px] text-gray-400 uppercase font-mono block">
-                  Pase VIP emitido para:
+                <span className="text-[9px] text-amber-300/90 uppercase font-mono block">
+                  Vista previa · Pendiente de confirmar depósito:
                 </span>
                 <strong className="text-white text-xs">{formData.nombreArtistico}</strong>
                 <span className="text-gray-400 text-[11px] ml-2 font-mono">({formData.telefono})</span>
@@ -512,6 +513,21 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
 
         {/* BOTÓN PRINCIPAL DE GENERAR PASE VIP */}
         <div className="space-y-3 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-400 px-1">
+            <span className="text-emerald-400/90">
+              ✓ Confirmación inmediata · Tu bloque queda reservado al confirmar el depósito
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById('preguntas-frecuentes')?.scrollIntoView({ behavior: 'smooth' })
+              }
+              className="text-amber-300 hover:text-amber-200 underline underline-offset-2 cursor-pointer"
+            >
+              ¿Dudas sobre depósito o cancelación? Ver FAQ ↓
+            </button>
+          </div>
+
           <button
             type="submit"
             disabled={isSending}

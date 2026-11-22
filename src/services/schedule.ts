@@ -2,6 +2,13 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getAgendaOcupadaSlots, getReservas, AgendaOcupadaSlot, Reserva } from './db';
 
+export interface BloqueCustomItem {
+  label: string;
+  desc: string;
+  start: string;
+  end: string;
+}
+
 export interface SlotDisponibilidad {
   diaNumero: number;
   disponible: boolean;
@@ -9,6 +16,7 @@ export interface SlotDisponibilidad {
   motivo?: string;
   fechaStr?: string;
   bloquesOcupados?: string[];
+  bloquesPermitidos?: BloqueCustomItem[];
 }
 
 export const format12h = (timeStr: string): string => {
@@ -36,12 +44,112 @@ export const formatRangeTo12h = (rangeStr: string | undefined): string => {
   return format12h(rangeStr.trim());
 };
 
+/** Retorna la fecha actual en zona horaria de Puerto Rico (America/Puerto_Rico). */
+export function getPuertoRicoTodayParts(): {
+  year: number;
+  month: number;
+  day: number;
+  dateStr: string;
+} {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Puerto_Rico',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value;
+  }
+  const year = Number(map.year);
+  const month = Number(map.month);
+  const day = Number(map.day);
+  return {
+    year,
+    month,
+    day,
+    dateStr: `${map.year}-${map.month}-${map.day}`,
+  };
+}
+
+export function getPuertoRicoTodayStr(): string {
+  return getPuertoRicoTodayParts().dateStr;
+}
+
+export interface ResumenDisponibilidadActual {
+  hoyStr: string;
+  hoyDisponible: boolean;
+  hoySlot: SlotDisponibilidad | null;
+  proximoDisponibleFecha: string | null;
+  proximoSlot: SlotDisponibilidad | null;
+}
+
+/**
+ * Fuente única de verdad para el estado de disponibilidad de hoy y el próximo día libre
+ * usado por el banner en vivo, el calendario y la preselección de fecha en la consola.
+ */
+export function obtenerResumenDisponibilidadActual(
+  maxDaysAhead = 45
+): ResumenDisponibilidadActual {
+  const pr = getPuertoRicoTodayParts();
+  const hoyStr = pr.dateStr;
+  const cacheMeses: Record<string, Record<number, SlotDisponibilidad>> = {};
+
+  const getMonthData = (y: number, m: number) => {
+    const key = `${y}-${m}`;
+    if (!cacheMeses[key]) {
+      cacheMeses[key] = obtenerDisponibilidadMes(y, m);
+    }
+    return cacheMeses[key];
+  };
+
+  const hoyData = getMonthData(pr.year, pr.month);
+  const hoySlot = hoyData[pr.day] || null;
+  const hoyDisponible = Boolean(hoySlot?.disponible);
+
+  let proximoDisponibleFecha: string | null = hoyDisponible ? hoyStr : null;
+  let proximoSlot: SlotDisponibilidad | null = hoyDisponible ? hoySlot : null;
+
+  if (!hoyDisponible) {
+    const cursor = new Date(pr.year, pr.month - 1, pr.day);
+    for (let i = 1; i <= maxDaysAhead; i++) {
+      cursor.setDate(cursor.getDate() + 1);
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth() + 1;
+      const d = cursor.getDate();
+      const monthMap = getMonthData(y, m);
+      const slot = monthMap[d];
+      if (slot?.disponible) {
+        proximoDisponibleFecha =
+          slot.fechaStr ||
+          `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        proximoSlot = slot;
+        break;
+      }
+    }
+  }
+
+  return {
+    hoyStr,
+    hoyDisponible,
+    hoySlot,
+    proximoDisponibleFecha,
+    proximoSlot,
+  };
+}
+
 const STORAGE_KEY_DISPONIBILIDAD = 'la_facultad_disponibilidad_personalizada_db';
 export const DISPONIBILIDAD_UPDATED_EVENT = 'la_facultad_disponibilidad_updated';
 
 export type DisponibilidadCustomMap = Record<
   string,
-  { disponible: boolean; horarioPermitido?: string; motivo?: string }
+  {
+    disponible: boolean;
+    horarioPermitido?: string;
+    motivo?: string;
+    bloquesPermitidos?: BloqueCustomItem[];
+    origen?: string;
+  }
 >;
 
 let disponibilidadListenerReady = false;
@@ -95,15 +203,29 @@ export function guardarDisponibilidadDia(
   fechaStr: string,
   disponible: boolean,
   horarioPermitido?: string,
-  motivo?: string
+  motivo?: string,
+  bloquesPermitidos?: BloqueCustomItem[]
 ) {
   const disponibilidades = obtenerTodasDisponibilidades();
   disponibilidades[fechaStr] = {
     disponible,
     horarioPermitido: disponible ? horarioPermitido : undefined,
     motivo: motivo || (disponible ? 'Día Liberado por Admin' : 'Cerrado / No disponible'),
+    ...(disponible && bloquesPermitidos && bloquesPermitidos.length > 0
+      ? { bloquesPermitidos }
+      : {}),
   };
   persistirDisponibilidades(disponibilidades);
+}
+
+export function guardarDisponibilidadesLote(
+  lote: DisponibilidadCustomMap,
+  merge = true
+): DisponibilidadCustomMap {
+  const actuales = merge ? obtenerTodasDisponibilidades() : {};
+  const combinadas: DisponibilidadCustomMap = { ...actuales, ...lote };
+  persistirDisponibilidades(combinadas);
+  return combinadas;
 }
 
 export function eliminarDisponibilidadDia(fechaStr: string) {
@@ -151,6 +273,57 @@ function getActiveSlotsForAvailability(): SlotLike[] {
   return getReservas();
 }
 
+const DEFAULT_BLOQUES: BloqueCustomItem[] = [
+  { label: 'Bloque 1 · Tarde', desc: '01:00 PM - 05:00 PM (4 Horas)', start: '13:00', end: '17:00' },
+  { label: 'Bloque 2 · Noche', desc: '06:00 PM - 10:00 PM (4 Horas)', start: '18:00', end: '22:00' },
+];
+
+const toMinutes = (hhmm: string): number => {
+  const [h, m] = (hhmm || '00:00').split(':').map(Number);
+  return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+};
+
+const rangesOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string): boolean => {
+  const s1 = toMinutes(aStart);
+  const e1 = toMinutes(aEnd);
+  const s2 = toMinutes(bStart);
+  const e2 = toMinutes(bEnd);
+  return s1 < e2 && s2 < e1;
+};
+
+export interface BloqueConEstado extends BloqueCustomItem {
+  ocupado: boolean;
+}
+
+export function obtenerBloquesDisponiblesParaFecha(fechaStr: string): BloqueConEstado[] {
+  const personalizadas = obtenerTodasDisponibilidades();
+  const custom = personalizadas[fechaStr];
+  if (custom && !custom.disponible) {
+    return [];
+  }
+  const baseBloques: BloqueCustomItem[] =
+    custom?.bloquesPermitidos && custom.bloquesPermitidos.length > 0
+      ? custom.bloquesPermitidos
+      : DEFAULT_BLOQUES;
+
+  const reservasActivas = getActiveSlotsForAvailability().filter(isReservaBlockingSlot);
+  const reservasDia = reservasActivas.filter(
+    (r) => r.fecha === fechaStr || (Array.isArray(r.fechasBloque) && r.fechasBloque.includes(fechaStr))
+  );
+
+  return baseBloques.map((b) => {
+    const ocupado = reservasDia.some((r) => {
+      const rStart = r.horaInicio || '13:00';
+      const rEnd =
+        'horaSalida' in r && (r as { horaSalida?: string }).horaSalida
+          ? (r as { horaSalida: string }).horaSalida
+          : `${String(Math.min(23, Number(rStart.split(':')[0] || 13) + 4)).padStart(2, '0')}:00`;
+      return rStart === b.start || rangesOverlap(b.start, b.end, rStart, rEnd);
+    });
+    return { ...b, ocupado };
+  });
+}
+
 export function obtenerBloquesOcupadosPorFecha(fechaStr: string): string[] {
   const slots = getActiveSlotsForAvailability();
   const ocupados: string[] = [];
@@ -186,18 +359,21 @@ export function obtenerDisponibilidadMes(año: number, mes: number): Record<numb
     const ambosBloquesOcupados =
       bloquesOcupados.includes('13:00') && bloquesOcupados.includes('18:00');
 
-    // 1. Configuración personalizada del Admin (prioridad máxima)
+    // 1. Configuración personalizada del Admin / #21 El Cronomante (prioridad máxima)
     if (personalizadas[fechaStr] !== undefined) {
       const p = personalizadas[fechaStr];
+      const bloquesDia = p.disponible ? obtenerBloquesDisponiblesParaFecha(fechaStr) : [];
+      const hayBloqueLibre = p.disponible && (bloquesDia.length === 0 ? !ambosBloquesOcupados : bloquesDia.some((b) => !b.ocupado));
       disponibilidad[dia] = {
         diaNumero: dia,
-        disponible: p.disponible && !ambosBloquesOcupados,
+        disponible: p.disponible && hayBloqueLibre,
         horarioPermitido: p.horarioPermitido,
-        motivo: ambosBloquesOcupados
-          ? 'Agenda Llena (Ambos bloques reservados)'
+        motivo: p.disponible && !hayBloqueLibre
+          ? 'Agenda Llena (Turnos reservados)'
           : p.motivo,
         fechaStr,
         bloquesOcupados,
+        bloquesPermitidos: p.bloquesPermitidos,
       };
       continue;
     }
@@ -205,9 +381,8 @@ export function obtenerDisponibilidadMes(año: number, mes: number): Record<numb
     // 2. Regla base semanal + verificación de reservas activas
     const fechaObj = new Date(año, mes - 1, dia);
     const dayOfWeek = fechaObj.getDay(); // 0 = Dom, 1 = Lun, 2 = Mar, 3 = Mié, 4 = Jue, 5 = Vie, 6 = Sáb
-    const now = new Date();
-    const isPast =
-      fechaObj.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const prToday = getPuertoRicoTodayParts();
+    const isPast = fechaStr < prToday.dateStr;
 
     let disponible = false;
     let horarioPermitido: string | undefined;

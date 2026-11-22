@@ -67,8 +67,8 @@ export const BADLENZ_CAREER_SUMMARY: BadlenzCareerSummary = {
   "obraSoundcloudStreams": 1486108,
   "obraProjectsCount": 108,
   "name": "Badlenz",
-  "totalCredits": 85,
-  "musoCreditsCount": 69,
+  "totalCredits": 84,
+  "musoCreditsCount": 68,
   "extraCreditsCount": 16,
   "collaboratorsCount": 120,
   "producerGlobalPercentile": 5,
@@ -2039,35 +2039,6 @@ export const BADLENZ_VERIFIED_CREDITS: VerifiedCreditItem[] = [
   },
   {
     "id": "0eda5d9a-2b80-48d4-9112-925393f9ede0",
-    "title": "X La City (feat. Akile)",
-    "artists": "Badlenz",
-    "album": "X La City (feat. Akile)",
-    "albumArt": "https://resources.tidal.com/images/17df4071/a0b7/4b5f/b29f/8bc19faede35/640x640.jpg",
-    "releaseDate": "2026-03-24",
-    "year": 2026,
-    "roles": [
-      "Engineer"
-    ],
-    "roleLabels": [
-      "Ingeniero de Mezcla"
-    ],
-    "source": "MUSO",
-    "sourceLabel": "Muso.AI Verificado",
-    "userNote": null,
-    "spotifyId": null,
-    "spotifyUrl": null,
-    "previewUrl": null,
-    "isrc": "QZTAX2607316",
-    "label": "Independiente",
-    "popularity": null,
-    "youtubeViews": null,
-    "youtubeUrl": null,
-    "youtubeTitle": null,
-    "verifiedPlaque": null,
-    "featured": null
-  },
-  {
-    "id": "5bb7b2ac-09f3-411f-a338-db5241c9c295",
     "title": "X La City (feat. Akile)",
     "artists": "Badlenz",
     "album": "X La City (feat. Akile)",

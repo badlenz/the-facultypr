@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StudioLiveStatus, 
-  getStudioLiveStatus, 
-  subscribeToStudioStatus 
+import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  StudioLiveStatus,
+  getStudioLiveStatus,
+  subscribeToStudioStatus,
 } from '../services/studioStatus';
+import {
+  obtenerResumenDisponibilidadActual,
+  formatRangeTo12h,
+  DISPONIBILIDAD_UPDATED_EVENT,
+} from '../services/schedule';
 import { 
   Radio, 
   Calendar, 
@@ -33,6 +39,7 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
 }) => {
   const [status, setStatus] = useState<StudioLiveStatus>(getStudioLiveStatus());
   const [showModal, setShowModal] = useState(false);
+  const [availabilityTick, setAvailabilityTick] = useState(0);
 
   useEffect(() => {
     // Initial fetch
@@ -41,8 +48,67 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
     const unsubscribe = subscribeToStudioStatus((newStatus) => {
       setStatus(newStatus);
     });
-    return unsubscribe;
+    const refreshAvail = () => setAvailabilityTick((t) => t + 1);
+    window.addEventListener(DISPONIBILIDAD_UPDATED_EVENT, refreshAvail);
+    window.addEventListener('la_facultad_reservas_updated', refreshAvail);
+    return () => {
+      unsubscribe();
+      window.removeEventListener(DISPONIBILIDAD_UPDATED_EVENT, refreshAvail);
+      window.removeEventListener('la_facultad_reservas_updated', refreshAvail);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal]);
+
+  const effectiveStatus = useMemo(() => {
+    const resumen = obtenerResumenDisponibilidadActual();
+    if (status.estado !== 'disponible') {
+      return status;
+    }
+
+    if (resumen.hoyDisponible && resumen.hoySlot) {
+      const rango = formatRangeTo12h(resumen.hoySlot.horarioPermitido);
+      return {
+        ...status,
+        titulo: '🟢 STUDIO DISPONIBLE HOY',
+        subtitulo: resumen.hoySlot.motivo || 'Espacio Abierto · ¡Toca aquí para reservar tu turno!',
+        proximoTurnoLibre: rango ? `Hoy · ${rango}` : 'Turnos de Tarde & Noche',
+      };
+    }
+
+    if (resumen.proximoDisponibleFecha && resumen.proximoSlot) {
+      const [y, m, d] = resumen.proximoDisponibleFecha.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const fechaLabel = dt.toLocaleDateString('es-PR', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      });
+      const rango = formatRangeTo12h(resumen.proximoSlot.horarioPermitido);
+      return {
+        ...status,
+        titulo: `📅 PRÓXIMO TURNO: ${fechaLabel.toUpperCase()}`,
+        subtitulo: 'Hoy sin turnos disponibles · Toca para apartar tu próximo bloque',
+        proximoTurnoLibre: rango ? `${fechaLabel} · ${rango}` : fechaLabel,
+      };
+    }
+
+    return {
+      ...status,
+      titulo: '📅 AGENDA COMPLETA',
+      subtitulo: 'Consulta próximas fechas disponibles en el calendario',
+      proximoTurnoLibre: 'Ver calendario',
+    };
+  }, [status, availabilityTick]);
 
   const getTheme = () => {
     switch (status.estado) {
@@ -156,132 +222,147 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
           <div className="flex items-center gap-1.5">
             {theme.icon}
             <span className={`text-[10px] font-mono tracking-wider uppercase ${theme.titleColor}`}>
-              {status.titulo}
+              {effectiveStatus.titulo}
             </span>
           </div>
           <span className={`text-[9px] block truncate max-w-[200px] lg:max-w-[280px] ${theme.subColor} font-medium`}>
-            {status.subtitulo}
+            {effectiveStatus.subtitulo}
           </span>
         </div>
 
         {/* Mobile-only compact tag */}
         <div className="sm:hidden flex items-center gap-1">
           <span className={`text-[10px] font-mono font-black tracking-wider uppercase ${theme.titleColor}`}>
-            {theme.tag}
+            {effectiveStatus.estado === 'disponible' && effectiveStatus.titulo.startsWith('📅')
+              ? '📅 PRÓXIMO TURNO'
+              : theme.tag}
           </span>
         </div>
       </button>
 
-      {/* POPUP / MODAL DE DETALLES EN VIVO */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#18181b] border border-gray-700 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl relative">
-            {/* Header del Modal */}
-            <div className="flex justify-between items-start border-b border-gray-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex h-3 w-3">
-                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${theme.ledPing}`}></span>
-                  <span className={`relative inline-flex rounded-full h-3 w-3 ${theme.ledBg}`}></span>
-                </span>
-                <div>
-                  <h4 className={`text-sm font-black uppercase tracking-wider ${theme.titleColor}`}>
-                    {status.titulo}
-                  </h4>
-                  <p className="text-[10px] text-gray-400 font-mono">
-                    Estado en tiempo real de La Facultad Studio
-                  </p>
+      {/* POPUP / MODAL DE DETALLES EN VIVO (Portal al body para evitar stacking context del header) */}
+      {showModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Estado en tiempo real de La Facultad Studio"
+            onClick={() => setShowModal(false)}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#18181b] border border-gray-700 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl relative"
+            >
+              {/* Header del Modal */}
+              <div className="flex justify-between items-start border-b border-gray-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-3 w-3">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${theme.ledPing}`}></span>
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${theme.ledBg}`}></span>
+                  </span>
+                  <div>
+                    <h4 className={`text-sm font-black uppercase tracking-wider ${theme.titleColor}`}>
+                      {effectiveStatus.titulo}
+                    </h4>
+                    <p className="text-[10px] text-gray-400 font-mono">
+                      Estado en tiempo real de La Facultad Studio
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cerrar ventana de estado"
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-white p-1.5 rounded-lg bg-gray-900 border border-gray-800 cursor-pointer transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Tarjeta de Telemetría */}
+              <div className="bg-black/60 rounded-xl p-4 border border-gray-800 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between text-gray-400">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-amber-500" />
+                    Productor en Turno:
+                  </span>
+                  <strong className="text-white font-medium">{effectiveStatus.ingeniero || 'Manuel E. Ramirez (Badlenz)'}</strong>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-400">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-red-500" />
+                    Próximo Turno Libre:
+                  </span>
+                  <strong className="text-emerald-400 font-bold font-mono text-right">
+                    {effectiveStatus.proximoTurnoLibre || 'Ver calendario'}
+                  </strong>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-400 pt-1 border-t border-gray-800/80">
+                  <span>Tratamiento de Sala:</span>
+                  <span className="text-gray-300 font-mono text-[11px]">Studio Acústico Profesional</span>
+                </div>
+
+                <div className="flex items-center justify-between text-gray-400">
+                  <span>Ubicación:</span>
+                  <span className="text-gray-300">Hormigueros, Puerto Rico</span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-lg bg-gray-900 border border-gray-800"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Tarjeta de Telemetría */}
-            <div className="bg-black/60 rounded-xl p-4 border border-gray-800 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-amber-500" />
-                  Productor en Turno:
-                </span>
-                <strong className="text-white font-medium">{status.ingeniero || 'Manuel E. Ramirez (Badlenz)'}</strong>
-              </div>
+              {/* Mensaje descriptivo */}
+              <p className="text-xs text-gray-300 bg-gray-900/70 p-3 rounded-xl border border-gray-800/80 leading-relaxed">
+                {effectiveStatus.subtitulo}
+              </p>
 
-              <div className="flex items-center justify-between text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-red-500" />
-                  Próximo Turno Libre:
-                </span>
-                <strong className="text-emerald-400 font-bold font-mono">
-                  {status.proximoTurnoLibre || 'Turno Noche 06:00 PM'}
-                </strong>
-              </div>
-
-              <div className="flex items-center justify-between text-gray-400 pt-1 border-t border-gray-800/80">
-                <span>Tratamiento de Sala:</span>
-                <span className="text-gray-300 font-mono text-[11px]">Studio Acústico Profesional</span>
-              </div>
-
-              <div className="flex items-center justify-between text-gray-400">
-                <span>Ubicación:</span>
-                <span className="text-gray-300">Hormigueros, Puerto Rico</span>
-              </div>
-            </div>
-
-            {/* Mensaje descriptivo */}
-            <p className="text-xs text-gray-300 bg-gray-900/70 p-3 rounded-xl border border-gray-800/80 leading-relaxed">
-              {status.subtitulo}
-            </p>
-
-            {/* Botones de Acción */}
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  if (onGoToBooking) {
-                    onGoToBooking();
-                  }
-                }}
-                className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer"
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Ver Calendario y Reservar Turno</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              <a
-                href={`https://wa.me/17872408627?text=${encodeURIComponent(
-                  `¡Hola Badlenz! Vi el estado de La Facultad Studio (${status.titulo}). Me gustaría consultar disponibilidad de fechas en el studio para mi próximo tema.`
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-emerald-300 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Consultar Inmediato por WhatsApp</span>
-              </a>
-
-              {isAdmin && onGoToAdmin && (
+              {/* Botones de Acción */}
+              <div className="space-y-2 pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
-                    onGoToAdmin();
+                    if (onGoToBooking) {
+                      onGoToBooking();
+                    }
                   }}
-                  className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold py-2 rounded-xl text-[11px] uppercase transition flex items-center justify-center gap-1.5"
+                  className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer"
                 >
-                  <span>⚙️ Cambiar Estado en Panel Admin</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Ver Calendario y Reservar Turno</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-              )}
+
+                <a
+                  href={`https://wa.me/17872408627?text=${encodeURIComponent(
+                    `¡Hola Badlenz! Vi el estado de La Facultad Studio (${effectiveStatus.titulo}). Me gustaría consultar disponibilidad de fechas en el studio para mi próximo tema.`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-emerald-300 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Consultar Inmediato por WhatsApp</span>
+                </a>
+
+                {isAdmin && onGoToAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      onGoToAdmin();
+                    }}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold py-2 rounded-xl text-[11px] uppercase transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>⚙️ Cambiar Estado en Panel Admin</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 };

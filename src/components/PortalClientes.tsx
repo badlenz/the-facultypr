@@ -9,13 +9,20 @@ import {
   getStudioConfig,
   StudioConfig,
 } from '../services/db';
-import { SlotDisponibilidad } from '../services/schedule';
+import {
+  SlotDisponibilidad,
+  obtenerResumenDisponibilidadActual,
+  getPuertoRicoTodayStr,
+  DISPONIBILIDAD_UPDATED_EVENT,
+} from '../services/schedule';
 import { UbicacionPuertoRico } from './UbicacionPuertoRico';
 import { AvisoEstudioCerrado } from './AvisoEstudioCerrado';
 import { getStudioLiveStatus, subscribeToStudioStatus, StudioLiveStatus } from '../services/studioStatus';
 import { compressImageToDataUrl } from '../utils/compressImage';
 import { ScrollReveal } from './ScrollReveal';
 import { StudioGuaranteesBento } from './StudioGuaranteesBento';
+import { SocialProofReviews } from './SocialProofReviews';
+import { StudioFaqSection } from './StudioFaqSection';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 import { BookingFormData, PackageType, PromoSlotsInfo } from './portal/types';
@@ -42,12 +49,24 @@ interface PortalClientesProps {
 }
 
 export default function PortalClientes({ slotInicial, onNavigateToMuestras }: PortalClientesProps) {
+  const initialAvailability = useMemo(() => obtenerResumenDisponibilidadActual(), []);
+  const initialHoraRange = initialAvailability.proximoSlot?.horarioPermitido?.split(' - ');
+  const savedDraft = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('la_facultad_booking_draft_v1');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const [formData, setFormData] = useState<BookingFormData>({
-    nombreReal: '',
-    nombreArtistico: '',
-    redesSociales: '',
-    telefono: '',
-    email: '',
+    nombreReal: savedDraft?.nombreReal || '',
+    nombreArtistico: savedDraft?.nombreArtistico || '',
+    redesSociales: savedDraft?.redesSociales || '',
+    telefono: savedDraft?.telefono || '',
+    email: savedDraft?.email || '',
     servicios: {
       grabacion: true,
       instrumental: false,
@@ -56,15 +75,18 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     },
     incluirBeatExclusivoBadlenz: false,
     tipoInstrumental: 'youtube',
-    linkYoutube: '',
+    linkYoutube: savedDraft?.linkYoutube || '',
     numeroCanales: '1-8 Pistas (Voz + Beat)',
     tempoBpm: '120 BPM',
     metodoPago: 'ATH Movil',
-    referencias: '',
+    referencias: savedDraft?.referencias || '',
     aceptaTerminos: true,
-    fecha: new Date().toISOString().split('T')[0],
-    horaInicio: '13:00',
-    horaSalida: '17:00',
+    fecha: initialAvailability.proximoDisponibleFecha || getPuertoRicoTodayStr(),
+    horaInicio: initialHoraRange?.[0]?.trim() || '13:00',
+    horaSalida:
+      initialHoraRange?.[0]?.trim() === '18:00'
+        ? '22:00'
+        : '17:00',
   });
 
   const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1);
@@ -73,7 +95,9 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   const [athComprobanteNombre, setAthComprobanteNombre] = useState<string>('');
 
   const [selectedPackage, setSelectedPackage] = useState<PackageType | null>('promo');
-  const [fechasSeleccionadasBloque] = useState<string[]>(['2026-08-10']);
+  const [fechasSeleccionadasBloque] = useState<string[]>([
+    initialAvailability.proximoDisponibleFecha || getPuertoRicoTodayStr(),
+  ]);
   const [esReservaEnBloque, setEsReservaEnBloque] = useState<boolean>(false);
   const [roughAudioPlaying, setRoughAudioPlaying] = useState<boolean>(false);
   const [promoSlotsInfo, setPromoSlotsInfo] = useState<PromoSlotsInfo>(() => getPromoSlotsCount());
@@ -113,6 +137,65 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   useEffect(() => {
     const unsub = subscribeToStudioStatus((st) => setStudioLiveStatus(st));
     return unsub;
+  }, []);
+
+  // Guardar borrador ligero de datos del artista en localStorage para evitar pérdida en recargas
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (reservaActiva) {
+        localStorage.removeItem('la_facultad_booking_draft_v1');
+        return;
+      }
+      const draft = {
+        nombreReal: formData.nombreReal,
+        nombreArtistico: formData.nombreArtistico,
+        redesSociales: formData.redesSociales,
+        telefono: formData.telefono,
+        email: formData.email,
+        linkYoutube: formData.linkYoutube,
+        referencias: formData.referencias,
+      };
+      localStorage.setItem('la_facultad_booking_draft_v1', JSON.stringify(draft));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [
+    reservaActiva,
+    formData.nombreReal,
+    formData.nombreArtistico,
+    formData.redesSociales,
+    formData.telefono,
+    formData.email,
+    formData.linkYoutube,
+    formData.referencias,
+  ]);
+
+  // Si Firestore actualiza la disponibilidad o reservas después del primer render,
+  // verificar que la fecha preseleccionada siga disponible; si no, mover al próximo turno libre.
+  useEffect(() => {
+    const syncInitialDate = () => {
+      const resumen = obtenerResumenDisponibilidadActual();
+      setFormData((prev) => {
+        if (!resumen.proximoDisponibleFecha) return prev;
+        if (prev.fecha === resumen.hoyStr && !resumen.hoyDisponible) {
+          const range = resumen.proximoSlot?.horarioPermitido?.split(' - ');
+          return {
+            ...prev,
+            fecha: resumen.proximoDisponibleFecha,
+            horaInicio: range?.[0]?.trim() || prev.horaInicio,
+            horaSalida: range?.[0]?.trim() === '18:00' ? '22:00' : '17:00',
+          };
+        }
+        return prev;
+      });
+    };
+    window.addEventListener(DISPONIBILIDAD_UPDATED_EVENT, syncInitialDate);
+    window.addEventListener('la_facultad_reservas_updated', syncInitialDate);
+    return () => {
+      window.removeEventListener(DISPONIBILIDAD_UPDATED_EVENT, syncInitialDate);
+      window.removeEventListener('la_facultad_reservas_updated', syncInitialDate);
+    };
   }, []);
 
   const isStudioTemporarilyClosed = ['vacaciones', 'mantenimiento', 'remodelacion'].includes(
@@ -718,7 +801,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   onSelectPackage={handleSelectPackage}
                   onContinueToStep2={() => {
                     if (!formData.fecha) {
-                      setFormData((prev) => ({ ...prev, fecha: new Date().toISOString().split('T')[0] }));
+                      const fallback =
+                        obtenerResumenDisponibilidadActual().proximoDisponibleFecha ||
+                        getPuertoRicoTodayStr();
+                      setFormData((prev) => ({ ...prev, fecha: fallback }));
                     }
                     setCheckoutStep(2);
                   }}
@@ -819,6 +905,11 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         <StudioGuaranteesBento />
       </ScrollReveal>
 
+      {/* 4B. TESTIMONIOS — LO QUE DICEN LOS ARTISTAS */}
+      <ScrollReveal delayMs={75}>
+        <SocialProofReviews />
+      </ScrollReveal>
+
       {/* 5. CRÉDITOS OFICIALES & STREAM MILESTONES */}
       <ScrollReveal delayMs={70}>
         <Suspense fallback={<div className="h-44 rounded-3xl bg-[#0e1017] border border-white/10 animate-pulse" />}>
@@ -829,6 +920,11 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       {/* 6. UBICACIÓN HORMIGUEROS, PUERTO RICO */}
       <ScrollReveal delayMs={60}>
         <UbicacionPuertoRico />
+      </ScrollReveal>
+
+      {/* 6B. PREGUNTAS FRECUENTES (FAQ) */}
+      <ScrollReveal delayMs={50}>
+        <StudioFaqSection />
       </ScrollReveal>
 
       {/* 7. ESCENA FINAL */}

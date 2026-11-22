@@ -10,6 +10,20 @@ export const AudioShowcaseAB: React.FC = () => {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(16); // 16s demo loop
+  const durationARef = useRef<number>(0);
+  const durationBRef = useRef<number>(0);
+
+  const syncAlignedDuration = () => {
+    const dA = durationARef.current;
+    const dB = durationBRef.current;
+    if (dA > 0 && dB > 0) {
+      setDuration(Math.min(dA, dB));
+    } else if (dA > 0) {
+      setDuration(dA);
+    } else if (dB > 0) {
+      setDuration(dB);
+    }
+  };
   const [mode, setMode] = useState<'A' | 'B'>('B'); // B = Master La Facultad (default)
   const [isMuted, setIsMuted] = useState(false);
   const [lufsMeter, setLufsMeter] = useState(-8.9);
@@ -370,19 +384,23 @@ export const AudioShowcaseAB: React.FC = () => {
         <audio 
           ref={audioARef} 
           src={playableAudioA} 
-          preload="none" 
+          preload="metadata" 
           loop 
           onTimeUpdate={(e) => {
-            if (hasCustomAudio) {
-              setCurrentTime(e.currentTarget.currentTime);
-              if (e.currentTarget.duration && !isNaN(e.currentTarget.duration)) {
-                setDuration(e.currentTarget.duration);
+            if (hasCustomAudio && mode === 'A') {
+              const t = e.currentTarget.currentTime;
+              if (duration > 0 && t >= duration) {
+                e.currentTarget.currentTime = 0;
+                setCurrentTime(0);
+              } else {
+                setCurrentTime(t);
               }
             }
           }}
           onLoadedMetadata={(e) => {
             if (e.currentTarget.duration && !isNaN(e.currentTarget.duration)) {
-              setDuration(e.currentTarget.duration);
+              durationARef.current = e.currentTarget.duration;
+              syncAlignedDuration();
             }
           }}
         />
@@ -391,19 +409,23 @@ export const AudioShowcaseAB: React.FC = () => {
         <audio 
           ref={audioBRef} 
           src={playableAudioB} 
-          preload="none" 
+          preload="metadata" 
           loop 
           onTimeUpdate={(e) => {
-            if (hasCustomAudio) {
-              setCurrentTime(e.currentTarget.currentTime);
-              if (e.currentTarget.duration && !isNaN(e.currentTarget.duration)) {
-                setDuration(e.currentTarget.duration);
+            if (hasCustomAudio && mode === 'B') {
+              const t = e.currentTarget.currentTime;
+              if (duration > 0 && t >= duration) {
+                e.currentTarget.currentTime = 0;
+                setCurrentTime(0);
+              } else {
+                setCurrentTime(t);
               }
             }
           }}
           onLoadedMetadata={(e) => {
             if (e.currentTarget.duration && !isNaN(e.currentTarget.duration)) {
-              setDuration(e.currentTarget.duration);
+              durationBRef.current = e.currentTarget.duration;
+              syncAlignedDuration();
             }
           }}
         />
