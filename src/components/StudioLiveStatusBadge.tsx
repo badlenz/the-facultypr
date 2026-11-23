@@ -14,7 +14,6 @@ import {
   Radio, 
   Calendar, 
   Clock, 
-  Sparkles, 
   User, 
   MessageSquare, 
   ChevronRight, 
@@ -157,7 +156,7 @@ export const StudioLiveStatusBadge: React.FC<StudioLiveStatusBadgeProps> = ({
           ledPing: 'bg-amber-300',
           titleColor: 'text-amber-300 font-black',
           subColor: 'text-amber-400/90',
-          icon: <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />,
+          icon: <Calendar className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />,
           tag: '🌴 VACACIONES'
         };
       case 'mantenimiento':

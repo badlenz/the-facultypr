@@ -98,6 +98,18 @@ rules_version = '2';
 // Collections: feedbacks, archivos, recibos, finanzas
 //   - Admin-only read/write.
 //
+// Collection: reviews (PUBLIC TESTIMONIALS / REVIEWS — NO PII)
+// Document ID: reviewId
+// Fields:
+//   - artistName: string (required, 2..60 chars)
+//   - projectTitle: string (required, 2..80 chars)
+//   - quote: string (required, 8..400 chars)
+//   - rating: int (required, 1..5)
+//   - featured: bool (required; public create must be false)
+//   - featuredOrder: int or null (optional)
+//   - source: string (optional, 1..40 chars)
+//   - createdAt: int or timestamp (required, immutable on update)
+//
 // ===============================================================
 
 service cloud.firestore {
@@ -310,6 +322,34 @@ service cloud.firestore {
         isValidOptionalBool(data, 'contactado');
     }
 
+    function isValidReview(data) {
+      return data.keys().hasOnly([
+          'artistName', 'projectTitle', 'quote', 'rating',
+          'featured', 'featuredOrder', 'source', 'createdAt'
+        ]) &&
+        data.keys().hasAll([
+          'artistName', 'projectTitle', 'quote', 'rating',
+          'featured', 'createdAt'
+        ]) &&
+        data.artistName is string &&
+        data.artistName.size() >= 2 &&
+        data.artistName.size() <= 60 &&
+        data.projectTitle is string &&
+        data.projectTitle.size() >= 2 &&
+        data.projectTitle.size() <= 80 &&
+        data.quote is string &&
+        data.quote.size() >= 8 &&
+        data.quote.size() <= 400 &&
+        data.rating is int &&
+        data.rating >= 1 &&
+        data.rating <= 5 &&
+        data.featured is bool &&
+        (!('featuredOrder' in data) || data.featuredOrder == null || data.featuredOrder is int) &&
+        (!('source' in data) || data.source == null ||
+          (data.source is string && data.source.size() >= 1 && data.source.size() <= 40)) &&
+        ((data.createdAt is int && data.createdAt >= 0) || data.createdAt is timestamp);
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -406,6 +446,19 @@ service cloud.firestore {
 
     match /finanzas/{movId} {
       allow read, write: if isAdmin();
+    }
+
+    // Public studio reviews & testimonials (NO PII)
+    // - Public can read reviews and submit new unfeatured reviews (featured == false).
+    // - Only admin can update (toggle featured / featuredOrder) or delete reviews.
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isValidReview(request.resource.data) &&
+        (isAdmin() || request.resource.data.featured == false);
+      allow update: if isAdmin() &&
+        isValidReview(request.resource.data) &&
+        request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
     }
 
     // Default deny everything else

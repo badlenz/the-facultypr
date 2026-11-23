@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, Sparkles, Sliders, CheckCircle2, Radio, Music, Loader2 } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Sliders, CheckCircle2, Radio, Music, Loader2, Headphones } from 'lucide-react';
 import { getShowcaseTracks, ShowcaseTrack } from '../services/db';
 import { getAudioPlayableUrl } from '../services/audioStorage';
 
@@ -626,7 +626,7 @@ export const AudioShowcaseAB: React.FC = () => {
                 }}
                 className="px-2 py-0.5 rounded bg-red-950/60 hover:bg-red-900/80 text-amber-300 border border-red-800/80 cursor-pointer transition font-bold flex items-center gap-1"
               >
-                <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                <Play className="w-2.5 h-2.5 text-amber-400" />
                 <span>0:16 Drop / Coro</span>
               </button>
               <button
@@ -708,7 +708,7 @@ export const AudioShowcaseAB: React.FC = () => {
               }`}
             >
               <div className="absolute top-2 right-2 text-amber-300" aria-hidden="true">
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                <Sliders className="w-3.5 h-3.5 animate-pulse" />
               </div>
               <span className="text-[10px] uppercase font-mono font-black block text-amber-200">
                 Opción B ★
@@ -746,7 +746,7 @@ export const AudioShowcaseAB: React.FC = () => {
                 }}
                 className="w-full bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-amber-200 fill-amber-200" />
+                <Headphones className="w-4 h-4 text-amber-200" />
                 <span>🔥 Quiero este sonido en mi tema (Apartar con $50) ➔</span>
               </button>
             </div>

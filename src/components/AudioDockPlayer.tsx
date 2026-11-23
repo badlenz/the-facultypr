@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Sliders, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AudioDockPlayerProps {
   onBookClick?: () => void;
@@ -201,7 +201,7 @@ export const AudioDockPlayer: React.FC<AudioDockPlayerProps> = ({ onBookClick })
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-3 h-3 text-amber-300" />
+              <Sliders className="w-3 h-3 text-amber-300" />
               <span>Master V1</span>
             </button>
           </div>

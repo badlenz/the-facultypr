@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Download,
   Target,
+  Star,
 } from 'lucide-react';
 import {
   getReservas,
@@ -70,8 +71,11 @@ import { CalendarioSection } from './Calendario/CalendarioSection';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 const AdminCreditsRolesEditor = lazyWithRetry(() => import('./AdminCreditsRolesEditor'));
+const AdminReviewsCurator = lazyWithRetry(() =>
+  import('./AdminReviewsCurator').then((m) => ({ default: m.AdminReviewsCurator }))
+);
 
-type AdminTab = 'reservas' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'creditos' | 'ajustes';
+type AdminTab = 'reservas' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'creditos' | 'resenas' | 'ajustes';
 
 interface PanelAdminProps {
   defaultSection?: 'all' | 'calendario';
@@ -613,6 +617,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
             { id: 'estado', label: 'Estado del Estudio', icon: Radio, badge: null },
             { id: 'showcase', label: 'Audio A/B', icon: Music, badge: tracks.length },
             { id: 'creditos', label: 'Créditos & Roles', icon: Award, badge: 84 },
+            { id: 'resenas', label: 'Reseñas', icon: Star, badge: null },
             { id: 'ajustes', label: 'Ajustes & Pagos', icon: Settings, badge: null },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1757,6 +1762,17 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
           }
         >
           <AdminCreditsRolesEditor onNotify={notify} />
+        </Suspense>
+      )}
+
+      {/* TAB: RESEÑAS & PORTADA */}
+      {activeTab === 'resenas' && (
+        <Suspense
+          fallback={
+            <div className="h-64 rounded-3xl bg-[#0e1018] border border-white/10 animate-pulse" />
+          }
+        >
+          <AdminReviewsCurator />
         </Suspense>
       )}
 

@@ -7,7 +7,6 @@ import {
   Clock, 
   MessageCircle, 
   CheckCircle2, 
-  Sparkles, 
   Send, 
   Music2, 
   ArrowRight, 
@@ -284,7 +283,7 @@ export const AvisoEstudioCerrado: React.FC<AvisoEstudioCerradoProps> = ({
               {currentCfg.sub}
             </p>
             <p className="text-xs text-amber-300/90 font-mono flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <Music2 className="w-4 h-4 text-amber-400 shrink-0" />
               <span>{currentCfg.highlight}</span>
             </p>
           </div>

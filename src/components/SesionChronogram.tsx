@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Mic, Sparkles, Sliders, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Clock, Mic, Headphones, Sliders, CheckCircle2, ChevronRight } from 'lucide-react';
 
 interface StageInfo {
   time: string;
@@ -43,7 +43,7 @@ export const SesionChronogram: React.FC = () => {
       subtitle: 'Espacio estéreo, agresividad y dinamismo',
       description: 'Grabación de doblajes laterales (Left/Right), segundas voces, apoyos de punch en los finales de frase y ad-libs espontáneos para darle anchura a la mezcla.',
       deliverable: 'Multitrack vocal completo con capas de soporte.',
-      icon: <Sparkles className="w-5 h-5 text-amber-300" />,
+      icon: <Headphones className="w-5 h-5 text-amber-300" />,
       badge: 'Fase 3: Capas'
     },
     {

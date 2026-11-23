@@ -8,7 +8,6 @@ import {
   Search,
   Users,
   Youtube,
-  Sparkles,
   Download,
   Radio,
   CheckCircle2,
@@ -529,7 +528,7 @@ export const CreditsBentoGrid: React.FC<CreditsBentoGridProps> = ({ onBookSessio
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <Award className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             <span className="sm:hidden">Destacados</span>
             <span className="hidden sm:inline">Destacados ({featuredCredits.length})</span>
           </button>

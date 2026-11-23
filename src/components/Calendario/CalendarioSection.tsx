@@ -1,5 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { obtenerDisponibilidadMes, SlotDisponibilidad, formatRangeTo12h, DISPONIBILIDAD_UPDATED_EVENT } from '../../services/schedule';
+import {
+  obtenerDisponibilidadMes,
+  SlotDisponibilidad,
+  formatRangeTo12h,
+  DISPONIBILIDAD_UPDATED_EVENT,
+  getPuertoRicoTodayParts,
+  getPuertoRicoTodayStr,
+} from '../../services/schedule';
 
 interface CalendarioSectionProps {
   selectedDate?: string;
@@ -11,8 +18,12 @@ interface CalendarioSectionProps {
 }
 
 export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSessions, isAdmin }: CalendarioSectionProps) {
-  // Estado para la fecha del calendario en tiempo real (mes actual)
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  // Estado para la fecha del calendario en tiempo real (zona horaria Puerto Rico)
+  const prTodayStr = getPuertoRicoTodayStr();
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    const pr = getPuertoRicoTodayParts();
+    return new Date(pr.year, pr.month - 1, pr.day);
+  });
   const [viewMode, setViewMode] = useState<'mes' | 'semana' | 'dia'>('mes');
   const [showModal, setShowModal] = useState(false);
   const [fechaSeleccionadaModal, setFechaSeleccionadaModal] = useState<number | null>(null);
@@ -21,6 +32,17 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
   React.useEffect(() => {
     if (selectedDate) {
       setInternalSelectedDate(selectedDate);
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selectedDate);
+      if (match) {
+        const selY = Number(match[1]);
+        const selM = Number(match[2]) - 1;
+        const selD = Number(match[3]);
+        setCurrentDate((prev) =>
+          prev.getFullYear() === selY && prev.getMonth() === selM
+            ? prev
+            : new Date(selY, selM, selD)
+        );
+      }
     }
   }, [selectedDate]);
 
@@ -207,6 +229,18 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
             >
               ▶
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const pr = getPuertoRicoTodayParts();
+                setCurrentDate(new Date(pr.year, pr.month - 1, pr.day));
+              }}
+              className="bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs font-mono font-bold px-2.5 py-2 rounded-lg border border-amber-500/30 transition focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer"
+              title="Ir a la fecha de hoy en Puerto Rico"
+            >
+              Hoy
+            </button>
           </div>
 
           <div className="flex items-center space-x-3 text-xs">
@@ -242,6 +276,7 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
               const diaStr = String(slot.diaNumero).padStart(2, '0');
               const mesStr = String(month + 1).padStart(2, '0');
               const fullDateStr = `${year}-${mesStr}-${diaStr}`;
+              const isToday = fullDateStr === prTodayStr;
               const isSelectable = slot.disponible || isAdmin;
               const isSelected = isSelectable && (selectedDate === fullDateStr || internalSelectedDate === fullDateStr);
 
@@ -284,6 +319,11 @@ export function CalendarioSection({ onSelectSlot, selectedDate, sessions, setSes
                       }`}>
                         {slot.diaNumero}
                       </span>
+                      {isToday && (
+                        <span className="text-[9px] font-mono font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">
+                          HOY
+                        </span>
+                      )}
                       {isSelected && (
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-200 animate-ping" />
                       )}

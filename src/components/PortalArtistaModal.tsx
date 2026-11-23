@@ -5,7 +5,6 @@ import {
   Headphones,
   ExternalLink,
   KeyRound,
-  Sparkles,
   MessageCircle,
   Star,
 } from 'lucide-react';
@@ -161,7 +160,7 @@ export const PortalArtistaModal: React.FC<PortalArtistaModalProps> = ({
             rel="noopener noreferrer"
             className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Headphones className="w-3.5 h-3.5 text-amber-400" />
             <span>Ir a Faculty Projects ({ARTIST_PORTAL_BASE_URL.replace('https://', '')})</span>
             <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
           </a>

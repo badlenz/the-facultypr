@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, ShieldCheck, Headphones, Zap, Sparkles, Copy, Check, CalendarX2, MessageCircle } from 'lucide-react';
+import { Clock, ShieldCheck, Headphones, Zap, Copy, Check, CalendarX2, MessageCircle } from 'lucide-react';
 import { BadlenzLogo, LFCrestLogo } from './BrandingLogos';
 
 export const StudioGuaranteesBento: React.FC = () => {
@@ -45,7 +45,7 @@ export const StudioGuaranteesBento: React.FC = () => {
               <span>Estándares Oficiales de Estudio</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono text-amber-300 font-bold uppercase tracking-wider">
-              <Sparkles className="w-3 h-3 text-amber-400" />
+              <ShieldCheck className="w-3 h-3 text-amber-400" />
               <span>Garantía Badlenz</span>
             </span>
           </div>

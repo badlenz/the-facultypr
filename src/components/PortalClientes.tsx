@@ -21,6 +21,7 @@ import { getStudioLiveStatus, subscribeToStudioStatus, StudioLiveStatus } from '
 import { compressImageToDataUrl } from '../utils/compressImage';
 import { ScrollReveal } from './ScrollReveal';
 import { StudioGuaranteesBento } from './StudioGuaranteesBento';
+import { StudioGallerySection } from './StudioGallerySection';
 import { SocialProofReviews } from './SocialProofReviews';
 import { StudioFaqSection } from './StudioFaqSection';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
@@ -910,6 +911,11 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         <Suspense fallback={<div className="h-44 rounded-3xl bg-[#0e1017] border border-white/10 animate-pulse" />}>
           <CreditsMinimalSection />
         </Suspense>
+      </ScrollReveal>
+
+      {/* 5B. GALERÍA DEL ESTUDIO REAL */}
+      <ScrollReveal delayMs={72}>
+        <StudioGallerySection />
       </ScrollReveal>
 
       {/* 6. UBICACIÓN HORMIGUEROS, PUERTO RICO */}

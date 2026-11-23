@@ -1,7 +1,30 @@
-import React from 'react';
-import { Calendar, Headphones, Smartphone, Sparkles } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Calendar, Headphones, Smartphone } from 'lucide-react';
 import { BadlenzLogo, LFCrestLogo } from '../BrandingLogos';
 import { PackageType, PromoSlotsInfo } from './types';
+
+const HERO_VIDEO_LOOP = [
+  {
+    src: '/assets/studio/videos/02-hero-session-badlenz.mp4',
+    poster: '/assets/studio/hero-session-badlenz.jpg',
+    label: 'Badlenz produciendo en sesión real',
+  },
+  {
+    src: '/assets/studio/videos/03-logo-transicion-tv-estudio.mp4',
+    poster: '/assets/branding/the-faculty-crest-hd.jpg',
+    label: 'Transición del logo The Faculty hacia la TV del estudio',
+  },
+  {
+    src: '/assets/studio/videos/01-hero-logo-faculty.mp4',
+    poster: '/assets/studio/hero-logo-faculty.jpg',
+    label: 'Control Room de La Facultad Studio con logo The Faculty',
+  },
+  {
+    src: '/assets/studio/videos/09-logo-crest-crimson-pulse.mp4',
+    poster: '/assets/branding/the-faculty-crest-hd.jpg',
+    label: 'Logo The Faculty con pulso carmesí y dorado',
+  },
+];
 
 interface StudioHeroSectionProps {
   promoSlotsInfo: PromoSlotsInfo;
@@ -16,6 +39,45 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
   onSelectPackage,
   onCopyAthPhone,
 }) => {
+  const [heroVideoIndex, setHeroVideoIndex] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const advancingRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const advanceToNextClip = useCallback(() => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    setHeroVideoIndex((prev) => {
+      const nextIdx = (prev + 1) % HERO_VIDEO_LOOP.length;
+      const nextEl = videoRefs.current[nextIdx];
+      if (nextEl) {
+        nextEl.currentTime = 0;
+        nextEl.play().catch(() => {});
+      }
+      return nextIdx;
+    });
+    window.setTimeout(() => {
+      advancingRef.current = false;
+    }, 1100);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const activeEl = videoRefs.current[heroVideoIndex];
+    if (activeEl && activeEl.paused) {
+      activeEl.play().catch(() => {});
+    }
+  }, [heroVideoIndex, prefersReducedMotion]);
+
   return (
     <>
       {/* BANNER OFICIAL DE BIENVENIDA & REAPERTURA 2026 (SPATIAL ANTIGRAVITY DESIGN) */}
@@ -92,16 +154,50 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
 
       {/* 1. MASTER STUDIO HERO (URBAN BOUTIQUE RECORDING STUDIO) */}
       <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
-        {/* Background Studio Photo */}
+        {/* Background Studio Video Loop (fallback to static photo if reduced motion) */}
         <div
           className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[60%] pointer-events-none overflow-hidden select-none z-0"
           aria-hidden="true"
         >
-          <img
-            src="/assets/studio/hero-session-badlenz.jpg"
-            alt="Badlenz produciendo en La Facultad Studio"
-            className="w-full h-full object-cover object-right sm:object-[65%_center] filter blur-[2.5px] opacity-40 sm:opacity-55"
-          />
+          {prefersReducedMotion ? (
+            <img
+              src="/assets/studio/hero-logo-faculty.jpg"
+              alt="La Facultad Studio · Control Room con logo The Faculty"
+              className="w-full h-full object-cover object-center sm:object-[60%_center] opacity-55"
+            />
+          ) : (
+            HERO_VIDEO_LOOP.map((clip, idx) => {
+              const isActive = idx === heroVideoIndex;
+              return (
+                <video
+                  key={clip.src}
+                  ref={(el) => {
+                    videoRefs.current[idx] = el;
+                  }}
+                  src={clip.src}
+                  poster={clip.poster}
+                  autoPlay={idx === 0}
+                  muted
+                  playsInline
+                  preload="auto"
+                  onTimeUpdate={(e) => {
+                    if (!isActive) return;
+                    const v = e.currentTarget;
+                    if (v.duration && v.duration - v.currentTime <= 0.9) {
+                      advanceToNextClip();
+                    }
+                  }}
+                  onEnded={() => {
+                    if (isActive) advanceToNextClip();
+                  }}
+                  aria-label={clip.label}
+                  className={`absolute inset-0 w-full h-full object-cover object-center sm:object-[60%_center] transition-opacity duration-1000 ease-in-out ${
+                    isActive ? 'opacity-55 sm:opacity-70 z-[1]' : 'opacity-0 z-0'
+                  }`}
+                />
+              );
+            })
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0c10] via-[#0a0c10]/85 via-35% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10] via-transparent to-[#0a0c10]/60" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0a0c10]/60 via-transparent to-transparent" />
@@ -125,14 +221,28 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Live Studio Equalizer Spectrum */}
-          <div className="flex items-center gap-3 bg-zinc-950/80 border border-zinc-800/90 px-3.5 py-1.5 rounded-2xl">
-            <div className="flex items-end gap-1 h-5 px-1">
-              <span className="w-1 bg-red-500 rounded-full animate-eq-1" />
-              <span className="w-1 bg-amber-400 rounded-full animate-eq-2" />
-              <span className="w-1 bg-red-400 rounded-full animate-eq-3" />
-              <span className="w-1 bg-amber-500 rounded-full animate-eq-4" />
-              <span className="w-1 bg-red-600 rounded-full animate-eq-5" />
+          {/* Mini Animated Galaxia Logo + Live Studio Status */}
+          <div className="flex items-center gap-3 bg-zinc-950/80 border border-zinc-800/90 px-3 py-1.5 rounded-2xl">
+            <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-400/40 bg-black shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.25)]">
+              {prefersReducedMotion ? (
+                <img
+                  src="/assets/branding/the-faculty-crest-hd.jpg"
+                  alt="The Faculty Crest"
+                  className="w-full h-full object-cover scale-110"
+                />
+              ) : (
+                <video
+                  src="/assets/studio/videos/08-logo-crest-galaxia-loop.mp4"
+                  poster="/assets/branding/the-faculty-crest-hd.jpg"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  aria-label="Logo animado The Faculty Galaxia"
+                  className="w-full h-full object-cover scale-125"
+                />
+              )}
             </div>
             <div className="text-[11px] font-mono">
               <span className="font-bold text-emerald-400 uppercase tracking-wider block">
@@ -150,8 +260,7 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
         </div>
 
         {/* Slogan pill from official contracts */}
-        <div className="relative z-10 inline-flex items-center gap-2 bg-gradient-to-r from-red-950/50 to-amber-950/30 border border-red-700/40 px-3.5 py-1.5 rounded-full text-xs">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <div className="relative z-10 inline-flex items-center bg-gradient-to-r from-red-950/50 to-amber-950/30 border border-red-700/40 px-3.5 py-1.5 rounded-full text-xs">
           <span className="italic font-medium text-amber-200">
             “Transformando tu visión en sonido profesional.”
           </span>

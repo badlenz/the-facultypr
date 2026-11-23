@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Phone, MessageCircle, Clock, ShieldCheck, Car, Sparkles } from 'lucide-react';
+import { MapPin, Navigation, Phone, MessageCircle, Clock, ShieldCheck, Car, Camera } from 'lucide-react';
 import { getStudioConfig, StudioConfig } from '../services/db';
 
 export const UbicacionPuertoRico: React.FC = () => {
@@ -143,7 +143,7 @@ export const UbicacionPuertoRico: React.FC = () => {
                 <span>Estacionamiento privado con portón de acceso.</span>
               </div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-red-400 shrink-0" />
+                <Camera className="w-4 h-4 text-red-400 shrink-0" />
                 <span>Iluminación para grabación de tomas y video.</span>
               </div>
               <div className="flex items-center gap-2">

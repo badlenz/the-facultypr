@@ -1,9 +1,12 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
-import { SlotDisponibilidad } from '../../services/schedule';
+import {
+  DISPONIBILIDAD_UPDATED_EVENT,
+  SlotDisponibilidad,
+  obtenerBloquesDisponiblesParaFecha,
+} from '../../services/schedule';
 import { lazyWithRetry } from '../../utils/lazyWithRetry';
 import {
-  BLOQUES_OFICIALES,
   BookingFormData,
   PackageType,
   format12h,
@@ -43,17 +46,32 @@ export const BookingStep1Schedule: React.FC<BookingStep1ScheduleProps> = ({
   onContinueToStep2,
   onShowToast,
 }) => {
+  const [, setScheduleRev] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setScheduleRev((n) => n + 1);
+    window.addEventListener(DISPONIBILIDAD_UPDATED_EVENT, refresh);
+    window.addEventListener('la_facultad_reservas_updated', refresh);
+    return () => {
+      window.removeEventListener(DISPONIBILIDAD_UPDATED_EVENT, refresh);
+      window.removeEventListener('la_facultad_reservas_updated', refresh);
+    };
+  }, []);
+
+  const bloquesDelDia = obtenerBloquesDisponiblesParaFecha(formData.fecha);
+
   const handleSelectSlot = (slot: SlotDisponibilidad) => {
     const diaStr = String(slot.diaNumero).padStart(2, '0');
     const fechaSeleccionada =
       slot.fechaStr ||
       `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${diaStr}`;
-    const primerBloque = BLOQUES_OFICIALES[0];
+    const disponibles = obtenerBloquesDisponiblesParaFecha(fechaSeleccionada);
+    const primerLibre = disponibles.find((b) => !b.ocupado) || disponibles[0];
     setFormData((prev) => ({
       ...prev,
       fecha: fechaSeleccionada,
-      horaInicio: primerBloque.start,
-      horaSalida: primerBloque.end,
+      horaInicio: primerLibre ? primerLibre.start : '13:00',
+      horaSalida: primerLibre ? primerLibre.end : '17:00',
     }));
     onShowToast(`📅 Día ${slot.diaNumero} seleccionado con éxito`, 'success');
   };
@@ -137,58 +155,69 @@ export const BookingStep1Schedule: React.FC<BookingStep1ScheduleProps> = ({
           </Suspense>
         </div>
 
-        {/* Bloques oficiales de horario */}
+        {/* Bloques oficiales dinámicos del día */}
         <div className="pt-2 border-t border-gray-800 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-amber-400" />
-              <span>Elige uno de los 2 Bloques Diarios Oficiales:</span>
+              <span>Turnos Disponibles para {formData.fecha}:</span>
             </span>
             <span className="text-[10px] text-zinc-400 font-mono">4 Horas de Sesión · Máx. 5h</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {BLOQUES_OFICIALES.map((bloque) => {
-              const isSelected =
-                formData.horaInicio === bloque.start && formData.horaSalida === bloque.end;
-              return (
-                <button
-                  key={bloque.label}
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      horaInicio: bloque.start,
-                      horaSalida: bloque.end,
-                    }))
-                  }
-                  className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-amber-500/20 to-red-950/40 border-amber-400 text-white font-bold ring-2 ring-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                      : 'bg-black/40 border-gray-800 hover:border-gray-700 text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  <div>
-                    <span className="text-xs font-bold block uppercase tracking-wide text-white">
-                      {bloque.label}
-                    </span>
-                    <span className="text-xs font-mono text-amber-300 font-bold block mt-0.5">
-                      {bloque.desc}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 block mt-0.5">
-                      Incluye Premezcla al terminar la sesión
-                    </span>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                      isSelected ? 'border-amber-400 bg-amber-400 text-black' : 'border-gray-700'
+          {bloquesDelDia.length === 0 ? (
+            <div className="p-3.5 rounded-xl border border-red-900/50 bg-red-950/20 text-xs text-red-300">
+              Este día está cerrado o bloqueado. Selecciona otro día en verde en el calendario.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {bloquesDelDia.map((bloque) => {
+                const isSelected =
+                  !bloque.ocupado &&
+                  formData.horaInicio === bloque.start &&
+                  formData.horaSalida === bloque.end;
+                return (
+                  <button
+                    key={`${bloque.label}-${bloque.start}`}
+                    type="button"
+                    disabled={bloque.ocupado}
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        horaInicio: bloque.start,
+                        horaSalida: bloque.end,
+                      }))
+                    }
+                    className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between gap-3 ${
+                      bloque.ocupado
+                        ? 'bg-zinc-900/50 border-zinc-800 text-zinc-500 opacity-60 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-gradient-to-r from-amber-500/20 to-red-950/40 border-amber-400 text-white font-bold ring-2 ring-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.25)] cursor-pointer'
+                        : 'bg-black/40 border-gray-800 hover:border-gray-700 text-gray-400 hover:text-gray-200 cursor-pointer'
                     }`}
                   >
-                    {isSelected && <span className="text-xs font-black">✓</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    <div>
+                      <span className="text-xs font-bold block uppercase tracking-wide text-white">
+                        {bloque.label} {bloque.ocupado ? '· OCUPADO' : ''}
+                      </span>
+                      <span className="text-xs font-mono text-amber-300 font-bold block mt-0.5">
+                        {bloque.desc}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 block mt-0.5">
+                        {bloque.ocupado ? 'Turno ya reservado o solapado' : 'Incluye Premezcla al terminar la sesión'}
+                      </span>
+                    </div>
+                    <div
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                        isSelected ? 'border-amber-400 bg-amber-400 text-black' : 'border-gray-700'
+                      }`}
+                    >
+                      {isSelected && <span className="text-xs font-black">✓</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Resumen en vivo de fecha y horario */}

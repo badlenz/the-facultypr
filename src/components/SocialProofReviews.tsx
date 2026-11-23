@@ -1,44 +1,20 @@
-import React from 'react';
-import { Star, Quote, Sparkles } from 'lucide-react';
-
-export interface ArtistTestimonial {
-  id: string;
-  rating: number;
-  quote: string;
-  artistName: string;
-  projectTitle: string;
-  isExample?: boolean;
-}
-
-// Testimonios reales verificados (WhatsApp e Instagram DM)
-const ARTIST_TESTIMONIALS: ArtistTestimonial[] = [
-  {
-    id: 'zyron-mix-master',
-    rating: 5,
-    quote:
-      'Suena cabron! Papi quedó cm mejor es posible, no le hace falta nada.',
-    artistName: 'Zyron',
-    projectTitle: 'Mix y Máster · WhatsApp',
-  },
-  {
-    id: 'k-lead-grabacion',
-    rating: 5,
-    quote:
-      'El último tema que me grabaste allí me pasó escuchando… la calidad está mortal.',
-    artistName: 'K Lead',
-    projectTitle: 'Grabación en el estudio · WhatsApp',
-  },
-  {
-    id: 'jvo-the-writer-adelanto',
-    rating: 5,
-    quote:
-      'Durolllllll. 🔥🔥🔥🫡🫡',
-    artistName: 'JVO The Writer',
-    projectTitle: 'Adelanto de Sesión · WhatsApp',
-  },
-];
+import React, { useEffect, useState } from 'react';
+import { Star, Quote, Mic, ExternalLink } from 'lucide-react';
+import {
+  StudioReview,
+  getFeaturedHomeReviews,
+  subscribeToReviews,
+} from '../services/reviews';
 
 export const SocialProofReviews: React.FC = () => {
+  const [reviews, setReviews] = useState<StudioReview[]>([]);
+
+  useEffect(() => {
+    return subscribeToReviews(setReviews);
+  }, []);
+
+  const featuredReviews = getFeaturedHomeReviews(reviews);
+
   return (
     <section
       id="testimonios"
@@ -51,7 +27,7 @@ export const SocialProofReviews: React.FC = () => {
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/10 pb-5">
         <div className="space-y-1.5">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-[10px] font-mono text-amber-300 font-bold uppercase tracking-widest">
-            <Sparkles className="w-3 h-3 text-amber-400" />
+            <Mic className="w-3 h-3 text-amber-400" />
             <span>Experiencias en Cabina</span>
           </span>
           <h2
@@ -65,19 +41,29 @@ export const SocialProofReviews: React.FC = () => {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-black/50 px-3.5 py-2 rounded-xl border border-white/10 text-xs font-mono text-zinc-300 self-start sm:self-auto shrink-0">
-          <div className="flex text-amber-400" aria-label="5 de 5 estrellas">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            ))}
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto shrink-0">
+          <div className="inline-flex items-center gap-2 bg-black/50 px-3.5 py-2 rounded-xl border border-white/10 text-xs font-mono text-zinc-300">
+            <div className="flex text-amber-400" aria-label="5 de 5 estrellas">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="font-bold text-white">5.0 / 5.0</span>
           </div>
-          <span className="font-bold text-white">5.0 / 5.0</span>
+
+          <a
+            href="/review"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-xs font-mono font-bold text-amber-200 transition"
+          >
+            <span>Dejar / Ver Reseñas</span>
+            <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+          </a>
         </div>
       </div>
 
-      {/* Grid de 3 tarjetas de testimonios */}
+      {/* Grid de 3 tarjetas de testimonios curadas desde Admin */}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-        {ARTIST_TESTIMONIALS.map((item) => (
+        {featuredReviews.map((item) => (
           <article
             key={item.id}
             className="rounded-2xl border border-white/10 bg-[#0f121b]/90 hover:border-amber-400/35 p-5 flex flex-col justify-between gap-4 transition-all shadow-lg"
@@ -102,11 +88,6 @@ export const SocialProofReviews: React.FC = () => {
                 <p className="font-syne font-bold text-white">{item.artistName}</p>
                 <p className="font-mono text-[11px] text-amber-300/90 mt-0.5">{item.projectTitle}</p>
               </div>
-              {item.isExample && (
-                <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded bg-zinc-800/90 border border-zinc-700 text-zinc-400 shrink-0">
-                  Ejemplo
-                </span>
-              )}
             </div>
           </article>
         ))}

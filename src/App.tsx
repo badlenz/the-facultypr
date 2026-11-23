@@ -16,6 +16,9 @@ const PortalClientes = lazyWithRetry(() => import('./components/PortalClientes')
 const PanelAdmin = lazyWithRetry(() => import('./components/PanelAdmin'));
 const AudioShowcaseAB = lazyWithRetry(() => import('./components/AudioShowcaseAB'));
 const CreditsBentoGrid = lazyWithRetry(() => import('./components/CreditsBentoGrid'));
+const ReviewPage = lazyWithRetry(() =>
+  import('./components/ReviewPage').then((m) => ({ default: m.ReviewPage }))
+);
 
 const SectionLoadingFallback = () => (
   <div className="min-h-[40vh] flex flex-col items-center justify-center p-8 space-y-4 text-center">
@@ -41,10 +44,16 @@ const isCreditsRoute = () => {
   return p === '/creditos' || p === '/credits';
 };
 
+const isReviewRoute = () => {
+  if (typeof window === 'undefined') return false;
+  const p = window.location.pathname.toLowerCase();
+  return p === '/review' || p === '/reviews';
+};
+
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>(() => (isAdminRoute() ? 'admin' : 'public'));
   const [activeTab, setActiveTab] = useState<NavigationTab>(() =>
-    isAdminRoute() ? 'panel_admin' : isCreditsRoute() ? 'creditos' : 'cliente'
+    isAdminRoute() ? 'panel_admin' : isCreditsRoute() ? 'creditos' : isReviewRoute() ? 'review' : 'cliente'
   );
   const [adminUser, setAdminUser] = useState<FirebaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
@@ -72,6 +81,9 @@ export default function App() {
       } else if (isCreditsRoute()) {
         setAppMode('public');
         setActiveTab('creditos');
+      } else if (isReviewRoute()) {
+        setAppMode('public');
+        setActiveTab('review');
       } else {
         setAppMode('public');
         setActiveTab('cliente');
@@ -133,7 +145,8 @@ export default function App() {
   const handleTabChange = (tab: NavigationTab) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined' && window.history && appMode !== 'admin') {
-      const targetPath = tab === 'creditos' ? '/creditos' : '/';
+      const targetPath =
+        tab === 'creditos' ? '/creditos' : tab === 'review' ? '/review' : '/';
       if (window.location.pathname !== targetPath) {
         window.history.pushState(null, '', targetPath);
       }
@@ -247,6 +260,18 @@ export default function App() {
       }
 
       return <PanelAdmin />;
+    }
+
+    if (activeTab === 'review') {
+      return (
+        <ReviewPage
+          onBackHome={() => {
+            handleTabChange('cliente');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onBookClick={navigateToBooking}
+        />
+      );
     }
 
     if (activeTab === 'creditos') {
