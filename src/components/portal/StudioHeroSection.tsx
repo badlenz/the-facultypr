@@ -153,17 +153,27 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
       </div>
 
       {/* 1. MASTER STUDIO HERO (URBAN BOUTIQUE RECORDING STUDIO) */}
-      <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#0a0c10] p-6 sm:p-10 shadow-2xl space-y-7">
-        {/* Background Studio Video Loop (fallback to static photo if reduced motion) */}
+      <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-gradient-to-br from-[#19080c] via-[#120d08] to-[#07080c] p-6 sm:p-10 shadow-2xl space-y-7">
+        {/* Ambient Studio Lighting Glows (Warm Red/Amber on left, Dark on right for video) */}
+        <div className="absolute -top-16 -left-16 w-[420px] h-[420px] bg-red-600/20 rounded-full blur-[130px] pointer-events-none" />
+        <div className="absolute -bottom-20 left-1/4 w-[380px] h-[380px] bg-amber-500/15 rounded-full blur-[120px] pointer-events-none" />
+
+        {/* Full-Bleed Studio Video Loop with Soft Radial Mask (zero hard cut/box) */}
         <div
-          className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[60%] pointer-events-none overflow-hidden select-none z-0"
+          className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"
+          style={{
+            WebkitMaskImage:
+              'radial-gradient(ellipse 78% 90% at 76% 50%, rgba(0,0,0,1) 22%, rgba(0,0,0,0.5) 54%, transparent 86%)',
+            maskImage:
+              'radial-gradient(ellipse 78% 90% at 76% 50%, rgba(0,0,0,1) 22%, rgba(0,0,0,0.5) 54%, transparent 86%)',
+          }}
           aria-hidden="true"
         >
           {prefersReducedMotion ? (
             <img
               src="/assets/studio/hero-logo-faculty.jpg"
               alt="La Facultad Studio · Control Room con logo The Faculty"
-              className="w-full h-full object-cover object-center sm:object-[60%_center] opacity-55"
+              className="w-full h-full object-cover object-center sm:object-[68%_center] opacity-60"
             />
           ) : (
             HERO_VIDEO_LOOP.map((clip, idx) => {
@@ -191,21 +201,14 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
                     if (isActive) advanceToNextClip();
                   }}
                   aria-label={clip.label}
-                  className={`absolute inset-0 w-full h-full object-cover object-center sm:object-[60%_center] transition-opacity duration-1000 ease-in-out ${
-                    isActive ? 'opacity-55 sm:opacity-70 z-[1]' : 'opacity-0 z-0'
+                  className={`absolute inset-0 w-full h-full object-cover object-center sm:object-[68%_center] transition-opacity duration-1000 ease-in-out ${
+                    isActive ? 'opacity-65 sm:opacity-75 z-[1]' : 'opacity-0 z-0'
                   }`}
                 />
               );
             })
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0c10] via-[#0a0c10]/85 via-35% to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10] via-transparent to-[#0a0c10]/60" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0c10]/60 via-transparent to-transparent" />
         </div>
-
-        {/* Ambient Studio Lighting Glows */}
-        <div className="absolute top-0 right-10 w-96 h-96 bg-red-600/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-[110px] pointer-events-none" />
 
         {/* Top Bar: Dual Branding + Live Equalizer Status */}
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
@@ -221,29 +224,8 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Mini Animated Galaxia Logo + Live Studio Status */}
-          <div className="flex items-center gap-3 bg-zinc-950/80 border border-zinc-800/90 px-3 py-1.5 rounded-2xl">
-            <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-400/40 bg-black shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-              {prefersReducedMotion ? (
-                <img
-                  src="/assets/branding/the-faculty-crest-hd.jpg"
-                  alt="The Faculty Crest"
-                  className="w-full h-full object-cover scale-110"
-                />
-              ) : (
-                <video
-                  src="/assets/studio/videos/08-logo-crest-galaxia-loop.mp4"
-                  poster="/assets/branding/the-faculty-crest-hd.jpg"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  aria-label="Logo animado The Faculty Galaxia"
-                  className="w-full h-full object-cover scale-125"
-                />
-              )}
-            </div>
+          {/* Live Studio Status (clean, sin ícono extra) */}
+          <div className="flex items-center bg-zinc-950/80 border border-zinc-800/90 px-3.5 py-1.5 rounded-2xl">
             <div className="text-[11px] font-mono">
               <span className="font-bold text-emerald-400 uppercase tracking-wider block">
                 ● On Air · Sesiones Activas

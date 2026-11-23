@@ -121,9 +121,24 @@ export const StudioGallerySection: React.FC = () => {
           </p>
         </div>
 
-        <span className="text-[11px] font-mono text-zinc-400 shrink-0">
-          {STUDIO_PHOTOS.length} tomas seleccionadas
-        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-400/40 bg-black shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <video
+              src="/assets/studio/videos/08-logo-crest-galaxia-loop.mp4"
+              poster="/assets/branding/the-faculty-crest-hd.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="Logo animado The Faculty Galaxia"
+              className="w-full h-full object-cover scale-125"
+            />
+          </div>
+          <span className="text-[11px] font-mono text-zinc-400">
+            {STUDIO_PHOTOS.length} tomas seleccionadas
+          </span>
+        </div>
       </div>
 
       {/* Curated Bento Gallery Grid */}
