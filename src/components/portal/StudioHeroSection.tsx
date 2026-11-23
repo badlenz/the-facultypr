@@ -210,9 +210,9 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
           )}
         </div>
 
-        {/* Top Bar: Dual Branding + Live Equalizer Status */}
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
-          <div className="flex items-center gap-3">
+        {/* Top Bar: Dual Branding + Centered Live Status */}
+        <div className="relative z-10 flex flex-wrap items-center justify-between md:grid md:grid-cols-3 md:items-center gap-4 border-b border-zinc-800/80 pb-5">
+          <div className="flex items-center gap-3 md:justify-self-start">
             <LFCrestLogo size="md" />
             <div>
               <span className="text-[10px] font-mono text-red-500 font-bold uppercase tracking-widest block">
@@ -224,19 +224,19 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Live Studio Status (clean, sin ícono extra) */}
-          <div className="flex items-center bg-zinc-950/80 border border-zinc-800/90 px-3.5 py-1.5 rounded-2xl">
+          {/* Live Studio Status (centrado exacto) */}
+          <div className="flex items-center justify-center bg-zinc-950/80 border border-zinc-800/90 px-4 py-1.5 rounded-2xl text-center md:justify-self-center">
             <div className="text-[11px] font-mono">
               <span className="font-bold text-emerald-400 uppercase tracking-wider block">
                 ● On Air · Sesiones Activas
               </span>
-              <span className="text-zinc-400 text-[10px]">
+              <span className="text-zinc-400 text-[10px] block">
                 Studio Acústico &amp; Control Room
               </span>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 md:justify-self-end">
             <BadlenzLogo size="md" />
           </div>
         </div>
