@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Camera, ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
 
 interface StudioPhoto {
@@ -70,6 +70,27 @@ const STUDIO_PHOTOS: StudioPhoto[] = [
 
 export const StudioGallerySection: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isGalleryInView, setIsGalleryInView] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setIsGalleryInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsGalleryInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '250px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (activeIndex === null) return;
@@ -94,6 +115,7 @@ export const StudioGallerySection: React.FC = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="galeria-estudio-real"
       aria-labelledby="galeria-estudio-heading"
       className="relative overflow-hidden rounded-3xl border border-white/10 antigravity-glass-panel p-5 sm:p-8 space-y-6 shadow-[0_30px_70px_rgba(0,0,0,0.75)]"
@@ -123,17 +145,26 @@ export const StudioGallerySection: React.FC = () => {
 
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-400/40 bg-black shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-            <video
-              src="/assets/studio/videos/08-logo-crest-galaxia-loop.mp4"
-              poster="/assets/branding/the-faculty-crest-hd.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              aria-label="Logo animado The Faculty Galaxia"
-              className="w-full h-full object-cover scale-125"
-            />
+            {isGalleryInView ? (
+              <video
+                src="/assets/studio/videos/08-logo-crest-galaxia-loop.mp4"
+                poster="/assets/branding/the-faculty-crest-hd.jpg"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                aria-label="Logo animado The Faculty Galaxia"
+                className="w-full h-full object-cover scale-125"
+              />
+            ) : (
+              <img
+                src="/assets/branding/the-faculty-crest-hd.jpg"
+                alt="The Faculty Crest"
+                loading="lazy"
+                className="w-full h-full object-cover scale-110"
+              />
+            )}
           </div>
           <span className="text-[11px] font-mono text-zinc-400">
             {STUDIO_PHOTOS.length} tomas seleccionadas
@@ -157,7 +188,7 @@ export const StudioGallerySection: React.FC = () => {
                   : ''
             }`}
           >
-            {photo.videoSrc ? (
+            {photo.videoSrc && isGalleryInView ? (
               <video
                 src={photo.videoSrc}
                 poster={photo.src}

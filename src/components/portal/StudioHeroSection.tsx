@@ -189,7 +189,7 @@ export const StudioHeroSection: React.FC<StudioHeroSectionProps> = ({
                   autoPlay={idx === 0}
                   muted
                   playsInline
-                  preload="auto"
+                  preload={idx <= 1 || heroVideoIndex >= idx - 1 ? 'auto' : 'none'}
                   onTimeUpdate={(e) => {
                     if (!isActive) return;
                     const v = e.currentTarget;
