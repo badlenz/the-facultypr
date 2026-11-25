@@ -592,11 +592,13 @@ export const ReservaConfirmacionPase: React.FC<ReservaConfirmacionPaseProps> = (
                 </p>
                 <button
                   type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-artist-portal-modal'))}
+                  onClick={() =>
+                    window.dispatchEvent(new CustomEvent('open-artist-portal-modal'))
+                  }
                   className="w-full py-2 px-3 rounded-lg bg-[#0b0c0e] hover:bg-amber-500/15 text-amber-300 border border-amber-500/50 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <Headphones className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Ver Mis Temas, Recibos &amp; Estrellas VIP ➜</span>
+                  <span>Ver Mi Pasaporte VIP &amp; Estrellas ⭐ ➜</span>
                 </button>
               </div>
 

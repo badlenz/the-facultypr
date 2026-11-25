@@ -40,10 +40,24 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [secretFeedback, setSecretFeedback] = useState(false);
   const [showArtistPortalModal, setShowArtistPortalModal] = useState(false);
+  const [artistPortalInitialCode, setArtistPortalInitialCode] = useState('');
 
   React.useEffect(() => {
-    const handleOpenModalEvent = () => setShowArtistPortalModal(true);
+    const handleOpenModalEvent = (ev: Event) => {
+      const custom = ev as CustomEvent<{ codigo?: string }>;
+      if (custom.detail?.codigo) {
+        setArtistPortalInitialCode(custom.detail.codigo);
+      }
+      setShowArtistPortalModal(true);
+    };
     window.addEventListener('open-artist-portal-modal', handleOpenModalEvent);
+    if (typeof window !== 'undefined') {
+      const vipParam = new URLSearchParams(window.location.search).get('vip');
+      if (vipParam && vipParam.trim().length >= 3) {
+        setArtistPortalInitialCode(vipParam.trim());
+        setShowArtistPortalModal(true);
+      }
+    }
     return () => {
       window.removeEventListener('open-artist-portal-modal', handleOpenModalEvent);
     };
@@ -266,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setShowArtistPortalModal(true)}
               className="taste-btn px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-amber-500/20 via-zinc-900 to-[#12131a] hover:from-amber-500/30 hover:to-zinc-800 text-white border border-amber-500/50 hover:border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-              title="Acceder a tus temas y masters en Faculty Projects"
+              title="Consultar Pasaporte VIP y acceder a Faculty Projects"
             >
               <User className="w-3.5 h-3.5 text-amber-400" />
               <span className="font-syne font-bold tracking-wide">Portal Artista</span>
@@ -350,11 +364,12 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
       )}
 
-      {/* MODAL LIGERO LAZY HACIA FACULTY PROJECTS */}
+      {/* MODAL LIGERO LAZY HACIA PASAPORTE VIP & FACULTY PROJECTS */}
       {showArtistPortalModal && (
         <Suspense fallback={null}>
           <PortalArtistaModal
             isOpen={showArtistPortalModal}
+            initialCode={artistPortalInitialCode}
             onClose={() => setShowArtistPortalModal(false)}
           />
         </Suspense>

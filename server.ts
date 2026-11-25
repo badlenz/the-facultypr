@@ -4,6 +4,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
+import notificarEstrellaVipHandler from "./api/notificar-estrella-vip";
 
 async function startServer() {
   const app = express();
@@ -68,6 +69,9 @@ async function startServer() {
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
+
+  // Pasaporte VIP notifications endpoint (compatible con Vercel serverless function)
+  app.post("/api/notificar-estrella-vip", (req, res) => notificarEstrellaVipHandler(req, res));
 
   // Gemini AI Assistant Chat Endpoint
   app.post("/api/chat", async (req, res) => {

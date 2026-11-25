@@ -51,49 +51,31 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-export const VIP_MAX_STARS = 20;
+import {
+  VIP_MAX_STARS,
+  VIP_MILESTONES,
+  clampVipStars,
+  getVipLevelBadge,
+  isStrongVipCode,
+  normalizeVipCode,
+  toVipPublicoDocId,
+  generarCodigoSesionSeguro,
+  buildVipPublicoPayload,
+  VipPublicoDoc,
+} from './vipRules';
 
-export const VIP_MILESTONES = [
-  {
-    pts: 5,
-    title: '5 ⭐: 15% Descuento',
-    desc: '15% de Descuento directo en tu próxima sesión de estudio.',
-    badge: '15% OFF',
-  },
-  {
-    pts: 10,
-    title: '10 ⭐: 1 Mezcla Pro Gratis',
-    desc: 'Mezcla profesional multitrack completa con compresión analógica y afinación.',
-    badge: 'Mezcla Gratis',
-  },
-  {
-    pts: 15,
-    title: '15 ⭐: Stems Multitrack Libres',
-    desc: 'Exportación de stems procesados e individuales sin costo adicional.',
-    badge: 'Stems Incluidos',
-  },
-  {
-    pts: 20,
-    title: '20 ⭐: 👑 1 Tema Completo Gratis',
-    desc: 'Bloque de Grabación 4h + Mezcla Multitrack Pro + Master Acústico 24-bit.',
-    badge: '👑 Tema Gratis',
-  },
-] as const;
-
-export const clampVipStars = (stars?: number): number => {
-  if (typeof stars !== 'number' || Number.isNaN(stars)) return 0;
-  return Math.max(0, Math.min(VIP_MAX_STARS, Math.round(stars)));
+export {
+  VIP_MAX_STARS,
+  VIP_MILESTONES,
+  clampVipStars,
+  getVipLevelBadge,
+  isStrongVipCode,
+  normalizeVipCode,
+  toVipPublicoDocId,
+  generarCodigoSesionSeguro,
+  buildVipPublicoPayload,
 };
-
-export const getVipLevelBadge = (stars: number) => {
-  const safe = clampVipStars(stars);
-  if (safe >= 20) return { label: '👑 Leyenda (20/20 ⭐)', shortLabel: '👑 Leyenda', color: 'text-amber-300 bg-amber-950/80 border-amber-400' };
-  if (safe >= 15) return { label: '💎 Platino (15+ ⭐)', shortLabel: '💎 Platino', color: 'text-cyan-300 bg-cyan-950/80 border-cyan-400' };
-  if (safe >= 10) return { label: '🥇 Oro (10+ ⭐)', shortLabel: '🥇 Oro', color: 'text-yellow-300 bg-yellow-950/80 border-yellow-400' };
-  if (safe >= 5) return { label: '🥈 Plata (5+ ⭐)', shortLabel: '🥈 Plata', color: 'text-zinc-200 bg-zinc-800 border-zinc-400' };
-  if (safe >= 1) return { label: '🥉 Bronce (1-4 ⭐)', shortLabel: '🥉 Bronce', color: 'text-amber-600 bg-amber-950/40 border-amber-800' };
-  return { label: '🌱 Nuevo Ingreso (0 ⭐)', shortLabel: '🌱 Nuevo (0 ⭐)', color: 'text-gray-300 bg-gray-900/80 border-gray-700' };
-};
+export type { VipPublicoDoc };
 
 export interface HistorialEstrella {
   id: string;
@@ -240,6 +222,7 @@ const notifyReservasUpdated = () => {
 
 let unsubAdminClientes: (() => void) | null = null;
 let unsubAdminReservas: (() => void) | null = null;
+let weakVipCodesMigratedThisSession = false;
 
 const stopAdminListeners = () => {
   if (unsubAdminClientes) {
@@ -262,6 +245,17 @@ const startAdminListeners = () => {
         snapshot.forEach((d) => list.push(d.data() as Cliente));
         safeSetStorageJson(STORAGE_KEY_CLIENTES, list);
         notifyClientesUpdated();
+        if (!weakVipCodesMigratedThisSession) {
+          weakVipCodesMigratedThisSession = true;
+          const migratedCount = migrarCodigosSesionDebiles(list);
+          if (migratedCount > 0 && typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('la_facultad_vip_codes_migrated', {
+                detail: { count: migratedCount },
+              })
+            );
+          }
+        }
       },
       (err) => {
         console.warn('Firestore Clientes sync notice:', err.message);
@@ -364,9 +358,12 @@ export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'
   const clientes = getClientes();
   const cleanEmail = (clienteData.email || '').trim().toLowerCase();
   const cleanArt = (clienteData.nombreArtistico || '').trim().toLowerCase();
+  const normalizeTel = (t?: string) => (t || '').trim().toLowerCase().replace(/[\s()-]+/g, '');
+  const cleanTel = normalizeTel(clienteData.telefono);
   const existe = clientes.find(c =>
     (cleanEmail && (c.email || '').trim().toLowerCase() === cleanEmail) ||
-    (cleanArt && (c.nombreArtistico || '').trim().toLowerCase() === cleanArt)
+    (cleanArt && (c.nombreArtistico || '').trim().toLowerCase() === cleanArt) ||
+    (cleanTel && cleanTel !== 'porconfirmar' && normalizeTel(c.telefono) === cleanTel)
   );
   
   if (existe) {
@@ -377,7 +374,7 @@ export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'
     ...clienteData,
     estrellasVip: clampVipStars(clienteData.estrellasVip),
     historialEstrellas: clienteData.historialEstrellas || [],
-    id: `CLI-${Date.now().toString().slice(-4)}`,
+    id: `CLI-${Date.now()}-${generateRandomCode(4)}`,
     fechaCreacion: new Date().toISOString().split('T')[0]
   });
 
@@ -390,6 +387,15 @@ export const guardarCliente = (clienteData: Omit<Cliente, 'id' | 'fechaCreacion'
     setDoc(doc(db, 'clientes', nuevoCliente.id), nuevoCliente).catch(err => {
       console.warn('Firestore guardarCliente async save notice:', err);
     });
+    const vipDocId = toVipPublicoDocId(nuevoCliente.codigoSesion);
+    if (vipDocId) {
+      setDoc(
+        doc(db, 'vip_publico', vipDocId),
+        buildVipPublicoPayload(nuevoCliente.nombreArtistico, nuevoCliente.estrellasVip)
+      ).catch(err => {
+        console.warn('Firestore vip_publico create notice:', err);
+      });
+    }
   } catch (err) {
     console.warn('Firestore guardarCliente sync notice:', err);
   }
@@ -685,32 +691,78 @@ export const findClienteForArtistQuery = (
   });
 };
 
+const syncVipPublicoDoc = (cliente: Cliente, prevCodigoSesion?: string) => {
+  const prevCode = (prevCodigoSesion || '').trim();
+  const nextCode = (cliente.codigoSesion || '').trim();
+  const prevDocId = toVipPublicoDocId(prevCode) || (prevCode && !prevCode.includes('/') ? prevCode : '');
+  const nextDocId = toVipPublicoDocId(nextCode);
+
+  if (prevDocId && prevDocId !== nextDocId && auth.currentUser?.email === ADMIN_EMAIL) {
+    deleteDoc(doc(db, 'vip_publico', prevDocId)).catch(err => {
+      console.warn('Firestore vip_publico old code delete notice:', err);
+    });
+  }
+
+  if (nextDocId) {
+    setDoc(
+      doc(db, 'vip_publico', nextDocId),
+      buildVipPublicoPayload(cliente.nombreArtistico, cliente.estrellasVip)
+    ).catch(err => {
+      console.warn('Firestore vip_publico sync notice:', err);
+    });
+  }
+};
+
 export const actualizarCliente = (id: string, updates: Partial<Cliente>): Cliente[] => {
   const clientes = getClientes();
   const index = clientes.findIndex(c => c.id === id);
   if (index !== -1) {
+    const prevCodigoSesion = clientes[index].codigoSesion;
     const nextStars =
       updates.estrellasVip !== undefined
         ? clampVipStars(updates.estrellasVip)
         : clampVipStars(clientes[index].estrellasVip);
-    const updated: Cliente = {
+    const updated: Cliente = stripUndefinedFields({
       ...clientes[index],
       ...updates,
       estrellasVip: nextStars,
-    };
+    });
     clientes[index] = updated;
-    localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(clientes));
+    safeSetStorageJson(STORAGE_KEY_CLIENTES, clientes);
     notifyClientesUpdated();
     setDoc(doc(db, 'clientes', id), updated, { merge: true }).catch(err => {
       console.warn('Firestore actualizarCliente async update notice:', err);
     });
+    syncVipPublicoDoc(updated, prevCodigoSesion);
   }
   return clientes;
 };
 
 /**
+ * Migra en una sola pasada los codigoSesion existentes que no cumplan el formato `VIP/nombre-del-artista`.
+ * Devuelve el total de códigos actualizados.
+ */
+export const migrarCodigosSesionDebiles = (clientesList?: Cliente[]): number => {
+  const list = clientesList ?? getClientes();
+  const usedCodes = list.map((c) => c.codigoSesion || '').filter(Boolean);
+  let count = 0;
+  for (const c of list) {
+    const raw = (c.codigoSesion || '').trim();
+    if (raw && !isStrongVipCode(raw)) {
+      const otherCodes = usedCodes.filter((code) => code !== raw);
+      const nuevoCodigo = generarCodigoSesionSeguro(c.nombreArtistico, otherCodes);
+      usedCodes.push(nuevoCodigo);
+      actualizarCliente(c.id, { codigoSesion: nuevoCodigo });
+      count++;
+    }
+  }
+  return count;
+};
+
+/**
  * Ajusta manualmente las estrellas del Pasaporte VIP (1 servicio entregado y facturado = 1 ⭐, 0..20)
  * y registra el movimiento en el historial del artista.
+ * Si recibe estrella positiva y el cliente no tiene código válido, le asigna `VIP/nombre-del-artista` y sincroniza vip_publico.
  */
 export const ajustarEstrellasCliente = (
   clienteId: string,
@@ -736,19 +788,64 @@ export const ajustarEstrellasCliente = (
   };
 
   const prevHistory = Array.isArray(target.historialEstrellas) ? target.historialEstrellas : [];
+  const otherCodes = clientes.filter((c) => c.id !== clienteId).map((c) => c.codigoSesion || '');
+  const nextCodigoSesion =
+    actualDelta > 0 && !isStrongVipCode(target.codigoSesion)
+      ? generarCodigoSesionSeguro(target.nombreArtistico, otherCodes)
+      : target.codigoSesion;
+
   return actualizarCliente(clienteId, {
     estrellasVip: nextStars,
+    historialEstrellas: [entry, ...prevHistory],
+    ...(nextCodigoSesion ? { codigoSesion: nextCodigoSesion } : {}),
+  });
+};
+
+/**
+ * Registra el canje de un hito VIP en el historial del cliente (delta 0, una sola vez por hito).
+ */
+export const registrarCanjeHitoCliente = (
+  clienteId: string,
+  hitoNombre: string
+): Cliente[] => {
+  const clientes = getClientes();
+  const target = clientes.find(c => c.id === clienteId);
+  if (!target || !hitoNombre.trim()) return clientes;
+
+  const notaCanje = `Canje: ${hitoNombre.trim()}`;
+  const prevHistory = Array.isArray(target.historialEstrellas) ? target.historialEstrellas : [];
+  if (prevHistory.some(h => h.nota === notaCanje)) {
+    return clientes;
+  }
+
+  const entry: HistorialEstrella = {
+    id: `EST-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    fecha: new Date().toISOString().split('T')[0],
+    delta: 0,
+    nota: notaCanje,
+  };
+
+  return actualizarCliente(clienteId, {
     historialEstrellas: [entry, ...prevHistory],
   });
 };
 
 export const eliminarCliente = (id: string): Cliente[] => {
   const clientes = getClientes();
+  const target = clientes.find(c => c.id === id);
   const filtrados = clientes.filter(c => c.id !== id);
-  localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(filtrados));
+  safeSetStorageJson(STORAGE_KEY_CLIENTES, filtrados);
+  notifyClientesUpdated();
   deleteDoc(doc(db, 'clientes', id)).catch(err => {
     console.warn('Firestore eliminarCliente async delete notice:', err);
   });
+  const rawCode = (target?.codigoSesion || '').trim();
+  const vipDocId = toVipPublicoDocId(rawCode) || (rawCode && !rawCode.includes('/') ? rawCode : '');
+  if (vipDocId) {
+    deleteDoc(doc(db, 'vip_publico', vipDocId)).catch(err => {
+      console.warn('Firestore vip_publico delete notice:', err);
+    });
+  }
   return filtrados;
 };
 

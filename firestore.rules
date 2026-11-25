@@ -297,6 +297,41 @@ service cloud.firestore {
         (!('historialEstrellas' in data) || data.historialEstrellas == null || data.historialEstrellas.size() == 0);
     }
 
+    function isValidVipPublico(data, codigo) {
+      return codigo is string &&
+        codigo.size() >= 6 &&
+        codigo.size() <= 64 &&
+        codigo.matches('^vip__[a-z0-9]([a-z0-9-]{0,46}[a-z0-9])?$') &&
+        data.keys().hasOnly([
+          'nombreArtistico', 'estrellasVip', 'nivel',
+          'proximoHito', 'estrellasRestantes', 'hitosAlcanzados'
+        ]) &&
+        data.keys().hasAll([
+          'nombreArtistico', 'estrellasVip', 'nivel',
+          'proximoHito', 'estrellasRestantes', 'hitosAlcanzados'
+        ]) &&
+        isNonEmptyString(data.nombreArtistico, 120) &&
+        isNumberInRange(data.estrellasVip, 0, 20) &&
+        data.nivel is map &&
+        data.nivel.keys().hasOnly(['label', 'shortLabel', 'color']) &&
+        data.nivel.keys().hasAll(['label', 'shortLabel', 'color']) &&
+        isNonEmptyString(data.nivel.label, 80) &&
+        isNonEmptyString(data.nivel.shortLabel, 40) &&
+        isNonEmptyString(data.nivel.color, 120) &&
+        (data.proximoHito == null || (
+          data.proximoHito is map &&
+          data.proximoHito.keys().hasOnly(['pts', 'title', 'desc', 'badge']) &&
+          data.proximoHito.keys().hasAll(['pts', 'title', 'desc', 'badge']) &&
+          isNumberInRange(data.proximoHito.pts, 1, 20) &&
+          isNonEmptyString(data.proximoHito.title, 100) &&
+          isNonEmptyString(data.proximoHito.desc, 300) &&
+          isNonEmptyString(data.proximoHito.badge, 60)
+        )) &&
+        isNumberInRange(data.estrellasRestantes, 0, 20) &&
+        data.hitosAlcanzados is list &&
+        data.hitosAlcanzados.size() <= 4;
+    }
+
     function isValidLeadEspera(data, leadId) {
       return data.keys().hasOnly([
           'id', 'nombreArtistico', 'nombreReal', 'telefono', 'email',
@@ -458,6 +493,18 @@ service cloud.firestore {
       allow update: if isAdmin() &&
         isValidReview(request.resource.data) &&
         request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    // Proyección pública segura del Pasaporte VIP (cero PII: sin email, teléfono, historial ni reservas)
+    // - Permite únicamente lectura puntual por documento (allow get: if true); listado/consulta denegada.
+    // - Creación pública solo con esquema exacto y estrellasVip == 0; actualización/borrado solo admin.
+    match /vip_publico/{codigo} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isValidVipPublico(request.resource.data, codigo) &&
+        (isAdmin() || request.resource.data.estrellasVip == 0);
+      allow update: if isAdmin() && isValidVipPublico(request.resource.data, codigo);
       allow delete: if isAdmin();
     }
 

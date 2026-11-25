@@ -10,7 +10,10 @@
         "email": { "type": "string", "maxLength": 150 },
         "telefono": { "type": "string", "maxLength": 50 },
         "instagram": { "type": "string", "maxLength": 100 },
-        "fechaCreacion": { "type": "string", "maxLength": 50 }
+        "fechaCreacion": { "type": "string", "maxLength": 50 },
+        "estrellasVip": { "type": "number" },
+        "codigoSesion": { "type": "string", "maxLength": 64 },
+        "historialEstrellas": { "type": "array" }
       },
       "required": ["nombreArtistico", "email"]
     },
@@ -42,7 +45,8 @@
         "roughMixUrl": { "type": "string" },
         "roughMixNombre": { "type": "string", "maxLength": 150 },
         "tipoProyecto": { "type": "string", "maxLength": 50 },
-        "detallesTracklist": { "type": "array" }
+        "detallesTracklist": { "type": "array" },
+        "estrellaOtorgada": { "type": "boolean" }
       },
       "required": ["clienteId", "nombreArtistico", "fecha", "subtotal", "deposito", "balance", "estado"]
     },
@@ -117,6 +121,20 @@
         "fechaSubida": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "clienteEmail", "nombreArchivo", "driveUrl"]
+    },
+    "vipPublico": {
+      "title": "VipPublico",
+      "description": "Proyección pública sanitizada del Pasaporte VIP (sin PII ni historial)",
+      "type": "object",
+      "properties": {
+        "nombreArtistico": { "type": "string", "maxLength": 120 },
+        "estrellasVip": { "type": "number" },
+        "nivel": { "type": "object" },
+        "proximoHito": { "type": ["object", "null"] },
+        "estrellasRestantes": { "type": "number" },
+        "hitosAlcanzados": { "type": "array" }
+      },
+      "required": ["nombreArtistico", "estrellasVip", "nivel", "proximoHito", "estrellasRestantes", "hitosAlcanzados"]
     }
   },
   "firestore": {
@@ -147,6 +165,10 @@
     "/archivos/{archivoId}": {
       "schema": "archivoSesion",
       "description": "Colección de archivos entregables de sesiones musicales"
+    },
+    "/vip_publico/{codigo}": {
+      "schema": "vipPublico",
+      "description": "Proyección pública puntual por codigoSesion seguro del Pasaporte VIP"
     }
   }
 }

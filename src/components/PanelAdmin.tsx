@@ -31,6 +31,20 @@ import {
   actualizarReserva,
   eliminarReserva,
   Reserva,
+  getClientes,
+  guardarCliente,
+  actualizarCliente,
+  ajustarEstrellasCliente,
+  registrarCanjeHitoCliente,
+  eliminarCliente,
+  Cliente,
+  VIP_MAX_STARS,
+  VIP_MILESTONES,
+  clampVipStars,
+  getVipLevelBadge,
+  isStrongVipCode,
+  normalizeVipCode,
+  generarCodigoSesionSeguro,
   getPromoSlotsCount,
   setPromoSlotsReservadosManual,
   getStudioConfig,
@@ -75,7 +89,7 @@ const AdminReviewsCurator = lazyWithRetry(() =>
   import('./AdminReviewsCurator').then((m) => ({ default: m.AdminReviewsCurator }))
 );
 
-type AdminTab = 'reservas' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'creditos' | 'resenas' | 'ajustes';
+type AdminTab = 'reservas' | 'clientes_vip' | 'finanzas' | 'calendario' | 'estado' | 'showcase' | 'creditos' | 'resenas' | 'ajustes';
 
 interface PanelAdminProps {
   defaultSection?: 'all' | 'calendario';
@@ -86,6 +100,11 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
     defaultSection === 'calendario' ? 'calendario' : 'reservas'
   );
   const [reservas, setReservas] = useState<Reserva[]>(() => getReservas());
+  const [clientes, setClientes] = useState<Cliente[]>(() => getClientes());
+  const [vipSearch, setVipSearch] = useState('');
+  const [vipDetalle, setVipDetalle] = useState<Record<string, { tema: string; nota: string }>>({});
+  const [vipHistorialOpen, setVipHistorialOpen] = useState<Record<string, boolean>>({});
+  const [vipCodigoInput, setVipCodigoInput] = useState<Record<string, string>>({});
   const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
   const [liveStatus, setLiveStatus] = useState<StudioLiveStatus>(() => getStudioLiveStatus());
   const [disponibilidades, setDisponibilidades] = useState<DisponibilidadCustomMap>(() =>
@@ -173,6 +192,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [newBooking, setNewBooking] = useState({
     nombreArtistico: '',
+    telefono: '',
     fecha: new Date().toISOString().split('T')[0],
     bloque: '13:00-17:00',
     subtotal: 130,
@@ -205,13 +225,22 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
       setReservas(getReservas());
       setPromoSlots(getPromoSlotsCount());
     };
+    const syncClientes = () => setClientes(getClientes());
     const syncDisp = () => setDisponibilidades(obtenerTodasDisponibilidades());
     const syncConfig = () => setStudioConfig(getStudioConfig());
     const syncTracks = () => setTracks(getShowcaseTracks());
     const syncFinanzas = () => setMovimientos(getMovimientosFinancieros());
+    const onVipCodesMigrated = (ev: Event) => {
+      const count = (ev as CustomEvent<{ count?: number }>).detail?.count || 0;
+      if (count > 0) {
+        notify(`🔒 Se regeneraron ${count} código(s) VIP débiles a formato seguro.`);
+      }
+    };
     const unsubStatus = subscribeToStudioStatus(setLiveStatus);
 
     window.addEventListener('la_facultad_reservas_updated', syncReservas);
+    window.addEventListener('la_facultad_clientes_updated', syncClientes);
+    window.addEventListener('la_facultad_vip_codes_migrated', onVipCodesMigrated);
     window.addEventListener(DISPONIBILIDAD_UPDATED_EVENT, syncDisp);
     window.addEventListener('la_facultad_config_updated', syncConfig);
     window.addEventListener('la_facultad_showcase_updated', syncTracks);
@@ -221,6 +250,8 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
     return () => {
       unsubStatus();
       window.removeEventListener('la_facultad_reservas_updated', syncReservas);
+      window.removeEventListener('la_facultad_clientes_updated', syncClientes);
+      window.removeEventListener('la_facultad_vip_codes_migrated', onVipCodesMigrated);
       window.removeEventListener(DISPONIBILIDAD_UPDATED_EVENT, syncDisp);
       window.removeEventListener('la_facultad_config_updated', syncConfig);
       window.removeEventListener('la_facultad_showcase_updated', syncTracks);
@@ -264,10 +295,130 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
     }
   };
 
+  const fireStarNotification = (
+    cliente: Cliente,
+    delta: number,
+    origen: string,
+    reservaId?: string
+  ) => {
+    const stars = clampVipStars(cliente.estrellasVip);
+    const badge = getVipLevelBadge(stars);
+    const nextMilestone = VIP_MILESTONES.find((m) => m.pts > stars);
+    fetch('/api/notificar-estrella-vip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombreArtistico: cliente.nombreArtistico,
+        email: cliente.email,
+        estrellasVip: stars,
+        delta,
+        nivel: badge.label,
+        proximoHito: nextMilestone?.title || null,
+        estrellasFaltantes: nextMilestone ? nextMilestone.pts - stars : 0,
+        origen,
+        reservaId,
+      }),
+    }).catch(() => {});
+  };
+
   const handleCambiarEstadoReserva = (id: string, estado: Reserva['estado']) => {
-    const next = actualizarReserva(id, { estado });
+    const targetReserva = reservas.find((r) => r.id === id);
+    let awardApplied = false;
+    let updatedClient: Cliente | undefined;
+
+    if (
+      estado === 'Completada' &&
+      targetReserva &&
+      !targetReserva.estrellaOtorgada &&
+      targetReserva.clienteId &&
+      !targetReserva.clienteId.startsWith('MANUAL-')
+    ) {
+      const nextClientes = ajustarEstrellasCliente(targetReserva.clienteId, 1, {
+        tema: targetReserva.detallesTracklist?.[0] || targetReserva.servicios?.[0],
+        nota: 'Sesión completada',
+        reservaId: targetReserva.id,
+      });
+      setClientes(nextClientes);
+      updatedClient = nextClientes.find((c) => c.id === targetReserva.clienteId);
+      awardApplied = Boolean(updatedClient);
+    }
+
+    const next = actualizarReserva(id, {
+      estado,
+      ...(awardApplied ? { estrellaOtorgada: true } : {}),
+    });
     setReservas(next);
+
+    if (awardApplied && updatedClient) {
+      fireStarNotification(updatedClient, 1, 'Sesión completada', targetReserva?.id);
+      notify(
+        `Reserva #${id} completada · +1 ⭐ VIP acreditada a ${updatedClient.nombreArtistico} (${clampVipStars(updatedClient.estrellasVip)}/${VIP_MAX_STARS}).`
+      );
+      return;
+    }
+
     notify(`Reserva #${id} marcada como ${estado}.`);
+  };
+
+  const handleAjustarEstrellaManual = (clienteId: string, delta: number) => {
+    const det = vipDetalle[clienteId] || { tema: '', nota: '' };
+    const prevStars = clampVipStars(clientes.find((c) => c.id === clienteId)?.estrellasVip);
+    const nextClientes = ajustarEstrellasCliente(clienteId, delta, {
+      tema: det.tema || undefined,
+      nota: det.nota || (delta > 0 ? 'Ajuste manual +1 ⭐' : 'Reversa manual −1 ⭐'),
+    });
+    setClientes(nextClientes);
+    const updated = nextClientes.find((c) => c.id === clienteId);
+    if (!updated) return;
+    const nextStars = clampVipStars(updated.estrellasVip);
+    if (nextStars === prevStars) {
+      notify(`Sin cambios: ${updated.nombreArtistico} ya está en ${nextStars}/${VIP_MAX_STARS} ⭐.`);
+      return;
+    }
+    setVipDetalle((prev) => ({ ...prev, [clienteId]: { tema: '', nota: '' } }));
+    if (delta > 0) {
+      fireStarNotification(updated, delta, 'Ajuste manual admin');
+    }
+    notify(`${updated.nombreArtistico}: ${nextStars}/${VIP_MAX_STARS} ⭐.`);
+  };
+
+  const handleCanjearHito = (cliente: Cliente, hitoTitle: string) => {
+    if (!window.confirm(`¿Marcar como canjeado "${hitoTitle}" para ${cliente.nombreArtistico}?`)) return;
+    const nextClientes = registrarCanjeHitoCliente(cliente.id, hitoTitle);
+    setClientes(nextClientes);
+    notify(`Hito "${hitoTitle}" marcado como canjeado para ${cliente.nombreArtistico}.`);
+  };
+
+  const handleGuardarCodigoSesion = (cliente: Cliente) => {
+    const raw = (vipCodigoInput[cliente.id] ?? cliente.codigoSesion ?? '').trim();
+    const otherCodes = clientes.filter((x) => x.id !== cliente.id).map((x) => x.codigoSesion || '');
+    const code = raw ? normalizeVipCode(raw) : generarCodigoSesionSeguro(cliente.nombreArtistico, otherCodes);
+    if (!code || !isStrongVipCode(code)) {
+      notify('⚠️ Formato inválido: usa VIP/nombre-del-artista o el botón "Generar".');
+      return;
+    }
+    const nextClientes = actualizarCliente(cliente.id, { codigoSesion: code });
+    setClientes(nextClientes);
+    setVipCodigoInput((prev) => ({ ...prev, [cliente.id]: code }));
+    notify(`Código VIP guardado (${code}) y sincronizado para ${cliente.nombreArtistico}.`);
+  };
+
+  const handleGenerarCodigoSeguro = (cliente: Cliente) => {
+    const otherCodes = clientes.filter((x) => x.id !== cliente.id).map((x) => x.codigoSesion || '');
+    const code = generarCodigoSesionSeguro(cliente.nombreArtistico, otherCodes);
+    const nextClientes = actualizarCliente(cliente.id, { codigoSesion: code });
+    setClientes(nextClientes);
+    setVipCodigoInput((prev) => ({ ...prev, [cliente.id]: code }));
+    notify(`Nuevo código VIP (${code}) generado para ${cliente.nombreArtistico}.`);
+  };
+
+  const handleCopiarLinkVip = (cliente: Cliente) => {
+    const code = (cliente.codigoSesion || '').trim();
+    if (!isStrongVipCode(code) || typeof navigator === 'undefined' || !navigator.clipboard) return;
+    const url = `${window.location.origin}/?vip=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      notify(`Link de Pasaporte VIP copiado para ${cliente.nombreArtistico}.`);
+    }).catch(() => {});
   };
 
   const handleEliminarReserva = (id: string) => {
@@ -277,13 +428,30 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
     notify(`Reserva #${id} eliminada.`);
   };
 
+  const handleEliminarCliente = (cliente: Cliente) => {
+    if (!window.confirm(`¿Eliminar permanentemente a ${cliente.nombreArtistico} y su tarjeta VIP pública?`)) {
+      return;
+    }
+    const next = eliminarCliente(cliente.id);
+    setClientes(next);
+    notify(`Cliente ${cliente.nombreArtistico} y su registro VIP eliminados.`);
+  };
+
   const handleCreateManualBooking = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBooking.nombreArtistico.trim()) return;
+    const artistName = newBooking.nombreArtistico.trim();
+    const cliente = guardarCliente({
+      nombreArtistico: artistName,
+      nombreReal: artistName,
+      email: '',
+      telefono: newBooking.telefono.trim() || 'Por confirmar',
+      instagram: '',
+    });
     const [horaInicio, horaSalida] = newBooking.bloque.split('-');
     const created = guardarReserva({
-      clienteId: `MANUAL-${Date.now().toString().slice(-4)}`,
-      nombreArtistico: newBooking.nombreArtistico.trim(),
+      clienteId: cliente.id,
+      nombreArtistico: artistName,
       fecha: newBooking.fecha,
       horaInicio,
       horaSalida,
@@ -297,10 +465,11 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
       depositoEstado: 'depositado',
     });
     setReservas(getReservas());
+    setClientes(getClientes());
     triggerGuildReservaWebhook(created);
     setShowNewBooking(false);
-    setNewBooking({ ...newBooking, nombreArtistico: '' });
-    notify(`Sesión manual #${created.id} agregada y bloqueada en el calendario.`);
+    setNewBooking({ ...newBooking, nombreArtistico: '', telefono: '' });
+    notify(`Sesión manual #${created.id} agregada (Cliente ${cliente.id}) y bloqueada en el calendario.`);
   };
 
   const handleSetStatusPreset = (tipo: StudioLiveStatusType) => {
@@ -612,6 +781,7 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
         <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/10 scrollbar-none">
           {[
             { id: 'reservas', label: 'Reservas & Depósitos', icon: Ticket, badge: pendientesCount || null },
+            { id: 'clientes_vip', label: 'Clientes VIP', icon: Star, badge: clientes.length },
             { id: 'finanzas', label: `Finanzas ($${totalIngresosMes}/$${metaMensual})`, icon: DollarSign, badge: null },
             { id: 'calendario', label: 'Bloqueo de Fechas', icon: Calendar, badge: null },
             { id: 'estado', label: 'Estado del Estudio', icon: Radio, badge: null },
@@ -728,6 +898,12 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
                         Ref ATH/Pago: {r.comprobanteNumReferencia}
                       </p>
                     )}
+
+                    {r.estado === 'Cancelada' && r.estrellaOtorgada && (
+                      <p className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2.5 py-1 rounded-lg">
+                        <span>⚠️ Estrella otorgada en reserva cancelada (revisar en Clientes VIP)</span>
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -786,6 +962,282 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 1B: CLIENTES VIP · PASAPORTE DE ESTRELLAS */}
+      {activeTab === 'clientes_vip' && (
+        <div className="rounded-3xl bg-[#0e1018] border border-white/10 p-4 sm:p-6 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-syne font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-400" />
+                <span>Pasaporte VIP · Clientes ({clientes.length})</span>
+              </h3>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                1 servicio completado y facturado = 1 ⭐ · Meta: {VIP_MAX_STARS} ⭐ (Producción Completa Gratis)
+              </p>
+            </div>
+            <input
+              type="text"
+              value={vipSearch}
+              onChange={(e) => setVipSearch(e.target.value)}
+              placeholder="Buscar artista, teléfono o código..."
+              className="w-full sm:w-64 bg-[#141724] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-500"
+            />
+          </div>
+
+          {clientes.length === 0 ? (
+            <p className="text-xs text-zinc-500 py-8 text-center">No hay clientes registrados aún.</p>
+          ) : (
+            <div className="space-y-4">
+              {clientes
+                .filter((c) => {
+                  const q = vipSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    (c.nombreArtistico || '').toLowerCase().includes(q) ||
+                    (c.telefono || '').toLowerCase().includes(q) ||
+                    (c.codigoSesion || '').toLowerCase().includes(q)
+                  );
+                })
+                .sort((a, b) => clampVipStars(b.estrellasVip) - clampVipStars(a.estrellasVip))
+                .map((c) => {
+                  const stars = clampVipStars(c.estrellasVip);
+                  const badge = getVipLevelBadge(stars);
+                  const nextMilestone = VIP_MILESTONES.find((m) => m.pts > stars);
+                  const faltantes = nextMilestone ? nextMilestone.pts - stars : 0;
+                  const historial = Array.isArray(c.historialEstrellas) ? c.historialEstrellas : [];
+                  const det = vipDetalle[c.id] || { tema: '', nota: '' };
+                  const isHistOpen = Boolean(vipHistorialOpen[c.id]);
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="rounded-2xl bg-[#131622] border border-zinc-800 p-4 space-y-4"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-syne font-bold text-white text-base">
+                              {c.nombreArtistico}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badge.color}`}>
+                              {badge.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded">
+                              {c.id}
+                            </span>
+                          </div>
+                          <div className="text-xs text-zinc-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span>Tel: <strong className="text-zinc-200">{c.telefono}</strong></span>
+                            <span>
+                              Estrellas: <strong className="text-amber-300">{stars}/{VIP_MAX_STARS} ⭐</strong>
+                            </span>
+                            {nextMilestone ? (
+                              <span>
+                                Próximo hito: <strong className="text-white">{nextMilestone.badge}</strong> (faltan{' '}
+                                <strong className="text-amber-400">{faltantes} ⭐</strong>)
+                              </span>
+                            ) : (
+                              <span className="text-amber-300 font-bold">👑 Meta máxima alcanzada (20/20 ⭐)</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Código de sesión VIP */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={vipCodigoInput[c.id] ?? c.codigoSesion ?? ''}
+                            onChange={(e) =>
+                              setVipCodigoInput((prev) => ({ ...prev, [c.id]: e.target.value }))
+                            }
+                            placeholder="VIP/nombre-del-artista"
+                            className="bg-black/50 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-white w-48"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleGenerarCodigoSeguro(c)}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-semibold cursor-pointer"
+                          >
+                            Generar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleGuardarCodigoSesion(c)}
+                            className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-semibold cursor-pointer"
+                          >
+                            Guardar
+                          </button>
+                          {isStrongVipCode(c.codigoSesion) && (
+                            <button
+                              type="button"
+                              onClick={() => handleCopiarLinkVip(c)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 text-[11px] font-semibold cursor-pointer"
+                            >
+                              Copiar link
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Barra de progreso */}
+                      <div className="w-full h-2 rounded-full bg-black/60 overflow-hidden border border-zinc-800">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 transition-all"
+                          style={{ width: `${Math.min(100, (stars / VIP_MAX_STARS) * 100)}%` }}
+                        />
+                      </div>
+
+                      {/* Hitos VIP_MILESTONES y canje */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2">
+                        {VIP_MILESTONES.map((m) => {
+                          const canjeado = historial.some((h) => h.nota === `Canje: ${m.title}`);
+                          const disponible = stars >= m.pts && !canjeado;
+                          return (
+                            <div
+                              key={m.pts}
+                              className={`rounded-xl p-2.5 border text-[11px] space-y-1.5 ${
+                                canjeado
+                                  ? 'bg-emerald-950/30 border-emerald-700/50 text-emerald-200'
+                                  : disponible
+                                  ? 'bg-amber-950/30 border-amber-500/50 text-amber-100'
+                                  : 'bg-black/30 border-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <strong className="font-bold">{m.title}</strong>
+                                {canjeado ? (
+                                  <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-300">
+                                    Canjeado
+                                  </span>
+                                ) : disponible ? (
+                                  <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">
+                                    Disponible
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-mono text-zinc-500">
+                                    -{m.pts - stars} ⭐
+                                  </span>
+                                )}
+                              </div>
+                              {disponible && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCanjearHito(c, m.title)}
+                                  className="w-full py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] uppercase tracking-wider cursor-pointer"
+                                >
+                                  Marcar canjeado
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Ajuste manual +1 / -1 */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/5">
+                        <input
+                          type="text"
+                          value={det.tema}
+                          onChange={(e) =>
+                            setVipDetalle((prev) => ({
+                              ...prev,
+                              [c.id]: { ...det, tema: e.target.value },
+                            }))
+                          }
+                          placeholder="Tema / servicio (opcional)"
+                          className="bg-black/40 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white flex-1 min-w-[140px]"
+                        />
+                        <input
+                          type="text"
+                          value={det.nota}
+                          onChange={(e) =>
+                            setVipDetalle((prev) => ({
+                              ...prev,
+                              [c.id]: { ...det, nota: e.target.value },
+                            }))
+                          }
+                          placeholder="Nota (opcional)"
+                          className="bg-black/40 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white flex-1 min-w-[140px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAjustarEstrellaManual(c.id, 1)}
+                          disabled={stars >= VIP_MAX_STARS}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold text-xs cursor-pointer"
+                        >
+                          +1 ⭐
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAjustarEstrellaManual(c.id, -1)}
+                          disabled={stars <= 0}
+                          className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-200 font-bold text-xs cursor-pointer"
+                        >
+                          −1 ⭐
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVipHistorialOpen((prev) => ({ ...prev, [c.id]: !isHistOpen }))
+                          }
+                          className="px-3 py-1.5 rounded-lg bg-black/50 border border-zinc-700 text-zinc-300 text-xs cursor-pointer"
+                        >
+                          Historial ({historial.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarCliente(c)}
+                          className="p-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/70 text-red-400 cursor-pointer"
+                          title={`Eliminar cliente ${c.nombreArtistico}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {isHistOpen && (
+                        <div className="rounded-xl bg-black/50 border border-zinc-800 p-3 space-y-1.5 max-h-48 overflow-y-auto">
+                          {historial.length === 0 ? (
+                            <p className="text-[11px] text-zinc-500">Sin movimientos registrados.</p>
+                          ) : (
+                            historial.map((h) => (
+                              <div
+                                key={h.id}
+                                className="flex flex-wrap items-center justify-between gap-2 text-[11px] border-b border-white/5 pb-1 last:border-none last:pb-0"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-zinc-500">{h.fecha}</span>
+                                  <span
+                                    className={`font-mono font-bold ${
+                                      h.delta > 0
+                                        ? 'text-amber-400'
+                                        : h.delta < 0
+                                        ? 'text-red-400'
+                                        : 'text-emerald-400'
+                                    }`}
+                                  >
+                                    {h.delta > 0 ? `+${h.delta} ⭐` : h.delta < 0 ? `${h.delta} ⭐` : 'Canje'}
+                                  </span>
+                                  {h.tema && <span className="text-white">{h.tema}</span>}
+                                  {h.nota && <span className="text-zinc-300">{h.nota}</span>}
+                                </div>
+                                {h.reservaId && (
+                                  <span className="font-mono text-[10px] text-zinc-500">
+                                    #{h.reservaId}
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           )}
         </div>
@@ -1806,6 +2258,14 @@ export default function PanelAdmin({ defaultSection = 'all' }: PanelAdminProps) 
               placeholder="Nombre artístico"
               value={newBooking.nombreArtistico}
               onChange={(e) => setNewBooking({ ...newBooking, nombreArtistico: e.target.value })}
+              className="w-full bg-[#181b28] border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+            />
+
+            <input
+              type="tel"
+              placeholder="WhatsApp / Teléfono (opcional, para perfil VIP)"
+              value={newBooking.telefono}
+              onChange={(e) => setNewBooking({ ...newBooking, telefono: e.target.value })}
               className="w-full bg-[#181b28] border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
             />
 
