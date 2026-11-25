@@ -6,15 +6,26 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ ok: false, error: 'GUILD_GOOGLE_BRIDGE_URL o GUILD_GOOGLE_BRIDGE_SECRET no configurado en Vercel.' });
   }
 
-  try {
-    if (req.method === 'GET') {
-      const resp = await fetch(bridgeUrl, {
+  const postBridgeWithTimeout = async (payload: Record<string, unknown>, timeoutMs = 8000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(bridgeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: bridgeSecret,
-          action: 'getCronomanteSchedule',
-        }),
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  try {
+    if (req.method === 'GET') {
+      const resp = await postBridgeWithTimeout({
+        secret: bridgeSecret,
+        action: 'getCronomanteSchedule',
       });
       const data = await resp.json().catch(() => ({ ok: false }));
       return res.status(200).json(data);
@@ -26,15 +37,11 @@ export default async function handler(req: any, res: any) {
       if (incomingSecret !== bridgeSecret) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
       }
-      const resp = await fetch(bridgeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: bridgeSecret,
-          action: 'saveCronomanteSchedule',
-          dias: body.dias || {},
-          updatedAt: new Date().toISOString(),
-        }),
+      const resp = await postBridgeWithTimeout({
+        secret: bridgeSecret,
+        action: 'saveCronomanteSchedule',
+        dias: body.dias || {},
+        updatedAt: new Date().toISOString(),
       });
       const data = await resp.json().catch(() => ({ ok: false }));
       return res.status(200).json(data);

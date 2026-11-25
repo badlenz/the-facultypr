@@ -66,25 +66,36 @@ export default async function handler(req: any, res: any) {
       </div>
     `;
 
-    // 1. Alerta inmediata para Badlenz
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: fromAddress,
-        to: [adminEmail],
-        subject: `🎙️ Nueva Reserva #${reserva.id} · ${cliente.nombreArtistico} (${reserva.fecha})`,
-        html: adminHtml,
-        attachments: [
-          {
-            filename: `Sesion_${reserva.fecha}_${reserva.id}.ics`,
-            content: icsBase64,
+    const sendResendEmail = async (payload: Record<string, unknown>) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      try {
+        return await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
           },
-        ],
-      }),
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    // 1. Alerta inmediata para Badlenz
+    await sendResendEmail({
+      from: fromAddress,
+      to: [adminEmail],
+      subject: `🎙️ Nueva Reserva #${reserva.id} · ${cliente.nombreArtistico} (${reserva.fecha})`,
+      html: adminHtml,
+      attachments: [
+        {
+          filename: `Sesion_${reserva.fecha}_${reserva.id}.ics`,
+          content: icsBase64,
+        },
+      ],
     });
 
     // 2. Confirmación automática al artista si dejó email válido
@@ -105,24 +116,17 @@ export default async function handler(req: any, res: any) {
         </div>
       `;
 
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [clientEmail],
-          subject: `🎟️ Pase de Sesión #${reserva.id} · La Facultad Studio (${reserva.fecha})`,
-          html: clientHtml,
-          attachments: [
-            {
-              filename: `La_Facultad_Sesion_${reserva.fecha}.ics`,
-              content: icsBase64,
-            },
-          ],
-        }),
+      await sendResendEmail({
+        from: fromAddress,
+        to: [clientEmail],
+        subject: `🎟️ Pase de Sesión #${reserva.id} · La Facultad Studio (${reserva.fecha})`,
+        html: clientHtml,
+        attachments: [
+          {
+            filename: `La_Facultad_Sesion_${reserva.fecha}.ics`,
+            content: icsBase64,
+          },
+        ],
       });
     }
 

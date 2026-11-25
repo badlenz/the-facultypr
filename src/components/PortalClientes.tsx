@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import {
   guardarCliente,
-  guardarReserva,
+  guardarReservaConSync,
   actualizarReserva,
   getReservas,
   Reserva,
@@ -108,6 +108,8 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
   const [reservaActiva, setReservaActiva] = useState<Reserva | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isStartingStripe, setIsStartingStripe] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [archivosSubidos, setArchivosSubidos] = useState<{ nombre: string; tamano: string }[]>([]);
 
   const [comprobanteAthFile, setComprobanteAthFile] = useState<string | null>(null);
@@ -492,6 +494,32 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     return lista;
   };
 
+  const scrollToBookingConsoleTop = () => {
+    if (typeof window === 'undefined') return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target =
+          document.getElementById('consola-reserva-inicio') ||
+          document.getElementById('seccion-calendario-booking');
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  };
+
+  const fetchWithTimeout = async (
+    url: string,
+    options: RequestInit,
+    timeoutMs = 15000
+  ): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   const handlePayWithStripe = async () => {
     const errors: { nombreArtistico?: string; telefono?: string } = {};
     if (!formData.nombreArtistico.trim()) {
@@ -503,10 +531,12 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     if (Object.keys(errors).length > 0) {
       setStepErrors(errors);
       setCheckoutStep(2);
+      scrollToBookingConsoleTop();
       showToast('Completa tu Nombre Artístico y WhatsApp en el Paso 2 antes de pagar con Stripe.', 'warning');
       return;
     }
 
+    setStripeError(null);
     setIsStartingStripe(true);
     try {
       const listaServicios = buildServiciosList();
@@ -518,7 +548,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         instagram: formData.redesSociales,
       });
 
-      const nuevaReserva = guardarReserva({
+      const syncResult = await guardarReservaConSync({
         clienteId: cliente.id,
         nombreArtistico: formData.nombreArtistico.trim(),
         fecha: formData.fecha,
@@ -534,56 +564,88 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
         estado: 'Pendiente',
       });
 
-      fetch('/api/enviar-email-reserva', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cliente, reserva: nuevaReserva }),
-      }).catch(() => {});
+      const nuevaReserva = syncResult.reserva;
+      if (!syncResult.firestoreSaved) {
+        console.warn('Stripe pre-save Firestore warning:', syncResult.error);
+      }
 
-      const res = await fetch('/api/crear-checkout-stripe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reservaId: nuevaReserva.id,
-          nombreArtistico: nuevaReserva.nombreArtistico,
-          email: formData.email,
-          fecha: nuevaReserva.fecha,
-          horaInicio: nuevaReserva.horaInicio,
-          horaSalida: nuevaReserva.horaSalida,
-          deposito: nuevaReserva.deposito,
-          paquete: listaServicios.join(' + '),
-          origin: window.location.origin,
-        }),
+      fetchWithTimeout(
+        '/api/enviar-email-reserva',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente,
+            reserva: { ...nuevaReserva, comprobanteAthUrl: undefined },
+          }),
+        },
+        15000
+      ).catch((emailErr) => {
+        console.warn('Aviso email previo a Stripe:', emailErr);
       });
 
+      const res = await fetchWithTimeout(
+        '/api/crear-checkout-stripe',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reservaId: nuevaReserva.id,
+            nombreArtistico: nuevaReserva.nombreArtistico,
+            email: formData.email,
+            fecha: nuevaReserva.fecha,
+            horaInicio: nuevaReserva.horaInicio,
+            horaSalida: nuevaReserva.horaSalida,
+            deposito: nuevaReserva.deposito,
+            paquete: listaServicios.join(' + '),
+            origin: window.location.origin,
+          }),
+        },
+        15000
+      );
+
       const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data?.url) {
-          window.location.href = data.url;
-          return;
-        }
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => null)
+        : null;
+
+      if (res.ok && data?.url) {
+        setReservaActiva(nuevaReserva);
+        window.location.href = data.url;
+        return;
       }
 
-      if (studioConfig.stripeDepositLink) {
+      console.error('Error respuesta /api/crear-checkout-stripe:', {
+        status: res.status,
+        contentType,
+        data,
+      });
+
+      const configuredLink = (studioConfig.stripeDepositLink || '').trim();
+      if (configuredLink && /^https:\/\/buy\.stripe\.com\//i.test(configuredLink) && deposito === 50) {
         setReservaActiva(nuevaReserva);
-        window.open(studioConfig.stripeDepositLink, '_blank', 'noopener,noreferrer');
-        showToast('Se abrió tu link seguro de Stripe. Tu Pase VIP ya quedó generado.', 'info');
-      } else {
-        setReservaActiva(nuevaReserva);
-        showToast(
-          `Reserva creada (#${nuevaReserva.id}). El Checkout automático de Stripe funcionará en vivo al desplegar en Vercel con STRIPE_SECRET_KEY.`,
-          'info'
-        );
+        window.location.href = configuredLink;
+        return;
       }
-    } catch {
-      showToast('No se pudo conectar con Stripe ahora. Puedes completar tu depósito por ATH Móvil.', 'error');
+
+      throw new Error(
+        data?.error ||
+          `No se pudo iniciar Stripe Checkout (HTTP ${res.status}). Intenta de nuevo o usa ATH Móvil.`
+      );
+    } catch (err: any) {
+      console.error('Error en handlePayWithStripe:', err);
+      const message =
+        err?.name === 'AbortError'
+          ? 'La conexión con Stripe tardó más de 15 segundos. Reintenta o completa tu depósito por ATH Móvil.'
+          : err?.message || 'No se pudo conectar con Stripe ahora. Intenta de nuevo o usa ATH Móvil.';
+      setStripeError(message);
+      showToast(message, 'error');
     } finally {
       setIsStartingStripe(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const errors: { nombreArtistico?: string; telefono?: string } = {};
@@ -600,71 +662,105 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     }
 
     setStepErrors({});
+    setSubmitError(null);
     const listaServicios = buildServiciosList();
     setIsSending(true);
 
-    const cliente = guardarCliente({
-      nombreArtistico: formData.nombreArtistico.trim(),
-      nombreReal: formData.nombreReal || formData.nombreArtistico.trim(),
-      email: formData.email || `${formData.nombreArtistico.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
-      telefono: formData.telefono.trim(),
-      instagram: formData.redesSociales,
-    });
+    try {
+      const cliente = guardarCliente({
+        nombreArtistico: formData.nombreArtistico.trim(),
+        nombreReal: formData.nombreReal || formData.nombreArtistico.trim(),
+        email: formData.email || `${formData.nombreArtistico.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
+        telefono: formData.telefono.trim(),
+        instagram: formData.redesSociales,
+      });
 
-    const nuevaReserva = guardarReserva({
-      clienteId: cliente.id,
-      nombreArtistico: formData.nombreArtistico.trim(),
-      fecha: formData.fecha,
-      fechasBloque: esReservaEnBloque ? fechasSeleccionadasBloque : undefined,
-      horaInicio: formData.horaInicio,
-      horaSalida: formData.horaSalida,
-      totalHoras: duracionHoras,
-      servicios: listaServicios,
-      metodoPago: formData.metodoPago,
-      subtotal,
-      deposito,
-      balance,
-      estado: 'Pendiente',
-      comprobanteNumReferencia: athNumReferenciaInput.trim() || undefined,
-      comprobanteAthUrl: athComprobanteUrl || undefined,
-      tipoProyecto: 'single',
-      roughMixNombre: `${formData.nombreArtistico.toUpperCase() || 'ARTISTA'}_Sesion_${formData.fecha}_ROUGH_v1.wav`,
-      roughMixUrl: 'https://actions.google.com/sounds/v1/musical_tracks/hip_hop_track.ogg',
-    });
+      const syncResult = await guardarReservaConSync({
+        clienteId: cliente.id,
+        nombreArtistico: formData.nombreArtistico.trim(),
+        fecha: formData.fecha,
+        fechasBloque: esReservaEnBloque ? fechasSeleccionadasBloque : undefined,
+        horaInicio: formData.horaInicio,
+        horaSalida: formData.horaSalida,
+        totalHoras: duracionHoras,
+        servicios: listaServicios,
+        metodoPago: formData.metodoPago,
+        subtotal,
+        deposito,
+        balance,
+        estado: 'Pendiente',
+        comprobanteNumReferencia: athNumReferenciaInput.trim() || undefined,
+        comprobanteAthUrl: athComprobanteUrl || undefined,
+        tipoProyecto: 'single',
+        roughMixNombre: `${formData.nombreArtistico.toUpperCase() || 'ARTISTA'}_Sesion_${formData.fecha}_ROUGH_v1.wav`,
+        roughMixUrl: 'https://actions.google.com/sounds/v1/musical_tracks/hip_hop_track.ogg',
+      });
 
-    setReservaActiva(nuevaReserva);
-    setIsSending(false);
-    showToast(
-      `🎟️ ¡Pase VIP #${nuevaReserva.id} emitido! Ya puedes descargar tu confirmación de calendario (.ics).`,
-      'success'
-    );
+      if (!syncResult.firestoreSaved) {
+        const errMsg =
+          syncResult.error ||
+          'No se pudo guardar tu reserva en el servidor. Verifica tu conexión y presiona Reintentar.';
+        console.error('Error guardando reserva en Firestore:', syncResult.error);
+        setSubmitError(errMsg);
+        showToast(errMsg, 'error');
+        return;
+      }
 
-    setTimeout(() => {
-      document.getElementById('seccion-resumen')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+      const nuevaReserva = syncResult.reserva;
+      setReservaActiva(nuevaReserva);
+      if (syncResult.screenshotDropped) {
+        showToast(
+          `🎟️ ¡Pase VIP #${nuevaReserva.id} emitido! La captura de ATH no pudo subirse automáticamente; puedes enviarla por WhatsApp.`,
+          'warning'
+        );
+      } else {
+        showToast(
+          `🎟️ ¡Pase VIP #${nuevaReserva.id} emitido! Ya puedes descargar tu confirmación de calendario (.ics).`,
+          'success'
+        );
+      }
 
-    fetch('/api/enviar-email-reserva', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cliente: {
-          nombreReal: formData.nombreReal || formData.nombreArtistico.trim(),
-          nombreArtistico: formData.nombreArtistico.trim(),
-          email: formData.email || `${formData.nombreArtistico.toLowerCase().replace(/\s+/g, '')}@cliente.com`,
-          telefono: formData.telefono.trim(),
-          instagram: formData.redesSociales,
+      setTimeout(() => {
+        document.getElementById('seccion-resumen')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+      // Notificación por correo en segundo plano (nunca bloquea la confirmación del cliente)
+      const { comprobanteAthUrl: _omitImg, ...reservaEmailPayload } = nuevaReserva;
+      fetchWithTimeout(
+        '/api/enviar-email-reserva',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente: {
+              nombreReal: formData.nombreReal || formData.nombreArtistico.trim(),
+              nombreArtistico: formData.nombreArtistico.trim(),
+              email: formData.email || `${formData.nombreArtistico.toLowerCase().replace(/\s+/g, '')}@cliente.com`,
+              telefono: formData.telefono.trim(),
+              instagram: formData.redesSociales,
+            },
+            reserva: reservaEmailPayload,
+            detallesProyecto: {
+              tipoInstrumental: formData.tipoInstrumental,
+              linkYoutube: formData.linkYoutube,
+              referencias: formData.referencias,
+              archivos: archivosSubidos,
+            },
+          }),
         },
-        reserva: nuevaReserva,
-        detallesProyecto: {
-          tipoInstrumental: formData.tipoInstrumental,
-          linkYoutube: formData.linkYoutube,
-          referencias: formData.referencias,
-          archivos: archivosSubidos,
-        },
-      }),
-    }).catch((err) => {
-      console.warn('Aviso de notificación por correo en segundo plano:', err);
-    });
+        15000
+      ).catch((err) => {
+        console.warn('Aviso de notificación por correo en segundo plano:', err);
+      });
+    } catch (err: any) {
+      console.error('Error en handleSubmit:', err);
+      const errMsg =
+        err?.message || 'Ocurrió un error al confirmar tu reserva. Verifica tu conexión y reintenta.';
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (isStudioTemporarilyClosed) {
@@ -741,7 +837,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
       {/* 3. FORMULARIO PRINCIPAL DE RESERVA (3 PASOS) & PASE VIP */}
       <ScrollReveal delayMs={100}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 bg-[#0e1017] p-5 sm:p-7 rounded-2xl border border-zinc-800 space-y-5 shadow-2xl">
+          <div
+            id="consola-reserva-inicio"
+            className="lg:col-span-8 bg-[#0e1017] p-5 sm:p-7 rounded-2xl border border-zinc-800 space-y-5 shadow-2xl scroll-mt-24"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -775,6 +874,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     onClick={() => {
                       setCheckoutStep(step);
                       setStepErrors({});
+                      scrollToBookingConsoleTop();
                     }}
                     className={`py-2.5 px-2 rounded-lg border transition-all font-medium flex items-center justify-center gap-2 cursor-pointer ${
                       checkoutStep === step
@@ -808,6 +908,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                       setFormData((prev) => ({ ...prev, fecha: fallback }));
                     }
                     setCheckoutStep(2);
+                    scrollToBookingConsoleTop();
                   }}
                   onShowToast={showToast}
                 />
@@ -823,7 +924,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   deposito={deposito}
                   onFileSelect={handleFileSelect}
                   onRemoveFile={handleRemoveFile}
-                  onBackToStep1={() => setCheckoutStep(1)}
+                  onBackToStep1={() => {
+                    setCheckoutStep(1);
+                    scrollToBookingConsoleTop();
+                  }}
                   onContinueToStep3={() => {
                     const errors: { nombreArtistico?: string; telefono?: string } = {};
                     if (!formData.nombreArtistico.trim()) {
@@ -834,6 +938,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     }
                     if (Object.keys(errors).length > 0) {
                       setStepErrors(errors);
+                      scrollToBookingConsoleTop();
                       showToast(
                         'Por favor completa tu Nombre Artístico y Teléfono para emitir tu Pase VIP.',
                         'warning'
@@ -842,6 +947,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                     }
                     setStepErrors({});
                     setCheckoutStep(3);
+                    scrollToBookingConsoleTop();
                   }}
                 />
               )}
@@ -858,6 +964,8 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   balance={balance}
                   isSending={isSending}
                   isStartingStripe={isStartingStripe}
+                  stripeError={stripeError}
+                  submitError={submitError}
                   copiedAthPhone={copiedAthPhone}
                   copiedAthAmount={copiedAthAmount}
                   athNumReferenciaInput={athNumReferenciaInput}
@@ -869,7 +977,10 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
                   onPayWithStripe={handlePayWithStripe}
                   onAthScreenshotUpload={handleAthScreenshotUpload}
                   onRemoveAthScreenshot={handleRemoveAthScreenshot}
-                  onBackToStep2={() => setCheckoutStep(2)}
+                  onBackToStep2={() => {
+                    setCheckoutStep(2);
+                    scrollToBookingConsoleTop();
+                  }}
                 />
               )}
             </form>

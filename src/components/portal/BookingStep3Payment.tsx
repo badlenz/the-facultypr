@@ -21,6 +21,8 @@ interface BookingStep3PaymentProps {
   balance: number;
   isSending: boolean;
   isStartingStripe: boolean;
+  stripeError?: string | null;
+  submitError?: string | null;
   copiedAthPhone: boolean;
   copiedAthAmount: boolean;
   athNumReferenciaInput: string;
@@ -46,6 +48,8 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
   balance,
   isSending,
   isStartingStripe,
+  stripeError,
+  submitError,
   copiedAthPhone,
   copiedAthAmount,
   athNumReferenciaInput,
@@ -217,6 +221,31 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
               </span>
               <ExternalLink className="w-4 h-4" />
             </button>
+            {stripeError && (
+              <div
+                role="alert"
+                className="bg-red-950/60 border border-red-500/60 rounded-xl p-3 text-xs text-red-200 space-y-2"
+              >
+                <p className="font-bold text-red-300">❌ {stripeError}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onPayWithStripe}
+                    disabled={isStartingStripe}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    Reintentar Stripe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, metodoPago: 'ATH Movil' }))}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    Cambiar a ATH Móvil
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -528,16 +557,30 @@ export const BookingStep3Payment: React.FC<BookingStep3PaymentProps> = ({
             </button>
           </div>
 
+          {submitError && (
+            <div
+              role="alert"
+              className="bg-red-950/60 border border-red-500/60 rounded-xl p-3 text-xs text-red-200 space-y-1.5"
+            >
+              <p className="font-bold text-red-300">❌ {submitError}</p>
+              <p className="text-[11px] text-red-200/80">
+                No se perdió tu información. Pulsa el botón abajo para reintentar la confirmación.
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isSending}
-            className="w-full py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-gray-950 font-black text-sm sm:text-base uppercase tracking-wider rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-70 text-gray-950 font-black text-sm sm:text-base uppercase tracking-wider rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSending ? (
               <>
                 <span className="inline-block animate-spin border-2 border-gray-950 border-t-transparent rounded-full w-4 h-4"></span>
                 <span>Confirmando Reserva...</span>
               </>
+            ) : submitError ? (
+              <span>🔄 Reintentar Confirmación de Reserva</span>
             ) : (
               <span>📋 Confirmar Reserva &amp; Generar Hoja de Sesión</span>
             )}
