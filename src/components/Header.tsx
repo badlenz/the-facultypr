@@ -12,6 +12,7 @@ import { LFCrestLogo, BadlenzLogo } from './BrandingLogos';
 import { StudioLiveStatusBadge } from './StudioLiveStatusBadge';
 
 const PortalArtistaModal = lazy(() => import('./PortalArtistaModal'));
+const RegistroVipQrModal = lazy(() => import('./RegistroVipQrModal'));
 
 export interface HeaderProps {
   activeTab?: NavigationTab | string;
@@ -41,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [secretFeedback, setSecretFeedback] = useState(false);
   const [showArtistPortalModal, setShowArtistPortalModal] = useState(false);
   const [artistPortalInitialCode, setArtistPortalInitialCode] = useState('');
+  const [showRegistroVipModal, setShowRegistroVipModal] = useState(false);
 
   React.useEffect(() => {
     const handleOpenModalEvent = (ev: Event) => {
@@ -50,16 +52,22 @@ export const Header: React.FC<HeaderProps> = ({
       }
       setShowArtistPortalModal(true);
     };
+    const handleOpenRegistroEvent = () => setShowRegistroVipModal(true);
     window.addEventListener('open-artist-portal-modal', handleOpenModalEvent);
+    window.addEventListener('open-registro-vip-modal', handleOpenRegistroEvent);
     if (typeof window !== 'undefined') {
-      const vipParam = new URLSearchParams(window.location.search).get('vip');
+      const params = new URLSearchParams(window.location.search);
+      const vipParam = params.get('vip');
       if (vipParam && vipParam.trim().length >= 3) {
         setArtistPortalInitialCode(vipParam.trim());
         setShowArtistPortalModal(true);
+      } else if (params.get('registro_vip') === '1') {
+        setShowRegistroVipModal(true);
       }
     }
     return () => {
       window.removeEventListener('open-artist-portal-modal', handleOpenModalEvent);
+      window.removeEventListener('open-registro-vip-modal', handleOpenRegistroEvent);
     };
   }, []);
 
@@ -371,6 +379,20 @@ export const Header: React.FC<HeaderProps> = ({
             isOpen={showArtistPortalModal}
             initialCode={artistPortalInitialCode}
             onClose={() => setShowArtistPortalModal(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* MODAL REGISTRO PRESENCIAL POR QR */}
+      {showRegistroVipModal && (
+        <Suspense fallback={null}>
+          <RegistroVipQrModal
+            isOpen={showRegistroVipModal}
+            onClose={() => setShowRegistroVipModal(false)}
+            onOpenPassport={(codigo) => {
+              setArtistPortalInitialCode(codigo);
+              setShowArtistPortalModal(true);
+            }}
           />
         </Suspense>
       )}

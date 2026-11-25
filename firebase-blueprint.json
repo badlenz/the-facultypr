@@ -13,7 +13,8 @@
         "fechaCreacion": { "type": "string", "maxLength": 50 },
         "estrellasVip": { "type": "number" },
         "codigoSesion": { "type": "string", "maxLength": 64 },
-        "historialEstrellas": { "type": "array" }
+        "historialEstrellas": { "type": "array" },
+        "servicioFrecuente": { "type": "string", "maxLength": 100 }
       },
       "required": ["nombreArtistico", "email"]
     },

@@ -97,6 +97,7 @@ export interface Cliente {
   estrellasVip?: number;
   codigoSesion?: string;
   historialEstrellas?: HistorialEstrella[];
+  servicioFrecuente?: string;
 }
 
 export interface Reserva {

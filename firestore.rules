@@ -275,7 +275,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'id', 'nombreArtistico', 'nombreReal', 'email', 'telefono',
           'instagram', 'fechaCreacion', 'estrellasVip', 'codigoSesion',
-          'historialEstrellas'
+          'historialEstrellas', 'servicioFrecuente'
         ]) &&
         data.keys().hasAll(['id', 'nombreArtistico', 'telefono']) &&
         isNonEmptyString(data.id, 128) &&
@@ -288,12 +288,14 @@ service cloud.firestore {
         isValidOptionalString(data, 'fechaCreacion', 40) &&
         isValidOptionalNumberRange(data, 'estrellasVip', 0, 20) &&
         isValidOptionalString(data, 'codigoSesion', 64) &&
-        isValidOptionalList(data, 'historialEstrellas', 100);
+        isValidOptionalList(data, 'historialEstrellas', 100) &&
+        isValidOptionalString(data, 'servicioFrecuente', 100);
     }
 
     function isValidPublicClienteCreate(data) {
       return (!('estrellasVip' in data) || data.estrellasVip == null || data.estrellasVip == 0) &&
-        (!('codigoSesion' in data) || data.codigoSesion == null || data.codigoSesion == '') &&
+        (!('codigoSesion' in data) || data.codigoSesion == null || data.codigoSesion == '' ||
+          (data.codigoSesion is string && data.codigoSesion.matches('^vip-[abcdefghjkmnpqrstuvwxyz23456789]{12}$'))) &&
         (!('historialEstrellas' in data) || data.historialEstrellas == null || data.historialEstrellas.size() == 0);
     }
 
