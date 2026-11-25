@@ -36,3 +36,4 @@ bun.lock
 # Raw uncompressed studio master sources (web copies are tracked as zyron-tukutu-*)
 public/Zyron -  TuKuTu_Master V1  (Prod. Badlenz).wav
 public/zyron Tukutu reff.mp3
+.vercel
