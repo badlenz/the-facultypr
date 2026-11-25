@@ -4,7 +4,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const bridgeUrl = process.env.GUILD_GOOGLE_BRIDGE_URL;
-  const bridgeSecret = process.env.GUILD_GOOGLE_BRIDGE_SECRET || 'LFS-GREMIO-2027-PUENTE';
+  const bridgeSecret = process.env.GUILD_GOOGLE_BRIDGE_SECRET;
   const tgToken = process.env.GUILD_TELEGRAM_BOT_TOKEN;
   const tgChatId = process.env.GUILD_TELEGRAM_CHAT_ID;
 
@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
 
     const results: Record<string, unknown> = {};
 
-    if (bridgeUrl && fecha) {
+    if (bridgeUrl && bridgeSecret && fecha) {
       const startIso = `${fecha}T${horaInicio}:00-04:00`;
       const endIso = `${fecha}T${horaSalida}:00-04:00`;
 
