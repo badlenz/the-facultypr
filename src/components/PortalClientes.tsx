@@ -236,7 +236,7 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     }
   }, [slotInicial]);
 
-  // Detectar retorno exitoso o cancelado desde Stripe Checkout
+  // Detectar retorno exitoso o cancelado desde Stripe Checkout (verificado server-side)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -245,22 +245,34 @@ export default function PortalClientes({ slotInicial, onNavigateToMuestras }: Po
     const reservaId = params.get('reserva');
     const sessionId = params.get('session_id');
 
-    if (stripePaid === '1' && reservaId) {
-      const found = getReservas().find((r) => r.id === reservaId);
-      const stripeRef = sessionId ? `STRIPE_${sessionId.slice(-12).toUpperCase()}` : 'STRIPE_PAGADO';
-      if (found) {
-        actualizarReserva(found.id, { comprobanteNumReferencia: stripeRef });
-        setReservaActiva({ ...found, comprobanteNumReferencia: stripeRef });
-        setComprobanteEnviadoExito(true);
-        setTimeout(() => {
-          document.getElementById('seccion-resumen')?.scrollIntoView({ behavior: 'smooth' });
-        }, 150);
-      }
-      showToast(
-        `✅ ¡Depósito con Stripe procesado! Referencia ${stripeRef} registrada en tu Pase #${reservaId}.`,
-        'success'
-      );
+    if (stripePaid === '1' && reservaId && sessionId) {
       window.history.replaceState(null, '', window.location.pathname);
+      void (async () => {
+        try {
+          const resp = await fetch(`/api/verificar-stripe-session?session_id=${encodeURIComponent(sessionId)}`);
+          const verify = await resp.json().catch(() => ({}));
+          if (!resp.ok || !verify?.paid || (verify.reservaId && verify.reservaId !== reservaId)) {
+            showToast('⚠️ No se pudo verificar el pago con Stripe todavía. Si ya pagaste, espera unos segundos.', 'warning');
+            return;
+          }
+          const found = getReservas().find((r) => r.id === reservaId);
+          const stripeRef = `STRIPE_${sessionId.slice(-12).toUpperCase()}`;
+          if (found) {
+            actualizarReserva(found.id, { comprobanteNumReferencia: stripeRef });
+            setReservaActiva({ ...found, comprobanteNumReferencia: stripeRef });
+            setComprobanteEnviadoExito(true);
+            setTimeout(() => {
+              document.getElementById('seccion-resumen')?.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+          }
+          showToast(
+            `✅ ¡Depósito con Stripe verificado! Referencia ${stripeRef} registrada en tu Pase #${reservaId}.`,
+            'success'
+          );
+        } catch {
+          showToast('⚠️ Error de red verificando la sesión de Stripe.', 'warning');
+        }
+      })();
     } else if (stripeCanceled === '1') {
       showToast('Pago con Stripe cancelado. Puedes intentar de nuevo o usar ATH Móvil.', 'info');
       window.history.replaceState(null, '', window.location.pathname);

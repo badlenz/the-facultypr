@@ -1,3 +1,5 @@
+const processedWebhookKeys = new Set<string>();
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -10,6 +12,13 @@ export default async function handler(req: any, res: any) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const idempKey = String(body.idempotencyKey || body.stripeSessionId || '').trim();
+    if (idempKey) {
+      if (processedWebhookKeys.has(idempKey)) {
+        return res.status(200).json({ ok: true, deduplicated: true, idempotencyKey: idempKey });
+      }
+      processedWebhookKeys.add(idempKey);
+    }
     const artist = String(body.nombreArtistico || body.artist || 'Artista').trim();
     const service = Array.isArray(body.servicios) ? body.servicios.join(', ') : String(body.service || 'Sesión de Estudio');
     const fecha = String(body.fecha || '').trim();
